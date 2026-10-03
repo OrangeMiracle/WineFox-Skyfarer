@@ -1,0 +1,48 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\safety\CorridorProbe.java使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyTerrainCombat
+UPHILL line=Line[gradient=0.75, height=1.5, entryX=0.0, entryY=-22.5, entryZ=-32.0, exitX=11.954336377100947, exitY=2.2844016847289232, exitZ=1.0458689129718977, cost=72.58200166788997]
+PULSE d=1 plan=Plan[yaw=0.0, pitch=-35.0, yawRate=2.5, pitchRate=6.0, mode=RECOVERY, safe=true, cost=7.118764034991466, reserve=0.4437858801000164, clearTicks=24, heightOffset=0.0] future=Forecast[safe=true, reserve=0.6667844294952909, passed=true, miss=0.0] cost=1.9142285221630482
+PULSE d=2 plan=Plan[yaw=0.0, pitch=-35.0, yawRate=2.5, pitchRate=6.0, mode=RECOVERY, safe=true, cost=7.106315483304146, reserve=0.4437858801000164, clearTicks=24, heightOffset=0.0] future=Forecast[safe=true, reserve=0.6512398671601134, passed=true, miss=0.0] cost=2.105679188751822
+PULSE d=3 plan=Plan[yaw=0.0, pitch=-35.0, yawRate=2.5, pitchRate=6.0, mode=RECOVERY, safe=true, cost=7.106315483304146, reserve=0.4437858801000164, clearTicks=24, heightOffset=0.0] future=Forecast[safe=true, reserve=1.0751594029650886, passed=true, miss=0.0] cost=3.068678959393113
+UPHILL line=Line[gradient=0.75, height=1.5, entryX=0.0, entryY=-22.5, entryZ=-32.0, exitX=11.954336377100947, exitY=2.2844016847289232, exitZ=1.0458689129718977, cost=72.58200166788997]
+PULSE d=1 plan=Plan[yaw=0.0, pitch=-35.0, yawRate=2.5, pitchRate=6.0, mode=RECOVERY, safe=true, cost=7.118764034991466, reserve=0.4437858801000164, clearTicks=24, heightOffset=0.0] future=Forecast[safe=true, reserve=0.6667844294952909, passed=true, miss=0.0] cost=1.9142285221630482
+PULSE d=2 plan=Plan[yaw=0.0, pitch=-35.0, yawRate=2.5, pitchRate=6.0, mode=RECOVERY, safe=true, cost=7.106315483304146, reserve=0.4437858801000164, clearTicks=24, heightOffset=0.0] future=Forecast[safe=true, reserve=0.6512398671601134, passed=true, miss=0.0] cost=2.105679188751822
+PULSE d=3 plan=Plan[yaw=0.0, pitch=-35.0, yawRate=2.5, pitchRate=6.0, mode=RECOVERY, safe=true, cost=7.106315483304146, reserve=0.4437858801000164, clearTicks=24, heightOffset=0.0] future=Forecast[safe=true, reserve=1.0751594029650886, passed=true, miss=0.0] cost=3.068678959393113
+Exception in thread "main" java.lang.AssertionError: steep abandoned grade=1.25 speed=0.8 tick=22 state=State[x=0.0, y=-17.808258714901942, z=-15.538372070312853, vx=0.0, vy=1.3686643552735083, vz=0.965505451836739, yaw=0.0, pitch=-55.0] plan=Plan[yaw=180.0, pitch=0.0, yawRate=180.0, pitchRate=90.0, mode=REVERSAL, safe=true, cost=9267.491619178418, reserve=0.15137306872801784, clearTicks=24, heightOffset=0.0]
+	at dev.winefox.skyfarer.flight.TerrainCombatChecks.require(TerrainCombatChecks.java:14)
+	at dev.winefox.skyfarer.flight.TerrainCombatChecks.precisionSlope(TerrainCombatChecks.java:70)
+	at dev.winefox.skyfarer.flight.TerrainCombatChecks.main(TerrainCombatChecks.java:34)
+
+> Task :verifyTerrainCombat FAILED
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyTerrainCombat'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 13s
+5 actionable tasks: 3 executed, 2 up-to-date

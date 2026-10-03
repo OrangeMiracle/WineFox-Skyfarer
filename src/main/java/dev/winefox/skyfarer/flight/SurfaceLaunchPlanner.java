@@ -1,0 +1,79 @@
+package dev.winefox.skyfarer.flight;
+
+/** A finite rocket pulse to leave a surface. Predictions never move the real entity. */
+public final class SurfaceLaunchPlanner {
+    private SurfaceLaunchPlanner() {}
+    public static final int DEPARTURE_TICKS = 6;
+    public record Plan(double yaw, double pitch, double height, double cost) {}
+    @FunctionalInterface public interface Water { boolean wet(FlightPrediction.State state); }
+    public static final Water DRY = state -> false;
+
+    public static double command(FlightPrediction.State s, Plan p, int elapsed, double gravity, boolean rocket) {
+        return elapsed < DEPARTURE_TICKS ? p.pitch : GlidePlanner.feedbackPitch(s,p.height,0,gravity,rocket);
+    }
+    public static FlightPrediction.State step(FlightPrediction.State s,double yaw,double pitch,double gravity,boolean rocket,boolean wet) {
+        if (!wet) return FlightPrediction.step(s,yaw,pitch,180,90,90,gravity,rocket);
+        // EntityMaid.travel with wantToSwim: move by current velocity, then apply 0.9 drag.
+        double vx=s.vx()*.9,vy=s.vy()*.9,vz=s.vz()*.9;
+        if(rocket) {
+            double a=Math.toRadians(yaw),p=Math.toRadians(pitch);
+            vx=vx*.5-Math.sin(a)*Math.cos(p)*.85;
+            vy=vy*.5-Math.sin(p)*.85;
+            vz=vz*.5+Math.cos(a)*Math.cos(p)*.85;
+        }
+        return new FlightPrediction.State(s.x()+s.vx(),s.y()+s.vy(),s.z()+s.vz(),vx,vy,vz,yaw,pitch);
+    }
+    /** One attitude must work for every possible lifetime of the selected inventory rocket. */
+    public static Plan choose(FlightPrediction.State start,double yaw,double height,double gravity,int duration,
+                              GlidePlanner.Corridor space,Water water) {
+        return choose(start,yaw,height,gravity,RocketProfile.minimumTicks(duration),RocketProfile.maximumTicks(duration),space,water);
+    }
+    public static Plan chooseRemaining(FlightPrediction.State start,double yaw,double height,double gravity,int ticks,
+                                       GlidePlanner.Corridor space,Water water) {
+        return choose(start,yaw,height,gravity,ticks,ticks,space,water);
+    }
+    private static Plan choose(FlightPrediction.State start,double yaw,double height,double gravity,int minimum,int maximum,
+                               GlidePlanner.Corridor space,Water water) {
+        if(maximum>64) return null;
+        Plan best=null;
+        for(double turn:new double[]{0,-45,45,-90,90,180}) for(double pitch:new double[]{-88,-70,-50,-25,0,15}) {
+            Plan candidate=new Plan(yaw+turn,pitch,height,0);
+            double worst=0; boolean safe=true;
+            for(int life=minimum;life<=maximum;life++) {
+                double cost=forecast(start,candidate,gravity,life,space,water);
+                if(!Double.isFinite(cost)) { safe=false; break; }
+                worst=Math.max(worst,cost);
+            }
+            if(!safe) continue;
+            double cost=worst+Math.abs(turn)*.025+Math.abs(pitch)*.008;
+            if(best==null || cost<best.cost) best=new Plan(candidate.yaw,pitch,height,cost);
+        }
+        return best;
+    }
+    private static double forecast(FlightPrediction.State start,Plan plan,double gravity,int life,
+                                   GlidePlanner.Corridor space,Water water) {
+        var s=start; double earlyRise=0,cost=0;
+        for(int tick=0;tick<life+16;tick++) {
+            double pitch=command(s,plan,tick,gravity,tick<life);
+            var next=step(s,plan.yaw,pitch,gravity,tick<life,water.wet(s));
+            // Small physical clearance is essential over snow layers and during the first jump.
+            if(!space.clear(s,next,.04,.01)) return Double.POSITIVE_INFINITY;
+            s=next;
+            if(tick==DEPARTURE_TICKS-1) earlyRise=s.y()-start.y();
+            cost+=Math.pow(Math.max(0,plan.height-s.y()),2)*.015;
+        }
+        if(water.wet(s)) return Double.POSITIVE_INFINITY;
+        return cost+Math.pow(Math.max(0,2-earlyRise),2)*12;
+    }
+    public static double pulseCost(FlightPrediction.State start,Plan plan,double gravity,int duration,
+                                   GlidePlanner.Corridor space,Water water) {
+        if(RocketProfile.maximumTicks(duration)>64) return Double.POSITIVE_INFINITY;
+        double worst=0;
+        for(int life=RocketProfile.minimumTicks(duration);life<=RocketProfile.maximumTicks(duration);life++) {
+            double score=forecast(start,plan,gravity,life,space,water);
+            if(!Double.isFinite(score)) return Double.POSITIVE_INFINITY;
+            worst=Math.max(worst,score);
+        }
+        return worst+RocketProfile.expectedTicks(duration)*.1;
+    }
+}

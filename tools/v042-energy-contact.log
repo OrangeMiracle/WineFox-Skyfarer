@@ -1,0 +1,40 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\safety\CorridorProbe.java使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyTerrainCombat
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: slow near-wall flight should find bounded correction before emergency: Plan[yaw=180.0, pitch=-20.0, yawRate=180.0, pitchRate=90.0, mode=REVERSAL, safe=true, cost=275.0162616074806, reserve=-0.5796905310998263, clearTicks=24, heightOffset=0.0]
+	at dev.winefox.skyfarer.flight.TerrainCombatChecks.require(TerrainCombatChecks.java:14)
+	at dev.winefox.skyfarer.flight.TerrainCombatChecks.precisionSafety(TerrainCombatChecks.java:85)
+	at dev.winefox.skyfarer.flight.TerrainCombatChecks.main(TerrainCombatChecks.java:36)
+
+> Task :verifyTerrainCombat FAILED
+
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyTerrainCombat'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 12s
+5 actionable tasks: 3 executed, 2 up-to-date

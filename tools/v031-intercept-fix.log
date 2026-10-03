@@ -1,0 +1,32 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifySpearIntercept FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+MISS speed=1.7 rocketEnd=0 height=5.3 drift=12 moving=0.0 delay=10 hit=false minY=1.84 x=0.10 y=1.84 z=4.14
+Exception in thread "main" java.lang.AssertionError: 2/144 spear intercept scenarios missed
+MISS speed=1.7 rocketEnd=0 height=5.3 drift=12 moving=0.1 delay=10 hit=false minY=1.96 x=2.12 y=1.96 z=3.60
+	at dev.winefox.skyfarer.flight.SpearInterceptChecks.main(SpearInterceptChecks.java:13)
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifySpearIntercept'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 7s
+5 actionable tasks: 3 executed, 2 up-to-date

@@ -1,0 +1,9 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "dev.winefox.skyfarer.mixin.ysm",
+  "plugin": "dev.winefox.skyfarer.compat.ysm.YsmMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["YsmMaidAnimationMixin", "YsmMaidAnimationControllerMixin", "YsmMaidRendererMixin", "YsmElytraQueriesMixin"],
+  "injectors": {"defaultRequire": 1}
+}

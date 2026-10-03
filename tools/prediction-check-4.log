@@ -1,0 +1,37 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyFlightPrediction FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+FAIL speed=0.8 rocket=20 height=5.3 -> y=1.852 vy=-0.018 pitch=0.0 minimum=1.852
+FAIL speed=0.8 rocket=20 height=5.3 -> y=1.852 vy=-0.018 pitch=0.0 minimum=1.852
+FAIL speed=0.8 rocket=20 height=5.3 -> y=1.852 vy=-0.018 pitch=0.0 minimum=1.852
+FAIL speed=1.2 rocket=20 height=5.3 -> y=1.889 vy=-0.022 pitch=0.0 minimum=1.889
+FAIL speed=1.2 rocket=20 height=5.3 -> y=1.889 vy=-0.022 pitch=0.0 minimum=1.889
+Exception in thread "main" java.lang.AssertionError: 6 intercept scenarios failed
+	at dev.winefox.skyfarer.flight.FlightPredictionChecks.require(FlightPredictionChecks.java:33)
+FAIL speed=1.2 rocket=20 height=5.3 -> y=1.889 vy=-0.022 pitch=0.0 minimum=1.889
+	at dev.winefox.skyfarer.flight.FlightPredictionChecks.main(FlightPredictionChecks.java:12)
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyFlightPrediction'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 7s
+5 actionable tasks: 3 executed, 2 up-to-date

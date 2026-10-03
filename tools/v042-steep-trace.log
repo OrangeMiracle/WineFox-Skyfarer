@@ -1,0 +1,54 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyTerrainCombat
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+TRACE tick=32 rocket=58 charge=25 state=State[x=0.0, y=15.027516213088028, z=-8.680564942406797, vx=0.0, vy=-1.179895261419553, vz=0.927990279589155, yaw=0.0, pitch=65.0] plan=Plan[yaw=0.0, pitch=55.0, yawRate=2.5, pitchRate=10.0, mode=GLIDE, safe=true, cost=389.6457117077593, reserve=0.5084786030733675, clearTicks=24, heightOffset=0.0]
+TRACE tick=33 rocket=58 charge=25 state=State[x=0.0, y=13.852147346043303, z=-7.725501873478891, vx=0.0, vy=-1.2839636711680054, vz=0.9650715053623418, yaw=0.0, pitch=55.0] plan=Plan[yaw=0.0, pitch=55.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=325.0320459033323, reserve=0.5492614899450329, clearTicks=24, heightOffset=0.0]
+TRACE tick=34 rocket=58 charge=25 state=State[x=0.0, y=12.578146708394295, z=-6.7306778334684525, vx=0.0, vy=-1.333279556470147, vz=0.9849519909036085, yaw=0.0, pitch=55.0] plan=Plan[yaw=0.0, pitch=55.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=341.0047791362408, reserve=0.5403435575850842, clearTicks=24, heightOffset=0.0]
+TRACE tick=35 rocket=58 charge=25 state=State[x=0.0, y=11.257406497247189, z=-5.714726516097345, vx=0.0, vy=-1.3566493432191962, vz=0.9955156295839431, yaw=0.0, pitch=55.0] plan=Plan[yaw=0.0, pitch=55.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=356.05691470298234, reserve=0.5314118468520888, clearTicks=24, heightOffset=0.0]
+TRACE tick=36 rocket=58 charge=25 state=State[x=0.0, y=9.914517360683861, z=-4.687632157812623, vx=0.0, vy=-1.367723805927307, vz=1.0010871500407503, yaw=0.0, pitch=55.0] plan=Plan[yaw=0.0, pitch=55.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=404.700382068218, reserve=0.5084786030733675, clearTicks=24, heightOffset=0.0]
+TRACE tick=37 rocket=58 charge=25 state=State[x=0.0, y=8.561132302562472, z=-3.654697368521341, vx=0.0, vy=-1.3729717667063381, vz=1.0040073655440303, yaw=0.0, pitch=55.0] plan=Plan[yaw=0.0, pitch=55.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=330.16449639739034, reserve=0.5492614899450329, clearTicks=24, heightOffset=0.0]
+TRACE tick=38 rocket=58 charge=25 state=State[x=0.0, y=7.20277344244921, z=-2.6187177323937734, vx=0.0, vy=-1.3754586677022735, vz=1.005529788962173, yaw=0.0, pitch=55.0] plan=Plan[yaw=0.0, pitch=-55.0, yawRate=2.5, pitchRate=10.0, mode=RECOVERY, safe=true, cost=167.9765951654036, reserve=0.75056750208403, clearTicks=24, heightOffset=0.0]
+TRACE tick=39 rocket=58 charge=25 state=State[x=0.0, y=5.875671422818393, z=-1.5597390576750858, vx=0.0, vy=-1.2645917738239736, vz=1.1305301013679092, yaw=0.0, pitch=45.0] plan=Plan[yaw=0.0, pitch=47.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=411.8413964403507, reserve=0.5240572034778604, clearTicks=24, heightOffset=0.0]
+TRACE tick=40 rocket=58 charge=25 state=State[x=0.0, y=4.645337667065931, z=-0.38594775994892716, vx=0.0, vy=-1.2368175242525261, vz=1.1665942549162032, yaw=0.0, pitch=47.0] plan=Plan[yaw=0.0, pitch=47.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=531.304326406541, reserve=0.5553239285526304, clearTicks=24, heightOffset=0.0]
+TRACE tick=41 rocket=58 charge=25 state=State[x=0.0, y=3.440956671916325, z=0.8223960196434592, vx=0.0, vy=-1.2238411439510979, vz=1.183870495849317, yaw=0.0, pitch=47.0] plan=Plan[yaw=0.0, pitch=47.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=734.0893053084026, reserve=0.6200149478343768, clearTicks=24, heightOffset=0.0]
+TRACE tick=42 rocket=58 charge=25 state=State[x=0.0, y=2.2487010409674064, z=2.047305506077191, vx=0.0, vy=-1.2177784618507541, vz=1.1921533492699896, yaw=0.0, pitch=47.0] plan=Plan[yaw=0.0, pitch=47.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=1448.6366529411594, reserve=0.5252885863705442, clearTicks=24, heightOffset=0.0]
+TRACE tick=22 rocket=26 charge=3 state=State[x=0.0, y=14.76603498124521, z=-8.379173804583855, vx=0.0, vy=-1.1713383756156688, vz=1.22900519158536, yaw=0.0, pitch=41.0] plan=Plan[yaw=0.0, pitch=-55.0, yawRate=2.5, pitchRate=10.0, mode=RECOVERY, safe=true, cost=975.9831304026891, reserve=0.5947760421008418, clearTicks=24, heightOffset=0.0]
+TRACE tick=23 rocket=26 charge=3 state=State[x=0.0, y=13.669853099238328, z=-7.083425817387661, vx=0.0, vy=-0.9858733046769879, vz=1.3764661991948928, yaw=0.0, pitch=31.0] plan=Plan[yaw=0.0, pitch=80.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=860.7112328186901, reserve=-0.18862281565869873, clearTicks=24, heightOffset=0.0]
+TRACE tick=24 rocket=26 charge=3 state=State[x=0.0, y=12.727032662837162, z=-5.6623259000277315, vx=0.0, vy=-0.9829529878798238, vz=1.3893901422201633, yaw=0.0, pitch=37.0] plan=Plan[yaw=0.0, pitch=80.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=938.9148773709637, reserve=-0.2591463030151533, clearTicks=24, heightOffset=0.0]
+TRACE tick=25 rocket=26 charge=3 state=State[x=0.0, y=11.770825279204164, z=-4.237701279222028, vx=0.0, vy=-1.0578022978696224, vz=1.3339629567791464, yaw=0.0, pitch=43.0] plan=Plan[yaw=0.0, pitch=80.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=1015.4991203605208, reserve=-0.31082728882502875, clearTicks=24, heightOffset=0.0]
+TRACE tick=26 rocket=26 charge=3 state=State[x=0.0, y=10.72799112475303, z=-2.8744337949834016, vx=0.0, vy=-1.162920220414923, vz=1.2392839167612446, yaw=0.0, pitch=49.0] plan=Plan[yaw=0.0, pitch=80.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=1089.4887794969084, reserve=-0.3469301770448481, clearTicks=24, heightOffset=0.0]
+TRACE tick=27 rocket=26 charge=3 state=State[x=0.0, y=9.568710505375527, z=-1.6116876146764836, vx=0.0, vy=-1.1592806193775036, vz=1.262746180306918, yaw=0.0, pitch=55.0] plan=Plan[yaw=0.0, pitch=80.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=1159.6591427690416, reserve=-0.370381661357739, clearTicks=24, heightOffset=0.0]
+TRACE tick=28 rocket=26 charge=3 state=State[x=0.0, y=8.396256572770401, z=-0.33591109579388534, vx=0.0, vy=-1.1724539326051273, vz=1.2757765188825982, yaw=0.0, pitch=61.0] plan=Plan[yaw=0.0, pitch=72.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=1407.5377208786895, reserve=-0.3683891900989428, clearTicks=24, heightOffset=0.0]
+TRACE tick=29 rocket=26 charge=3 state=State[x=0.0, y=7.196430599375735, z=0.9440201440784781, vx=0.0, vy=-1.199825973394666, vz=1.2799312398723635, yaw=0.0, pitch=67.0] plan=Plan[yaw=0.0, pitch=72.0, yawRate=2.5, pitchRate=6.0, mode=GLIDE, safe=true, cost=1617.2152493971441, reserve=-0.28639288405915286, clearTicks=24, heightOffset=0.0]
+TRACE tick=30 rocket=26 charge=3 state=State[x=0.0, y=5.959739253829657, z=2.2219924576150234, vx=0.0, vy=-1.2366913455460788, vz=1.2779723135365453, yaw=0.0, pitch=72.0] plan=Plan[yaw=0.0, pitch=-55.0, yawRate=2.5, pitchRate=10.0, mode=RECOVERY, safe=true, cost=2471.2520947414914, reserve=-0.15795755973936496, clearTicks=24, heightOffset=0.0]
+Exception in thread "main" java.lang.AssertionError: steep miss grade=-1.25 speed=0.45 end=State[x=0.0, y=4.710495764378537, z=3.512782478410647, vx=0.0, vy=-1.2492434894511197, vz=1.2907900207956238, yaw=0.0, pitch=62.0] line=Line[gradient=-1.25, height=4.0, entryX=0.0, entryY=42.47560975609756, entryZ=-30.78048780487805, exitX=10.875693444439799, exitY=3.660726073889508, exitZ=5.071419140888393, cost=65.43935465321601]
+	at dev.winefox.skyfarer.flight.TerrainCombatChecks.require(TerrainCombatChecks.java:14)
+	at dev.winefox.skyfarer.flight.TerrainCombatChecks.precisionSlope(TerrainCombatChecks.java:72)
+	at dev.winefox.skyfarer.flight.TerrainCombatChecks.main(TerrainCombatChecks.java:34)
+
+> Task :verifyTerrainCombat FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyTerrainCombat'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 10s
+5 actionable tasks: 2 executed, 3 up-to-date

@@ -1,0 +1,13 @@
+.gradle/
+build/
+run/
+libs/*.jar
+tools/cfr.jar
+tools/tlm/
+tools/spears/
+tools/minecraft/
+tools/ysm/
+tools/ysm-reference.jar
+tools/mdk-build.gradle
+.idea/
+*.iml

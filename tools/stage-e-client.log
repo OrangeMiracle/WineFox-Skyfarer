@@ -1,0 +1,184 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :processResources
+> Task :classes
+
+> Task :downloadAssets
+Loaded 145 artifacts from F:\AI\AI_Project\.....\build\tmp\downloadAssets\nfrt_artifact_manifest.properties
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Downloading asset index 17
+Using Minecraft asset root: C:\Users\Administrator\.gradle\caches\neoformruntime\assets
+  DL    https://piston-meta.mojang.com/v1/packages/9b16298b1dc0697878cec88bb2d96168f5239e4f/17.json
+100/3888 downloads
+200/3888 downloads
+300/3888 downloads
+400/3888 downloads
+500/3888 downloads
+600/3888 downloads
+700/3888 downloads
+800/3888 downloads
+900/3888 downloads
+1000/3888 downloads
+1100/3888 downloads
+1200/3888 downloads
+1300/3888 downloads
+1400/3888 downloads
+1500/3888 downloads
+1600/3888 downloads
+1700/3888 downloads
+1800/3888 downloads
+1900/3888 downloads
+2000/3888 downloads
+2100/3888 downloads
+2200/3888 downloads
+2300/3888 downloads
+2400/3888 downloads
+2500/3888 downloads
+2600/3888 downloads
+2700/3888 downloads
+2800/3888 downloads
+2900/3888 downloads
+3000/3888 downloads
+3100/3888 downloads
+3200/3888 downloads
+3300/3888 downloads
+3400/3888 downloads
+3500/3888 downloads
+3600/3888 downloads
+3700/3888 downloads
+3800/3888 downloads
+Downloaded 3888 files with a total size of 786 MiB
+
+> Task :writeClientLegacyClasspath
+> Task :prepareClientRun
+
+> Task :runClient
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+WARN StatusConsoleListener Advanced terminal features are not available in this environment
+[12:14:16] [main/INFO] [cp.mo.mo.Launcher/MODLAUNCHER]: ModLauncher running: args [--launchTarget, forgeclientdev, --version, 21.1.250, --assetIndex, 17, --assetsDir, C:\\Users\\Administrator\\.gradle\\caches\\neoformruntime\\assets, --gameDir, ., --fml.fmlVersion, 4.0.44, --fml.mcVersion, 1.21.1, --fml.neoForgeVersion, 21.1.250, --fml.neoFormVersion, 20240808.144430]
+[12:14:16] [main/INFO] [cp.mo.mo.Launcher/MODLAUNCHER]: JVM identified as Oracle Corporation Java HotSpot(TM) 64-Bit Server VM 21.0.10+8-LTS-217
+[12:14:16] [main/INFO] [cp.mo.mo.Launcher/MODLAUNCHER]: ModLauncher 11.0.5+main.901c6ea8 starting: java version 21.0.10 by Oracle Corporation; OS Windows 11 arch amd64 version 10.0
+[12:14:16] [main/INFO] [ne.ne.fm.lo.ImmediateWindowHandler/]: Loading ImmediateWindowProvider fmlearlywindow
+[12:14:16] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.6
+[12:14:16] [main/INFO] [EARLYDISPLAY/]: Requested GL version 4.6 got version 4.6
+[12:14:16] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=union:/C:/Users/Administrator/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.15.2+mixin.0.8.7/2af2f021d8e02a0220dc27a7a72b4666d66d44ca/sponge-mixin-0.15.2+mixin.0.8.7.jar%23138!/ Service=ModLauncher Env=CLIENT
+[12:14:16] [pool-2-thread-1/INFO] [EARLYDISPLAY/]: GL info: AMD Radeon RX 7900 XTX GL version 4.6.0 Core Profile Context 26.9.1.260826, ATI Technologies Inc.
+[12:14:17] [main/INFO] [ne.ne.fm.lo.mo.lo.JarInJarDependencyLocator/]: Found 2 dependencies adding them to mods collection
+[12:14:17] [main/INFO] [ne.ne.fm.lo.mo.ModDiscoverer/]: 
+     Mod List:
+		Name Version (Mod Id)
+
+		Backported Spears 1.8.0 (spears)
+		Minecraft 1.21.1 (minecraft)
+		NeoForge 21.1.250 (neoforge)
+		Touhou Little Maid 1.5.3-neoforge+mc1.21.1 (touhou_little_maid)
+		WineFox: Skyfarer 0.1.0 (winefox_skyfarer)
+[12:14:18] [main/INFO] [mixin/]: Compatibility level set to JAVA_17
+[12:14:18] [main/INFO] [mixin/]: Compatibility level set to JAVA_21
+[12:14:18] [main/INFO] [cp.mo.mo.LaunchServiceHandler/MODLAUNCHER]: Launching target 'forgeclientdev' with arguments [--version, 21.1.250, --gameDir, ., --assetsDir, C:\Users\Administrator\.gradle\caches\neoformruntime\assets, --assetIndex, 17]
+[12:14:18] [main/WARN] [mixin/]: Reference map 'touhou_little_maid.refmap.json' for touhou_little_maid.mixins.json could not be read. If this is a development environment you can ignore this message
+[12:14:18] [main/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.3).
+[12:14:20] [Datafixer Bootstrap/INFO] [mojang/DataFixerBuilder]: 229 Datafixer optimizations took 238 milliseconds
+[12:14:20] [main/WARN] [os.dr.wi.pe.PerfmonDisabled/]: Invalid registry value type detected for PerfOS counters. Should be REG_DWORD. Ignoring: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PerfOS\Performance\Disable Performance Counters.
+[12:14:23] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, location] and [teleport, destination] with inputs: [0.1 -0.5 .9, 0 0 0]
+[12:14:23] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, location] and [teleport, targets] with inputs: [0.1 -0.5 .9, 0 0 0]
+[12:14:23] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, destination] and [teleport, targets] with inputs: [Player, 0123, @e, dd12be42-52a9-4a91-a8a1-11c01849e498]
+[12:14:23] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, targets] and [teleport, destination] with inputs: [Player, 0123, dd12be42-52a9-4a91-a8a1-11c01849e498]
+[12:14:23] [main/WARN] [minecraft/Commands]: Ambiguity between arguments [teleport, targets, location] and [teleport, targets, destination] with inputs: [0.1 -0.5 .9, 0 0 0]
+[12:14:23] [Render thread/WARN] [minecraft/VanillaPackResourcesBuilder]: Assets URL 'union:/F:/AI/AI_Project/骑空士酒狐/build/moddev/artifacts/neoforge-21.1.250.jar%23189!/assets/.mcassetsroot' uses unexpected schema
+[12:14:23] [Render thread/WARN] [minecraft/VanillaPackResourcesBuilder]: Assets URL 'union:/F:/AI/AI_Project/骑空士酒狐/build/moddev/artifacts/neoforge-21.1.250.jar%23189!/data/.mcassetsroot' uses unexpected schema
+[12:14:24] [Render thread/INFO] [mojang/YggdrasilAuthenticationService]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, name=PROD]
+[12:14:24] [Render thread/INFO] [minecraft/Minecraft]: Setting user: Dev
+[12:14:24] [Render thread/INFO] [minecraft/Minecraft]: Backend library: LWJGL version 3.3.3+5
+[12:14:24] [modloading-worker-0/INFO] [spears/]: Backported spears!
+[12:14:24] [modloading-worker-0/INFO] [ne.ne.ne.co.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 21.1.250, for MC 1.21.1
+[12:14:24] [modloading-worker-0/INFO] [touhou_little_maid/]: common default pack init start...
+[12:14:25] [modloading-worker-0/INFO] [touhou_little_maid/]: common default pack init finished, cost time: 737.993 ms
+[12:14:25] [modloading-worker-0/INFO] [de.wi.sk.WineFoxSkyfarer/]: WineFox: Skyfarer initializing; required dependencies: Touhou Little Maid and Spears
+[12:14:25] [Render thread/INFO] [ne.ne.ne.ga.GameTestHooks/]: Enabled Gametest Namespaces: []
+[12:14:25] [Render thread/INFO] [minecraft/ReloadableResourceManager]: Reloading ResourceManager: vanilla, mod_resources, mod/touhou_little_maid, mod/spears, mod/winefox_skyfarer, mod/neoforge
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/shrine.json
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/altar.json
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/backpack/tank_backpack.json
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/maid_fairy.json
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/backpack/small_backpack.json
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/broom.json
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/baby_maid_fairy.json
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/maid_bed/black.json
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/cchess.json
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/gomoku.json
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/maid_bed/yellow.json
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/computer.json
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/gomoku_piece.json
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/bookshelf.json
+[12:14:25] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/maid_bed/blue.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/backpack/end_chest_backpack.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/keyboard.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/backpack/crafting_table_backpack.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/picnic_mat.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/snack_cabinet.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/statue_base.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/wchess.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/picnic_basket.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/maid_banner.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/cchess_pieces.json
+[12:14:26] [Worker-Main-14/INFO] [minecraft/UnihexProvider]: Found unifont_all_no_pua-15.1.05.hex, loading
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/maid_bed/purple.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/tombstone.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/cake_box.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/backpack/middle_backpack.json
+[12:14:26] [Worker-Main-7/INFO] [minecraft/UnihexProvider]: Found unifont_jp_patch-15.1.05.hex, loading
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/new_maid_fairy.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/backpack/big_backpack.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/maid_bed/pink.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/maid_bed/green.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/marisa_yukkuri.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/wchess_pieces.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/backpack/furnace_backpack.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/entity/reimu_yukkuri.json
+[12:14:26] [Worker-Main-1/INFO] [simplebedrockmodel/]: Loading bedrock model file: touhou_little_maid:models/bedrock/block/maid_bed/white.json
+[12:14:26] [Render thread/INFO] [de.wi.sk.WineFoxSkyfarer/]: Registered Skyfarer through TLM ILittleMaid extension API
+[12:14:26] [Worker-Main-15/WARN] [minecraft/ModelManager]: Missing textures in model winefox_skyfarer:maid_remote#inventory:
+    minecraft:textures/atlas/blocks.png:minecraft:item/compass
+[12:14:27] [Render thread/WARN] [minecraft/SoundEngine]: Missing sound for event: minecraft:item.goat_horn.play
+[12:14:27] [Render thread/WARN] [minecraft/SoundEngine]: Missing sound for event: minecraft:entity.goat.screaming.horn_break
+[12:14:27] [Render thread/INFO] [mojang/Library]: OpenAL initialized on device OpenAL Soft on Voicemeeter VAIO3 Input (VB-Audio Voicemeeter VAIO)
+[12:14:27] [Render thread/INFO] [minecraft/SoundEngine]: Sound engine started
+[12:14:27] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 1024x1024x4 minecraft:textures/atlas/blocks.png-atlas
+[12:14:27] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 256x256x4 minecraft:textures/atlas/signs.png-atlas
+[12:14:27] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 512x512x4 minecraft:textures/atlas/shield_patterns.png-atlas
+[12:14:27] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 512x512x4 minecraft:textures/atlas/banner_patterns.png-atlas
+[12:14:27] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 1024x1024x4 minecraft:textures/atlas/armor_trims.png-atlas
+[12:14:27] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 256x256x4 minecraft:textures/atlas/chest.png-atlas
+[12:14:27] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 128x64x4 minecraft:textures/atlas/decorated_pot.png-atlas
+[12:14:27] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 512x256x4 minecraft:textures/atlas/shulker_boxes.png-atlas
+[12:14:27] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 512x256x4 minecraft:textures/atlas/beds.png-atlas
+[12:14:27] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 512x256x0 minecraft:textures/atlas/particles.png-atlas
+[12:14:27] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 512x256x0 minecraft:textures/atlas/paintings.png-atlas
+[12:14:27] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 256x128x0 minecraft:textures/atlas/mob_effects.png-atlas
+[12:14:27] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 64x64x0 minecraft:textures/atlas/map_decorations.png-atlas
+[12:14:27] [Render thread/INFO] [minecraft/TextureAtlas]: Created: 1024x512x0 minecraft:textures/atlas/gui.png-atlas
+[12:14:27] [Render thread/WARN] [minecraft/ShaderInstance]: Shader rendertype_entity_translucent_emissive could not find sampler named Sampler2 in the specified shader program.
+[12:14:28] [TLM Downloader 0/INFO] [touhou_little_maid/]: The download info file was successfully updated and loaded
+[12:14:30] [Render thread/INFO] [touhou_little_maid/]: Model loading time: 2658.807 ms
+[12:14:30] [Render thread/INFO] [ne.ne.ne.cl.en.an.js.AnimationLoader/]: Loaded 0 entity animations
+
+> Task :runClient FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':runClient'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value -1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 10m 23s
+7 actionable tasks: 5 executed, 2 up-to-date

@@ -1,0 +1,9 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.winefox.skyfarer.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["EntityFlightAccessor", "TlmFollowOwnerMixin", "MobAirControlMixin", "TlmAirControlMixin", "SpearFriendlyFireMixin", "SpearMovementMixin", "MaidSpearChargeMixin", "MaidFlightPoseMixin", "FireworkLifetimeAccessor"],
+  "client": ["TlmSpearItemPoseMixin", "MaidFlightRenderMixin"],
+  "injectors": {"defaultRequire": 1}
+}

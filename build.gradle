@@ -1,0 +1,87 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+group = 'dev.winefox.skyfarer'
+version = '0.4.3'
+base { archivesName = 'winefox_skyfarer-1.21.1' }
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+repositories { mavenCentral() }
+neoForge {
+    version = '21.1.250'
+    mods { winefox_skyfarer { sourceSet sourceSets.main } }
+}
+sourceSets {
+    verification {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+tasks.register('verifyScanCadence', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath
+    mainClass = 'dev.winefox.skyfarer.ai.ScanCadenceChecks'
+}
+tasks.named('check') { dependsOn verifyScanCadence }
+tasks.register('verifyFlightMath', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.FlightMathChecks'
+}
+tasks.named('check') { dependsOn verifyFlightMath }
+tasks.register('verifyFlightPrediction', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.FlightPredictionChecks'
+}
+tasks.named('check') { dependsOn verifyFlightPrediction }
+tasks.register('verifyAttackPolicy', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath
+    mainClass = 'dev.winefox.skyfarer.ai.AttackPolicyChecks'
+}
+tasks.register('verifySpearIntercept', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.SpearInterceptChecks'
+}
+tasks.named('check') { dependsOn verifyAttackPolicy, verifySpearIntercept }
+tasks.register('verifyMaidCombat', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath + sourceSets.main.runtimeClasspath
+    mainClass = 'dev.winefox.skyfarer.ai.MaidCombatChecks'
+}
+tasks.named('check') { dependsOn verifyMaidCombat }
+tasks.register('verifyGlideCorridor', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.GlideCorridorChecks'
+}
+tasks.named('check') { dependsOn verifyGlideCorridor }
+tasks.register('verifyTerrainCombat', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.TerrainCombatChecks'
+}
+tasks.named('check') { dependsOn verifyTerrainCombat }
+tasks.register('verifySurfaceLaunch', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.SurfaceLaunchChecks'
+}
+tasks.register('verifyYsmCompatibility', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.YsmCompatibilityChecks'
+}
+tasks.named('check') { dependsOn verifySurfaceLaunch, verifyYsmCompatibility }
+dependencies {
+    // Read-only API reference; neither bundled into this mod nor installed as a test client.
+    compileOnly files('tools/ysm-reference.jar')
+    implementation files('libs/touhoulittlemaid-1.5.3-neoforge+mc1.21.1.jar')
+    implementation files('libs/spear-backport-neoforge-1.8.0-1.21.1.jar')
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+tasks.named('jar') {
+    manifest { attributes('Implementation-Version': project.version) }
+}
