@@ -16,8 +16,11 @@ public final class CommandTickets {
     private static final Map<UUID,Held> HELD=new HashMap<>();
     public static void register(RegisterTicketControllersEvent event){event.register(CONTROLLER);}
     public static void update(ServerLevel level,UUID maid,Vec3 position,Vec3 toward) {
+        update(level,maid,position,toward,48*dev.winefox.skyfarer.flight.PredictionHorizon.factor());
+    }
+    public static void update(ServerLevel level,UUID maid,Vec3 position,Vec3 toward,double lookahead) {
         Set<Long> wanted=new HashSet<>();
-        for(var cell:TicketWindow.around(position.x,position.z,toward.x-position.x,toward.z-position.z,48*dev.winefox.skyfarer.flight.PredictionHorizon.factor()))wanted.add(ChunkPos.asLong(cell.x(),cell.z()));
+        for(var cell:TicketWindow.around(position.x,position.z,toward.x-position.x,toward.z-position.z,lookahead))wanted.add(ChunkPos.asLong(cell.x(),cell.z()));
         replace(level,maid,wanted);
     }
     public static void wake(ServerLevel level,UUID maid,net.minecraft.core.BlockPos pos){replace(level,maid,Set.of(new ChunkPos(pos).toLong()));}

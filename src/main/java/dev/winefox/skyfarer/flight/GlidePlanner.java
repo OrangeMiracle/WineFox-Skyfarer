@@ -126,7 +126,7 @@ public final class GlidePlanner {
         for (int tick=0;tick<horizon;tick++) {
             double along=(s.x()-initial.x())*dx+(s.z()-initial.z())*dz;
             double remaining=r.distance-along;
-            if(active.exit!=null && !active.recovery && exitDue(r,remaining)) active=exitRequest(s,active,Math.max(0,r.rocketTicks-tick));
+            if(active.exit!=null && !active.recovery && (exitDue(r,remaining)||bestMiss<=.04)) active=exitRequest(s,active,Math.max(0,r.rocketTicks-tick));
             boolean exiting=active!=r || active.recovery&&active.exit!=null;
             double goal=FlightPrediction.pathHeight(exiting?0:remaining,active.height,active.slope,active.flare)+heightOffset;
             if(exiting) goal=Math.max(goal,active.exit.supportHeight(s)+heightOffset);
@@ -183,22 +183,27 @@ public final class GlidePlanner {
         }
         return java.util.List.copyOf(path);
     }
-    public record Forecast(boolean safe, double reserve, boolean passed, double miss) {
+    public record Forecast(boolean safe, double reserve, boolean passed, double miss,String reason) {
+        public Forecast(boolean safe,double reserve,boolean passed,double miss){this(safe,reserve,passed,miss,safe?"clear":"unsafe");}
         public Forecast(boolean safe,double reserve) { this(safe,reserve,false,Double.POSITIVE_INFINITY); }
     }
+    public record PulseReview(double cost,String reason){}
     public static double pulseCost(FlightPrediction.State start,Request request,Corridor corridor,int duration,double minimumSpeed,double reserve) {
+        return reviewPulse(start,request,corridor,duration,minimumSpeed,reserve).cost;
+    }
+    public static PulseReview reviewPulse(FlightPrediction.State start,Request request,Corridor corridor,int duration,double minimumSpeed,double reserve) {
         double cost=0;
         for (int ticks=RocketProfile.minimumTicks(duration);ticks<=RocketProfile.maximumTicks(duration);ticks++) {
             var candidate=request.withPulse(ticks);
             var plan=choose(start,candidate,corridor);
-            if (!ordinary(plan)) return Double.POSITIVE_INFINITY;
+            if (!ordinary(plan)) return new PulseReview(Double.POSITIVE_INFINITY,"pulse_"+ticks+"_"+plan.mode);
             var future=forecast(start,candidate,plan,corridor,minimumSpeed);
-            if (!future.safe()) return Double.POSITIVE_INFINITY;
+            if (!future.safe()) return new PulseReview(Double.POSITIVE_INFINITY,"pulse_"+ticks+"_"+future.reason);
             // Reject a pulse which carries the maid past contact before the native windup/aim is ready.
-            if(request.exit!=null && request.aim!=null && future.passed() && future.miss()>.04) return Double.POSITIVE_INFINITY;
+            if(request.exit!=null && request.aim!=null && future.passed() && future.miss()>.04) return new PulseReview(Double.POSITIVE_INFINITY,"pulse_"+ticks+"_miss_"+future.miss);
             cost+=Math.pow(Math.max(0,reserve-future.reserve()),2)*200+Math.max(0,future.reserve()-reserve)*2;
         }
-        return cost/12+RocketProfile.expectedTicks(duration)*0.02;
+        return new PulseReview(cost/12+RocketProfile.expectedTicks(duration)*0.02,"safe_contact_and_exit");
     }
     /** Validate the selected maneuver through pulse expiry AND its unpowered coast. */
     public static Forecast forecast(FlightPrediction.State start, Request r, Plan p, Corridor corridor, double minimumSpeed) {
@@ -217,7 +222,9 @@ public final class GlidePlanner {
         boolean passed=false;
         for (int tick=0;tick<horizon;tick++) {
             double remaining=r.distance-((s.x()-start.x())*dx+(s.z()-start.z())*dz);
-            boolean switchExit=trajectory.exit!=null && !trajectory.recovery && exitDue(r,remaining);
+            // The real controller leaves immediately after a confirmed hit. A forecast which
+            // continues the attack line beyond that point can falsely reject every useful pulse.
+            boolean switchExit=trajectory.exit!=null && !trajectory.recovery && (exitDue(r,remaining)||bestMiss<=.04);
             if(switchExit) trajectory=exitRequest(s,trajectory,Math.max(0,r.rocketTicks-tick));
             boolean exiting=trajectory!=r || trajectory.recovery&&trajectory.exit!=null;
             passed|=remaining<-.5;
@@ -227,7 +234,7 @@ public final class GlidePlanner {
                     trajectory.yawRate,trajectory.pitchRate,trajectory.recoveryRate,r.gravity,r.sideMargin,r.verticalMargin,trajectory.recovery,
                     exiting||r.aim==null||r.exit==null?null:r.aim.after(tick),trajectory.exit);
                 active=choose(s,future,corridor);
-                if (!ordinary(active)) return new Forecast(false,Double.NEGATIVE_INFINITY);
+                if (!ordinary(active)) return new Forecast(false,Double.NEGATIVE_INFINITY,passed,bestMiss,"coast_"+tick+"_"+active.mode);
             }
             goal=FlightPrediction.pathHeight(exiting?0:remaining,trajectory.height,trajectory.slope,trajectory.flare)+active.heightOffset;
             if(exiting) goal=Math.max(goal,trajectory.exit.supportHeight(s)+active.heightOffset);
@@ -249,7 +256,7 @@ public final class GlidePlanner {
             var next=FlightPrediction.step(s,local<6?active.yaw:trajectory.yaw,pitch,active.yawRate,
                 active.mode==Mode.PRECISION?active.pitchRate:trajectory.pitchRate,
                 active.mode==Mode.PRECISION?active.pitchRate:trajectory.recoveryRate,r.gravity,tick<r.rocketTicks);
-            if (!corridor.clear(s,next,0.04,0.04)) return new Forecast(false,Double.NEGATIVE_INFINITY);
+            if (!corridor.clear(s,next,0.04,0.04)) return new Forecast(false,Double.NEGATIVE_INFINITY,passed,bestMiss,"sweep_"+tick);
             s=next;
         }
         // A short pulse ending before an uphill contact must leave enough energy to reach that

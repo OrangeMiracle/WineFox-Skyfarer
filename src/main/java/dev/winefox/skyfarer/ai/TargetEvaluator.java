@@ -38,7 +38,7 @@ public final class TargetEvaluator {
             || AirCollisionChecker.clear(maid,maid.getEyePosition(),new Vec3(center.x,target.getY()+target.getBbHeight()*.85,center.z));
     }
     private static TargetPriority.Rank rank(EntityMaid maid,LivingEntity target,UUID previous,Vec3 anchor) {
-        return TargetPriority.rank(target.getUUID().equals(previous)||CommandAccess.marked(maid,target),target.position().distanceTo(anchor),protectedRadius(maid),
+        return TargetPriority.rank(CommandAccess.marked(maid,target),target.getUUID().equals(previous),target.position().distanceTo(anchor),protectedRadius(maid),
             target instanceof Phantom,score(maid,target,previous,anchor));
     }
     public static ScanResult scan(EntityMaid maid, LivingEntity preferred, UUID previous, Vec3 anchor) {

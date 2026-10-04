@@ -21,8 +21,13 @@ final class TransitFlight {
     private GlidePlanner.Request lastRequest;
     private EntityMaid swimmer;
     private boolean previousSwimming;
+    private boolean descending;private double cruiseY=Double.NaN;private CreativeTransitPlanner.Motion fastMotion;
+    private int blockedFastTicks;
     boolean waterEscape(){return swimmer!=null;}
     boolean tick(EntityMaid maid,Vec3 target) {
+        return tick(maid,target,false);
+    }
+    boolean tick(EntityMaid maid,Vec3 target,boolean creative) {
         ticks++;heading.beginTick(maid);TlmFollowCompat.clearGroundMovement(maid);
         double gravity=maid.getAttributeValue(Attributes.GRAVITY);
         Vec3 v=maid.getDeltaMovement(),toward=target.subtract(maid.position());
@@ -53,6 +58,7 @@ final class TransitFlight {
             else {heading.steerAngles(maid,launch.yaw(),pitch,180,90);return true;}
         }
         launch=null;
+        if(creative)return creativeTravel(maid,target,start,space,gravity);
         var request=new GlidePlanner.Request(yaw,target.y+10,0,0,14,Double.NaN,remaining(),5,3,8,gravity,.25,.25,false,null);
         // Only local receding-horizon prediction, no global pathfinding along the entire journey.
         if(cached==null || ticks%5==0)cached=GlidePlanner.choose(start,request,space);
@@ -65,6 +71,33 @@ final class TransitFlight {
         }
         lastRequest=request;if(!cached.safe())return false;
         heading.steerAngles(maid,cached.yaw(),cached.pitch(),cached.yawRate(),cached.pitchRate());return true;
+    }
+    private boolean creativeTravel(EntityMaid maid,Vec3 target,FlightPrediction.State start,CorridorProbe space,double gravity){
+        if(rocket!=null){rocket.discard();rocket=null;}
+        double horizontal=target.subtract(maid.position()).horizontalDistance();
+        if(Double.isNaN(cruiseY)){
+            double ceiling=maid.level().getMaxBuildHeight()-16;
+            double requested=maid.level().dimensionType().hasCeiling()?Math.max(start.y(),target.y)+12:dev.winefox.skyfarer.config.SkyfarerSettings.get("creative_transit_height");
+            cruiseY=CreativeTransitPlanner.cruiseHeight(start.y(),target.y,horizontal,requested,ceiling);
+        }
+        descending|=horizontal<=CreativeTransitPlanner.DIVE_HORIZONTAL+.5;
+        Vec3 goal=new Vec3(target.x,descending?target.y+1.4:cruiseY,target.z);
+        fastMotion=CreativeTransitPlanner.choose(start,goal.x,goal.y,goal.z,maid.position().distanceTo(target),horizontal,descending,
+            dev.winefox.skyfarer.config.SkyfarerSettings.get("creative_transit_speed_multiplier"),gravity,
+            (a,b,side,vertical)->space.segment(new Vec3(a.x(),a.y(),a.z()),new Vec3(b.x(),b.y(),b.z()),side,vertical));
+        if(fastMotion==null){
+            // Return to local native guidance at ordinary speed if terrain has no direct corridor.
+            Vec3 v=maid.getDeltaMovement();if(v.length()>1)maid.setDeltaMovement(v.normalize());
+            cached=null;if(++blockedFastTicks>100)return false;
+            return tick(maid,target,false);
+        }
+        blockedFastTicks=0;
+        heading.steerAngles(maid,fastMotion.yaw(),fastMotion.pitch(),180,90);
+        var motion=fastMotion.input();maid.setDeltaMovement(new Vec3(motion.vx(),motion.vy(),motion.vz()));
+        return true;
+    }
+    void handoff(EntityMaid maid){
+        close();var v=maid.getDeltaMovement();if(v.length()>1.7)maid.setDeltaMovement(v.normalize().scale(1.7));
     }
     private boolean wet(EntityMaid maid,FlightPrediction.State state){var pos=net.minecraft.core.BlockPos.containing(state.x(),state.y()-.35,state.z());return maid.level().hasChunkAt(pos)&&maid.level().getFluidState(pos).is(net.minecraft.tags.FluidTags.WATER);}
     private boolean escapeWater(EntityMaid maid,double yaw,double gravity) {
@@ -87,7 +120,13 @@ final class TransitFlight {
     void debug(net.minecraft.nbt.CompoundTag data,EntityMaid maid) {
         var v=maid.getDeltaMovement();var start=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot());
         var space=new CorridorProbe(maid,maid.getBbWidth(),.6,.4,waterEscape());double gravity=maid.getAttributeValue(Attributes.GRAVITY);
-        if(launch!=null)dev.winefox.skyfarer.runtime.DebugSnapshot.corridor(data,maid,SurfaceLaunchPlanner.trace(start,launch,departure,gravity,remaining(),space,s->wet(maid,s)));
+        if(fastMotion!=null){
+            var path=new java.util.ArrayList<GlidePlanner.TracePoint>();var to=fastMotion.next();int count=Math.max(1,(int)Math.ceil(new Vec3(to.x(),to.y(),to.z()).distanceTo(maid.getEyePosition())/2));
+            for(int i=0;i<=count;i++){var p=maid.getEyePosition().lerp(new Vec3(to.x(),to.y(),to.z()),i/(double)count);path.add(new GlidePlanner.TracePoint(new FlightPrediction.State(p.x,p.y,p.z,0,0,0,to.yaw(),to.pitch()),.15,.12));}
+            dev.winefox.skyfarer.runtime.DebugSnapshot.corridor(data,maid,path);
+            data.putString("reason",(descending?"CREATIVE_DESCENT":"CREATIVE_HIGH_CRUISE")+" effective multiplier="+fastMotion.multiplier());
+        }
+        else if(launch!=null)dev.winefox.skyfarer.runtime.DebugSnapshot.corridor(data,maid,SurfaceLaunchPlanner.trace(start,launch,departure,gravity,remaining(),space,s->wet(maid,s)));
         else if(cached!=null&&lastRequest!=null)dev.winefox.skyfarer.runtime.DebugSnapshot.corridor(data,maid,GlidePlanner.trace(start,lastRequest.withPulse(remaining()),cached,space));
     }
     private void boost(EntityMaid maid){

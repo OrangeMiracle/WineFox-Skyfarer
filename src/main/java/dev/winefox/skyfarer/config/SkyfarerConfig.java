@@ -57,6 +57,9 @@ public final class SkyfarerConfig {
         define("debug", "sync_interval_ticks", 5, 1, 40, "ticks");
         define("command", "command_mark_range", 256, 16, 512, "blocks");
         define("command", "command_home_range", 128, 16, 512, "blocks");
+        define("command", "creative_command_range", 1000, 0, Double.MAX_VALUE, "blocks; 0 = unlimited");
+        define("command", "creative_transit_speed_multiplier", 2, 1, 100, "multiplier");
+        define("command", "creative_transit_height", 200, -64, 1024, "world Y; bounded by dimension ceiling");
         define("command", "command_mark_bonus", 150, 0, 1000, "score");
         define("flight", "prediction_length_multiplier", 1, 1, 10, "multiplier");
         define("debug", "log_interval_ticks", 100, 20, 1200, "ticks");

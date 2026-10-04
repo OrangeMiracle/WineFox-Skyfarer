@@ -16,6 +16,15 @@ public final class CommandChecks {
         require(a.creative(ids.get(5))&&!a.creative(ids.get(3))&&b.isEmpty(),"per-player and per-mark isolation");
         require(DispatchPolicy.admitted(true,false,128,128)&&!DispatchPolicy.admitted(true,false,128.01,128),"survival home boundary");
         require(DispatchPolicy.admitted(true,true,1e6,128)&&DispatchPolicy.admitted(false,false,1e6,128),"creative home and follow admission");
+        require(DispatchPolicy.admitted(true,true,1000,128,1000)&&!DispatchPolicy.admitted(false,true,1000.01,128,1000),"creative cap applies to both Home and follow maids");
+        require(DispatchPolicy.admitted(true,true,1e12,128,0),"zero means unlimited creative radius");
+        require(!DispatchPolicy.transit(true,32,true)&&DispatchPolicy.transit(true,32.01,true)&&!DispatchPolicy.transit(true,48,false),"creative 3D handoff is 32; survival retains 48");
+        require(DispatchPolicy.refreshOrder(false,true,false,false)&&DispatchPolicy.refreshOrder(false,false,true,false),"finished order and new marks must reactivate in air");
+        require(!DispatchPolicy.refreshOrder(true,true,true,false)&&!DispatchPolicy.refreshOrder(false,true,true,true),"transit lock and committed attack must not be interrupted");
+        var marked=dev.winefox.skyfarer.ai.TargetPriority.rank(true,false,80,16,false,-9999);
+        require(marked.compareTo(dev.winefox.skyfarer.ai.TargetPriority.rank(false,true,0,16,true,9999))>0,"marked target outranks local phantom/previous target regardless of route bonus");
+        require(dev.winefox.skyfarer.ai.TargetPriority.rank(true,false,80,16,true,-9999).compareTo(marked)>0,"phantom preference stays inside marked layer");
+        creativeTravel();
         require(DispatchPolicy.transit(true,48.01)&&!DispatchPolicy.transit(true,48)&&DispatchPolicy.transit(false,20),"exact handoff and unavailable entity lock");
         for(int mask=0;mask<16;mask++)require(DispatchPolicy.retainCreative((mask&1)!=0,(mask&2)!=0,(mask&4)!=0,(mask&8)!=0)==(mask==15),
             "Home retention must end on death, unmark or unload, and must not affect survival commands");
@@ -70,6 +79,19 @@ public final class CommandChecks {
         System.out.println("Command queue, ownership/range policy, handoff, route priority, bounded tickets, debug forecast and actual spyglass/Home bytecode checks passed.");
     }
     private static ClassNode read(JarFile jar,String name)throws Exception {var n=new ClassNode();new ClassReader(jar.getInputStream(jar.getJarEntry(name+".class"))).accept(n,ClassReader.SKIP_DEBUG);return n;}
+    private static void creativeTravel(){
+        var start=new FlightPrediction.State(0,200,0,0,0,1.7,0,0);
+        var fast=CreativeTransitPlanner.choose(start,0,200,900,900,900,false,100,.08,(a,b,s,v)->true);
+        require(fast!=null&&fast.next().z()>150&&fast.next().z()<180,"100x must provide real cruise displacement, not multiply a display label");
+        var limited=CreativeTransitPlanner.choose(start,0,200,900,900,900,false,100,.08,(a,b,s,v)->b.z()+s+.3<40);
+        require(limited!=null&&limited.next().z()<40,"high-speed sweep must respect unloaded/blocked corridor");
+        require(CreativeTransitPlanner.choose(start,0,200,900,900,900,false,100,.08,(a,b,s,v)->false)==null,"closed corridor cannot be bypassed by speed scaling");
+        var near=new FlightPrediction.State(0,20,-30,0,-5,100,0,70);
+        var brake=CreativeTransitPlanner.choose(near,0,1.4,0,36,30,true,100,.08,(a,b,s,v)->true);
+        require(brake!=null&&Math.hypot(brake.input().vx(),brake.input().vz())<2,"brake before handing high transit momentum to combat");
+        require(CreativeTransitPlanner.cruiseHeight(10,70,900,200,304)==200&&CreativeTransitPlanner.cruiseHeight(10,70,900,200,112)==112,"cruise respects actual dimension ceiling");
+        require(CreativeTransitPlanner.lookahead(100)<=480,"ticket lookahead remains bounded at maximum speed");
+    }
     private static boolean calls(MethodNode m,String owner,String name){for(var i:m.instructions)if(i instanceof MethodInsnNode c&&c.owner.equals(owner)&&c.name.equals(name))return true;return false;}
     private static void require(boolean value,String reason){if(!value)throw new AssertionError(reason);}
 }

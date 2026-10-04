@@ -34,6 +34,9 @@ public final class ControllerReplayChecks {
         run("ice-inertia-cycle",20,90,1,5,false,1);
         run("radius-32-cycle",20,0,1,5,false,1);
         run("surface-and-cave",20,0,1,5,false,1);
+        run("summit-cycle",28,0,1,5,false,1);
+        run("uphill-cycle",28,0,1,5,false,1);
+        run("upward-pillar",32,0,1,5,false,1);
         System.out.println("Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.");
     }
     private static void run(String name,double targetZ,float yaw,int duration,int jitter,boolean home,int enemies) throws Exception {
@@ -46,6 +49,9 @@ public final class ControllerReplayChecks {
             world.boxes.add(new FlightCorridor.Box(-96,0,z,96,new double[]{.125,.375,.5}[Math.floorMod(z/2,3)],z+2));
         if(name.equals("slope-cycle"))for(int z=12;z<38;z+=2)
             world.boxes.add(new FlightCorridor.Box(-12,0,z,12,(z-10)*.25,z+2));
+        if(name.equals("summit-cycle"))world.boxes.add(new FlightCorridor.Box(-.5,0,targetZ-.5,.5,8,targetZ+.5));
+        if(name.equals("upward-pillar"))world.boxes.add(new FlightCorridor.Box(-.5,0,targetZ-.5,.5,18,targetZ+.5));
+        if(name.equals("uphill-cycle"))for(int z=4;z<50;z++)world.boxes.add(new FlightCorridor.Box(-12,0,z,12,(z-3)*.8,z+1));
         var origin=new Vec3(0,world.ground(0,0,10),0);
         var maid=new EntityMaid(world,origin);maid.owner=new Player(world,origin);maid.yaw=yaw;maid.home=home;maid.inventory.duration=duration;
         if(name.equals("surface-and-cave"))new LivingEntity(world,new Vec3(0,-6,12));

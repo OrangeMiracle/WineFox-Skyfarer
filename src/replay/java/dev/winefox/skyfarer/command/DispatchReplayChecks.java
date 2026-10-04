@@ -14,6 +14,7 @@ import java.util.*;
 public final class DispatchReplayChecks {
     public static void main(String[] args) {
         run(180,0,0,false);run(900,180,11,true);run(256,-90,5,false);run(180,0,5,false,true);
+        run(900,0,5,false,false,2);run(900,180,11,false,false,100);run(180,90,0,false,true,2);
         CommandAccess.targets=m->List.of();CommandAccess.anchor=m->null;CommandAccess.designated=(m,t)->false;
         System.out.println("Dispatch full-cycle replay passed; transit consumes no inventory; combat and landing remain native controller decisions.");
     }
@@ -21,7 +22,11 @@ public final class DispatchReplayChecks {
         run(distance,yaw,jitter,snow,false);
     }
     private static void run(double distance,float yaw,int jitter,boolean snow,boolean friendly) {
+        run(distance,yaw,jitter,snow,friendly,0);
+    }
+    private static void run(double distance,float yaw,int jitter,boolean snow,boolean friendly,double creativeSpeed) {
         SkyfarerSettings.reset("all");SkyfarerSettings.setDebugLogging(true);ReplayWorld.events.clear();var world=new ReplayWorld();world.loadedRadius=2048;world.rocketJitter=jitter;
+        if(creativeSpeed>0)SkyfarerSettings.set("creative_transit_speed_multiplier",creativeSpeed);
         world.boxes.clear();world.boxes.add(new FlightCorridor.Box(-2048,-20,-2048,2048,snow?.125:0,2048));
         var maid=new EntityMaid(world,new Vec3(0,snow?.125:0,0));maid.owner=new Player(world,maid.pos);maid.yaw=yaw;maid.home=true;
         var target=new LivingEntity(world,new Vec3(0,maid.getY(),distance));
@@ -31,12 +36,13 @@ public final class DispatchReplayChecks {
         int handoff=-1,hit=-1,landed=-1;boolean exit=false;
         for(int tick=0;tick<2200;tick++) {
             world.time=tick;
-            if(handoff<0&&maid.distanceTo(target)<=DispatchPolicy.HANDOFF_RANGE) {
-                transit.close();handoff=tick;controller.acceptCommand(target);
+            if(handoff<0&&maid.distanceTo(target)<=DispatchPolicy.handoffRange(creativeSpeed>0)) {
+                transit.handoff(maid);handoff=tick;controller.acceptCommand(target);
+                require(maid.velocity.length()<=1.7001,"creative speed leaked into combat");
                 require(maid.inventory.consumed==0,"dispatch consumed inventory");
                 require(world.rockets.stream().noneMatch(r->r.alive),"free rocket survived combat handoff");
             }
-            if(handoff<0)require(transit.tick(maid,target.pos),"transit abandoned open route at tick "+tick+" pos="+maid.pos);
+            if(handoff<0)require(transit.tick(maid,target.pos,creativeSpeed>0),"transit abandoned open route at tick "+tick+" pos="+maid.pos);
             else controller.tick();
             if(controller.state()==AirCombatState.ATTACK_EXIT)exit=true;
             if(target.alive&&controller.spearAttackActive()&&maid.using&&maid.usedTicks>=10) {
@@ -59,12 +65,12 @@ public final class DispatchReplayChecks {
             }
             else maid.ground=false;
             maid.pos=next;for(var r:world.rockets)if(r.alive&&++r.life>r.lifetime)r.discard();
-            if(handoff<0)require(maid.getY()<35,"unbounded transit ascent");
+            if(handoff<0)require(maid.getY()<(creativeSpeed>0?215:35),"unbounded transit ascent");
             if(hit>=0&&maid.ground&&controller.state()==AirCombatState.GROUNDED){landed=tick;break;}
         }
         transit.close();exit|=ReplayWorld.events.stream().anyMatch(s->s.contains(" -> ATTACK_EXIT;"));
         require(handoff>0&&hit>handoff&&exit&&landed>hit,"incomplete dispatch: "+handoff+"/"+hit+"/"+landed+" exit="+exit);
-        System.out.printf(Locale.ROOT,"dispatch %.0f blocks yaw=%.0f snow=%s friendly=%s handoff=%d hit=%d landed=%d combat rockets=%d%n",distance,yaw,snow,friendly,handoff,hit,landed,maid.inventory.consumed);
+        System.out.printf(Locale.ROOT,"dispatch %.0f blocks yaw=%.0f snow=%s friendly=%s creativeMultiplier=%.0f handoff=%d hit=%d landed=%d combat rockets=%d%n",distance,yaw,snow,friendly,creativeSpeed,handoff,hit,landed,maid.inventory.consumed);
     }
     private static FlightPrediction.State state(EntityMaid m){return new FlightPrediction.State(m.getX(),m.getEyeY(),m.getZ(),m.velocity.x,m.velocity.y,m.velocity.z,m.yaw,m.pitch);}
     private static void require(boolean value,String message){if(!value)throw new AssertionError(message);}

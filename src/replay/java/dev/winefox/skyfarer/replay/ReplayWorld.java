@@ -10,6 +10,7 @@ public class ReplayWorld {
  public final List<FlightCorridor.Box> boxes=new ArrayList<>();public long time;public int rocketJitter=5;public double loadedRadius=128;
  public ReplayWorld(){boxes.add(new FlightCorridor.Box(-256,-20,-256,256,0,256));}
  public long getGameTime(){return time;}public boolean hasChunkAt(BlockPos p){return Math.abs(p.x())<loadedRadius&&Math.abs(p.z())<loadedRadius;}
+ public int getMaxBuildHeight(){return 320;}public DimensionType dimensionType(){return new DimensionType();}public static class DimensionType{public boolean hasCeiling(){return false;}}
  public boolean addFreshEntity(FireworkRocketEntity e){rockets.add(e);return true;}
  public <T extends LivingEntity> List<T> getEntitiesOfClass(Class<T> type,AABB area){return getEntitiesOfClass(type,area,e->true);}
  public <T extends LivingEntity> List<T> getEntitiesOfClass(Class<T> type,AABB area,java.util.function.Predicate<T> test){return entities.stream().filter(type::isInstance).map(type::cast).filter(e->e.alive&&e.getBoundingBox().intersects(area)&&test.test(e)).toList();}

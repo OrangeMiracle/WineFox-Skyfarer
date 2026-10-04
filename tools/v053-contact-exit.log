@@ -1,0 +1,63 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyControllerReplay
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+flat-near attack=77 hits=1 landed=208 peak=14.71 radius=30.56 rockets=2
+flat-normal attack=78 hits=1 landed=228 peak=14.71 radius=35.89 rockets=2
+flat-behind-long-pulse attack=100 hits=1 landed=230 peak=14.71 radius=31.25 rockets=2
+home-continuous attack=76 hits=3 landed=434 peak=14.71 radius=48.46 rockets=4
+flat-short-pulse attack=137 hits=1 landed=235 peak=22.28 radius=42.42 rockets=3
+flat-longest-pulse attack=111 hits=1 landed=411 peak=14.71 radius=46.60 rockets=3
+flat-far attack=155 hits=1 landed=219 peak=45.49 radius=61.98 rockets=2
+follow-continuous attack=78 hits=3 landed=723 peak=14.71 radius=46.25 rockets=8
+slope-cycle attack=71 hits=1 landed=203 peak=14.71 radius=49.90 rockets=3
+small-target-cycle attack=78 hits=1 landed=229 peak=14.71 radius=36.71 rockets=2
+target-despawn attack=78 hits=0 landed=124 peak=14.71 radius=30.56 rockets=1
+task-cancel attack=78 hits=0 landed=122 peak=14.71 radius=30.56 rockets=1
+snow-layer-cycle attack=78 hits=1 landed=228 peak=14.83 radius=35.89 rockets=2
+mixed-partial-cycle attack=78 hits=1 landed=248 peak=15.21 radius=35.72 rockets=2
+slab-cycle attack=78 hits=1 landed=228 peak=15.21 radius=35.89 rockets=2
+ice-inertia-cycle attack=78 hits=1 landed=228 peak=14.73 radius=35.57 rockets=2
+radius-32-cycle attack=78 hits=1 landed=228 peak=14.71 radius=35.89 rockets=2
+surface-and-cave attack=78 hits=1 landed=228 peak=14.71 radius=35.89 rockets=2
+summit-cycle attack=73 hits=1 landed=194 peak=14.71 radius=55.24 rockets=2
+uphill-cycle attack=87 hits=1 landed=469 peak=33.88 radius=43.11 rockets=2
+Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.
+
+> Task :verifyDispatchReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+dispatch 180 blocks yaw=0 snow=false friendly=false creativeMultiplier=0 handoff=92 hit=122 landed=146 combat rockets=0
+dispatch 900 blocks yaw=180 snow=true friendly=false creativeMultiplier=0 handoff=611 hit=637 landed=648 combat rockets=0
+dispatch 256 blocks yaw=-90 snow=false friendly=false creativeMultiplier=0 handoff=161 hit=195 landed=218 combat rockets=0
+dispatch 180 blocks yaw=0 snow=false friendly=true creativeMultiplier=0 handoff=107 hit=134 landed=150 combat rockets=1
+dispatch 900 blocks yaw=0 snow=false friendly=false creativeMultiplier=2 handoff=315 hit=405 landed=414 combat rockets=1
+dispatch 900 blocks yaw=180 snow=false friendly=false creativeMultiplier=100 handoff=38 hit=130 landed=139 combat rockets=1
+dispatch 180 blocks yaw=90 snow=false friendly=true creativeMultiplier=2 handoff=68 hit=104 landed=163 combat rockets=0
+Dispatch full-cycle replay passed; transit consumes no inventory; combat and landing remain native controller decisions.
+
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyTerrainCombat
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+36 steep/slow attack replays with finite pulses and planned exits passed.
+36 sloped attack replays, low-roof launch, target layers and airborne reengagement checks passed; no game launched.
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 24s
+8 actionable tasks: 6 executed, 2 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

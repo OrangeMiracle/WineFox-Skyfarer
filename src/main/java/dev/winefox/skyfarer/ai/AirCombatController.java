@@ -59,6 +59,8 @@ public final class AirCombatController {
     private Vec3 recoveryOrigin;
     private String exitStyle = "STRAIGHT_CLIMB", laneStatus = "not checked";
     private double energyReserve = Double.NaN;
+    private String energyDecision="idle";
+    private String pulseReview="none";
     private String diagnostic = "WAITING_FOR_SCAN", lastScan = "not scanned", pendingReturn = "";
     private String returnReason="";
     private SurfaceLaunchPlanner.Plan surfaceLaunch;
@@ -190,6 +192,9 @@ public final class AirCombatController {
                 if(launchControlTicks>0 && surfaceLaunch!=null) {
                     launchDeparture(); break;
                 }
+                if(TargetEvaluator.attackable(maid,preferred)&&attackHeight(preferred)>maid.getEyeY()+1
+                    &&preferred.position().subtract(maid.position()).horizontalDistance()>=AttackPolicy.minimumEntry(approachSpeed(),SpearCompat.delayTicks(maid.getMainHandItem()),SpearCompat.mobReach(maid.getMainHandItem()))
+                    &&HeadingController.horizontalAngle(forward(),preferred.position().subtract(maid.position()))<25){startApproach();break;}
                 guide("CLIMB", waypoint, waypoint.y, false, 0, 0, Double.NaN);
                 manageEnergy();
                 if ((stateTicks>=8 && maid.getY() >= waypoint.y - SkyfarerSettings.get("waypoint_tolerance")) || stateTicks > 100) startApproach();
@@ -500,6 +505,9 @@ public final class AirCombatController {
             // A new pass has a fresh use session and native windup, even if the previous tail is still held.
             endCharge();
             runTarget = preferred; runOrigin = target; runDirection = HeadingController.horizontal(offset); runTicks = 0;
+            // Wind up at commitment, before a possible energy pulse changes time-to-contact.
+            // Native windup and damage windows remain authoritative.
+            SpearCompat.startCharge(maid);
             passHistory.begin(runTarget.getUUID());
             chainCenter=runTarget.position(); chainCandidate=null; chainHits=0; chainTicks=0; chainTravel=0;
             if(runFlare>=0) runSlope = Math.max(0, maid.getEyeY() - height - runHeightOffset) / Math.max(6, distance - SkyfarerSettings.get("level_run_distance"));
@@ -919,6 +927,7 @@ public final class AirCombatController {
         motionTarget = target.getUUID(); lastTargetPosition = target.position();
     }
     private void manageEnergy() {
+        energyDecision="not_requested";
         if (flightPlan==null || flightRequest==null || !maid.isFallFlying() || state==AirCombatState.LANDING) return;
         if(state==AirCombatState.REPOSITION || state==AirCombatState.CHAIN_ATTACK) return;
         double minimum=SkyfarerSettings.get("minimum_boost_speed"), reserve=SkyfarerSettings.get("energy_reserve");
@@ -929,7 +938,10 @@ public final class AirCombatController {
         }
         var coast=GlidePlanner.forecast(predictionStart(),flightRequest,flightPlan,corridor,minimum);
         energyReserve=coast.reserve();
-        if (GlidePlanner.ordinary(flightPlan) && coast.safe() && energyReserve>=reserve) return;
+        double closing=maid.getDeltaMovement().dot(new Vec3(-Math.sin(Math.toRadians(flightRequest.yaw())),0,Math.cos(Math.toRadians(flightRequest.yaw()))));
+        boolean earlyStrike=precisionAttack&&flightRequest.distance()>SpearCompat.mobReach(maid.getMainHandItem())+4
+            &&closing<.8&&energyReserve<.16&&coast.miss()>.04;
+        if (GlidePlanner.ordinary(flightPlan) && coast.safe() && energyReserve>=reserve&&!earlyStrike){energyDecision="coast_sufficient";return;}
         // Never boost an outward exit merely to reach a nominal cruise reserve.
         double speed=maid.getDeltaMovement().horizontalDistance();
         if(state==AirCombatState.APPROACH && coast.safe() && speed>.45 && TargetEvaluator.attackable(maid,preferred)) {
@@ -940,18 +952,38 @@ public final class AirCombatController {
             if(maid.position().subtract(preferred.position()).horizontalDistance()<poweredEntry+6) return;
         }
         if(state==AirCombatState.ATTACK_EXIT && coast.safe() && (speed>.6 || maid.getDeltaMovement().y>=0)) return;
-        if(runFlare==-2 && state.locksRunTarget() && coast.safe() && energyReserve>=0 && speed>.6) return;
+        if(runFlare==-2 && state.locksRunTarget() && coast.safe() && energyReserve>=.16 && speed>.8){energyDecision="dive_coast";return;}
         double yaw=Math.toRadians(flightRequest.yaw());
         Vec3 pulseHeading=flightRequest.flare()<0?new Vec3(-Math.sin(yaw),0,Math.cos(yaw)):heading.desired();
-        if (fireworks.active()) return;
+        if (fireworks.active()){energyDecision="active_pulse";return;}
         final var original=flightRequest;
         final double requiredSpeed=minimum,requiredReserve=reserve;
         boolean aligned=HeadingController.horizontalAngle(forward(),pulseHeading)<=20;
         Vec3 destination=returning()?CombatAnchor.current(maid):TargetEvaluator.attackable(maid,preferred)?preferred.position():anchor();
         if(!precisionAttack && state!=AirCombatState.ATTACK_EXIT && CompactTurnPlanner.angle(predictionStart(),destination.x,destination.z)>30) return;
         // The whole pulse must stay in the bounded, entity-ticking navigation corridor.
-        boolean boosted=aligned && fireworks.boost(maid,duration -> GlidePlanner.pulseCost(predictionStart(),original,navigationSpace(),duration,requiredSpeed,requiredReserve));
+        var fundedRequests=new java.util.HashMap<Integer,GlidePlanner.Request>();
+        boolean boosted=aligned && fireworks.boost(maid,duration -> {
+            var review=GlidePlanner.reviewPulse(predictionStart(),original,navigationSpace(),duration,requiredSpeed,requiredReserve);
+            pulseReview=review.reason();
+            if(!Double.isFinite(review.cost())&&earlyStrike&&original.aim()!=null&&original.exit()!=null){
+                // Preserve contact and fund a different post-hit exit instead of abandoning a
+                // low-energy strike merely because the old exit cannot absorb a full rocket.
+                for(double turn:new double[]{0,-45,45}){
+                    double angle=Math.toRadians(original.yaw()+turn),length=SkyfarerSettings.attackExitDistance();
+                    var aim=original.aim();var exit=new GlidePlanner.Exit(aim.x()-Math.sin(angle)*length,original.height()+(turn==0?6:4),aim.z()+Math.cos(angle)*length,0,0);
+                    if(!corridor.segment(new Vec3(aim.x(),original.height(),aim.z()),new Vec3(exit.x(),exit.y(),exit.z()),.15,.12))continue;
+                    var alternative=original.withExit(exit);
+                    var checked=GlidePlanner.reviewPulse(predictionStart(),alternative,navigationSpace(),duration,requiredSpeed,requiredReserve);
+                    if(Double.isFinite(checked.cost())){fundedRequests.put(duration,alternative);pulseReview="replanned_exit";return checked.cost()+1;}
+                }
+            }
+            return review.cost();
+        });
+        energyDecision=aligned?fireworks.decision():"pulse_heading_unaligned";
         if (boosted) {
+            var funded=fundedRequests.get(fireworks.selectedDuration());
+            if(funded!=null){flightRequest=funded;var exit=funded.exit();laneExit=new Vec3(exit.x(),exit.y(),exit.z());laneGradientX=laneGradientZ=0;laneStatus+="; energy-funded exit";}
             flightRequest=flightRequest.withPulse(fireworks.remainingBoostTicks());
             flightPlan=GlidePlanner.choose(predictionStart(),flightRequest,corridor); applyPlan();
             if (!route.waypoints().isEmpty()) {
@@ -1011,6 +1043,7 @@ public final class AirCombatController {
             preferred == null ? "none" : preferred.getUUID(), runTarget == null ? "none" : runTarget.getUUID(), maid.isUsingItem(), maid.getTicksUsingItem(), SpearCompat.mobReach(maid.getMainHandItem()));
         if (flightPlan!=null) WineFoxSkyfarer.LOGGER.info("[WFS debug] maid={} planner={} safe={} clearTicks={} energyReserve={} rocketTicks={} exit={} corridor=[{}] pitch={}",
             maid.getUUID(),flightPlan.mode(),flightPlan.safe(),flightPlan.clearTicks(),energyReserve,fireworks.remainingBoostTicks(),exitStyle,laneStatus,flightPlan.pitch());
+        if(flightRequest!=null)WineFoxSkyfarer.LOGGER.info("[WFS debug] maid={} energyDecision={} pulseReview={} cooldown={} contactDistance={} contactHeight={} signedSlope={}",maid.getUUID(),energyDecision,pulseReview,fireworks.cooldown(maid),flightRequest.distance(),flightRequest.height(),flightRequest.slope());
         if(state==AirCombatState.REPOSITION && preferred!=null && compactGoal!=null) {
             var slope=sampleSlope(preferred);
             WineFoxSkyfarer.LOGGER.info("[WFS debug] maid={} entryDistance={} entryAngle={} staging={} goalY={} supportY={} targetFeetY={} slopeNear=({}, {}) slopeWide=({}, {}) samples={} radius={} aimOffset={}",
