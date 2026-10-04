@@ -10,8 +10,11 @@ public final class SkyfarerNetwork {
     public static Consumer<OpenRemoteTaskPayload> openRemote = payload -> {};
     public static Consumer<AirCombatDebugPayload> debug = payload -> {};
     public static Consumer<CommandMarksPayload> marks=payload->{};
+    public static Consumer<DebugPanelPayload> debugPanel=payload->{};
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("2");
+        var registrar = event.registrar("3");
+        registrar.playToClient(DebugPanelPayload.TYPE,DebugPanelPayload.CODEC,(payload,context)->context.enqueueWork(()->debugPanel.accept(payload)));
+        registrar.playToServer(DebugPanelActionPayload.TYPE,DebugPanelActionPayload.CODEC,(payload,context)->context.enqueueWork(()->{if(context.player() instanceof ServerPlayer player)dev.winefox.skyfarer.runtime.DebugPanelManager.action(player,payload.data());}));
         registrar.playToClient(CommandMarksPayload.TYPE,CommandMarksPayload.CODEC,(payload,context)->context.enqueueWork(()->marks.accept(payload)));
         registrar.playToServer(ToggleCommandMarkPayload.TYPE,ToggleCommandMarkPayload.CODEC,(payload,context)->context.enqueueWork(()->{if(context.player() instanceof ServerPlayer player)dev.winefox.skyfarer.command.CommandManager.toggle(player);}));
         registrar.playToClient(AirCombatDebugPayload.TYPE, AirCombatDebugPayload.CODEC,

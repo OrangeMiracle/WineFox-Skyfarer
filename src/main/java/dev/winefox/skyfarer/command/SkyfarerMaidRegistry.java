@@ -12,11 +12,13 @@ import java.util.*;
 
 /** Small persistent index, partitioned by owner. Unknown TLM records are verified after bounded wakeup. */
 public final class SkyfarerMaidRegistry extends SavedData {
-    public record Entry(UUID id,UUID owner,String dimension,BlockPos pos,boolean known,boolean home,boolean skyfarer) {}
+    public record Entry(UUID id,UUID owner,String dimension,BlockPos pos,boolean known,boolean home,boolean skyfarer,String name) {}
     private final Map<UUID,Map<UUID,Entry>> owners=new HashMap<>();
     public static SkyfarerMaidRegistry get(MinecraftServer server){return server.overworld().getDataStorage().computeIfAbsent(
         new Factory<>(SkyfarerMaidRegistry::new,SkyfarerMaidRegistry::load),"winefox_skyfarer_maids");}
     public List<Entry> owned(UUID owner){return new ArrayList<>(owners.getOrDefault(owner,Map.of()).values());}
+    public Set<UUID> owners(){return Set.copyOf(owners.keySet());}
+    public Entry find(UUID id){for(var group:owners.values()){var e=group.get(id);if(e!=null)return e;}return null;}
     private void put(Entry e){
         for(var group:owners.entrySet())if(!group.getKey().equals(e.owner))group.getValue().remove(e.id);
         var old=owners.computeIfAbsent(e.owner,k->new HashMap<>()).put(e.id,e);
@@ -24,22 +26,28 @@ public final class SkyfarerMaidRegistry extends SavedData {
     }
     public void observe(EntityMaid maid) {
         UUID owner=maid.getOwnerUUID(); if(owner==null){remove(maid.getUUID());return;}
-        put(new Entry(maid.getUUID(),owner,maid.level().dimension().location().toString(),maid.blockPosition(),true,maid.isHomeModeEnable(),SkyfarerRuntime.isSkyfarer(maid)));
+        put(new Entry(maid.getUUID(),owner,maid.level().dimension().location().toString(),maid.blockPosition(),true,maid.isHomeModeEnable(),SkyfarerRuntime.isSkyfarer(maid),maid.getName().getString()));
     }
     public void remove(UUID id){for(var group:owners.values())if(group.remove(id)!=null)setDirty();}
     public void seed(ServerPlayer player) {
-        for(var info:MaidWorldData.get(player.level()).getPlayerMaidInfos(player))
-            if(!owners.getOrDefault(player.getUUID(),Map.of()).containsKey(info.getEntityId()))
-                put(new Entry(info.getEntityId(),player.getUUID(),info.getDimension(),info.getChunkPos(),false,false,false));
+        seed(player.server,player.getUUID());
+    }
+    public void seed(MinecraftServer server,UUID owner) {
+        var infos=MaidWorldData.get(server.overworld()).getInfos(owner);if(infos==null)return;
+        for(var info:infos) {
+            var old=find(info.getEntityId());
+            if(old==null)put(new Entry(info.getEntityId(),owner,info.getDimension(),info.getChunkPos(),false,false,false,info.getName().getString()));
+            else if(old.name.isEmpty())put(new Entry(old.id,old.owner,old.dimension,old.pos,old.known,old.home,old.skyfarer,info.getName().getString()));
+        }
     }
     private static SkyfarerMaidRegistry load(CompoundTag tag,HolderLookup.Provider lookup) {
         var registry=new SkyfarerMaidRegistry();var entries=tag.getList("maids",Tag.TAG_COMPOUND);
-        for(int i=0;i<entries.size();i++){var e=entries.getCompound(i);if(e.hasUUID("id")&&e.hasUUID("owner"))registry.put(new Entry(e.getUUID("id"),e.getUUID("owner"),e.getString("dim"),BlockPos.of(e.getLong("pos")),e.getBoolean("known"),e.getBoolean("home"),e.getBoolean("skyfarer")));}
+        for(int i=0;i<entries.size();i++){var e=entries.getCompound(i);if(e.hasUUID("id")&&e.hasUUID("owner"))registry.put(new Entry(e.getUUID("id"),e.getUUID("owner"),e.getString("dim"),BlockPos.of(e.getLong("pos")),e.getBoolean("known"),e.getBoolean("home"),e.getBoolean("skyfarer"),e.getString("name")));}
         return registry;
     }
     @Override public CompoundTag save(CompoundTag tag,HolderLookup.Provider lookup) {
         var entries=new ListTag();for(var group:owners.values())for(var e:group.values()){
-            var t=new CompoundTag();t.putUUID("id",e.id);t.putUUID("owner",e.owner);t.putString("dim",e.dimension);t.putLong("pos",e.pos.asLong());t.putBoolean("known",e.known);t.putBoolean("home",e.home);t.putBoolean("skyfarer",e.skyfarer);entries.add(t);
+            var t=new CompoundTag();t.putUUID("id",e.id);t.putUUID("owner",e.owner);t.putString("dim",e.dimension);t.putLong("pos",e.pos.asLong());t.putBoolean("known",e.known);t.putBoolean("home",e.home);t.putBoolean("skyfarer",e.skyfarer);t.putString("name",e.name);entries.add(t);
         }tag.put("maids",entries);return tag;
     }
 }

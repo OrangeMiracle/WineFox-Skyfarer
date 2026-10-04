@@ -1,4 +1,7 @@
 {
+  "key.winefox_skyfarer.debug_previous": "Debug: previous maid",
+  "key.winefox_skyfarer.debug_next": "Debug: next maid",
+  "key.categories.winefox_skyfarer": "Skyfarer Debug",
   "item.winefox_skyfarer.command_spyglass": "Skyfarer Command Spyglass",
   "item.winefox_skyfarer.creative_command_spyglass": "Creative Skyfarer Command Spyglass",
   "tooltip.winefox_skyfarer.command_spyglass": "Left-click to toggle a mark (up to 5); right-click to zoom.",
@@ -20,7 +23,7 @@
   "message.winefox_skyfarer.expired": "Remote session expired. Use the remote again.",
   "message.winefox_skyfarer.task_disabled": "Task is currently unavailable. Check equipment.",
   "message.winefox_skyfarer.debug_on": "Observing Skyfarer: %s",
-  "message.winefox_skyfarer.debug_off": "Skyfarer debug display off.",
+  "message.winefox_skyfarer.debug_off": "Stopped watching: %s",
   "message.winefox_skyfarer.not_skyfarer": "This maid is not a Skyfarer.",
   "tooltip.winefox_skyfarer.remote": "Right-click maid: bind. Use in air: change task.",
   "screen.winefox_skyfarer.remote": "Maid Remote",

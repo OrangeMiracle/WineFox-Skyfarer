@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 group = 'dev.winefox.skyfarer'
-version = '0.5.1'
+version = '0.5.2'
 base { archivesName = 'winefox_skyfarer-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
@@ -122,6 +122,15 @@ tasks.register('verifyDispatchReplay', JavaExec) {
     mainClass = 'dev.winefox.skyfarer.command.DispatchReplayChecks'
 }
 tasks.named('check') { dependsOn verifyCommandDispatch, verifyDispatchReplay }
+
+tasks.register('verifyDebugTools', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'dev.winefox.skyfarer.runtime.DebugToolsChecks'
+    // NBT-only checks use console logging, not the dependency Jar's game log file configuration.
+    systemProperty 'log4j.configurationFile', file('tools/offline-log4j2.xml').toURI().toString()
+}
+tasks.named('check') { dependsOn verifyDebugTools }
 dependencies {
     // Read-only API reference; neither bundled into this mod nor installed as a test client.
     compileOnly files('tools/ysm-reference.jar')

@@ -1,4 +1,7 @@
 {
+  "key.winefox_skyfarer.debug_previous": "调试：上一位女仆",
+  "key.winefox_skyfarer.debug_next": "调试：下一位女仆",
+  "key.categories.winefox_skyfarer": "骑空士调试",
   "item.winefox_skyfarer.command_spyglass": "骑空士指挥镜",
   "item.winefox_skyfarer.creative_command_spyglass": "创造骑空士指挥镜",
   "tooltip.winefox_skyfarer.command_spyglass": "左键切换目标标记（最多 5 个）；右键缩放。",
@@ -20,7 +23,7 @@
   "message.winefox_skyfarer.expired": "遥控会话已失效，请再次使用遥控器。",
   "message.winefox_skyfarer.task_disabled": "该工作当前不可用，请检查装备条件。",
   "message.winefox_skyfarer.debug_on": "正在观察骑空士：%s",
-  "message.winefox_skyfarer.debug_off": "已关闭骑空士调试显示。",
+  "message.winefox_skyfarer.debug_off": "已取消观察：%s",
   "message.winefox_skyfarer.not_skyfarer": "这位女仆当前不是骑空士。",
   "tooltip.winefox_skyfarer.remote": "右键女仆绑定；右键空气切换工作模式。",
   "screen.winefox_skyfarer.remote": "女仆遥控器",

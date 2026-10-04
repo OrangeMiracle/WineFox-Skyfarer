@@ -266,6 +266,11 @@ public final class CommandManager {
         if(maid.level() instanceof ServerLevel level){if(!maid.isAlive()||maid.getRemovalReason()==Entity.RemovalReason.DISCARDED)SkyfarerMaidRegistry.get(level.getServer()).remove(maid.getUUID());else observe(maid);}
         cancel(maid.getUUID());
     }
+    public static void prepareDebugTeleport(EntityMaid maid){
+        UUID id=maid.getUUID();var order=ORDERS.remove(id);if(order!=null)order.flight.close();
+        WAKES.remove(id);RECALLS.remove(id);CommandTickets.release(id);
+        SkyfarerRuntime.onSafetyTeleport(maid);
+    }
     private static void cancel(UUID id){
         var order=ORDERS.remove(id);
         if(order!=null){

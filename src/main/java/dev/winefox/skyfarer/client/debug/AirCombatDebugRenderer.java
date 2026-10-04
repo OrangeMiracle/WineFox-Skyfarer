@@ -20,10 +20,19 @@ import java.util.Locale;
 
 @EventBusSubscriber(modid = WineFoxSkyfarer.MOD_ID, value = Dist.CLIENT)
 public final class AirCombatDebugRenderer {
+    @SubscribeEvent public static void keys(net.neoforged.neoforge.client.event.ClientTickEvent.Post event){
+        var mc=Minecraft.getInstance();
+        while(dev.winefox.skyfarer.client.SkyfarerClient.DEBUG_PREVIOUS.consumeClick())if(mc.screen==null&&mc.isWindowActive())ClientDebugState.selection.cycle(-1);
+        while(dev.winefox.skyfarer.client.SkyfarerClient.DEBUG_NEXT.consumeClick())if(mc.screen==null&&mc.isWindowActive())ClientDebugState.selection.cycle(1);
+    }
     @SubscribeEvent public static void logout(ClientPlayerNetworkEvent.LoggingOut event) { ClientDebugState.clear(); }
     @SubscribeEvent public static void render(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) return;
-        var mc = Minecraft.getInstance(); var data = ClientDebugState.current();
+        var mc=Minecraft.getInstance();if(mc.level==null||mc.options.hideGui)return;
+        for(var data:ClientDebugState.all())renderMaid(event,data);
+    }
+    private static void renderMaid(RenderLevelStageEvent event,net.minecraft.nbt.CompoundTag data){
+        var mc = Minecraft.getInstance();
         if (mc.level == null || !data.hasUUID("maid") || !mc.level.dimension().location().toString().equals(data.getString("dimension"))) return;
         Vec3 position = DebugSnapshot.vector(data, "position").add(0, 0.8, 0);
         var entity = mc.level.getEntity(data.getInt("entity_id"));
@@ -56,16 +65,37 @@ public final class AirCombatDebugRenderer {
             last=corners;
         }
         buffers.endBatch(RenderType.lines());
+        if(data.contains("attack_entry")){
+            Vec3 center=DebugSnapshot.vector(data,"attack_entry");var entryLines=buffers.getBuffer(RenderType.lines());
+            for(int axis=0;axis<3;axis++)for(int a:new int[]{-1,1})for(int b:new int[]{-1,1}){
+                Vec3 from=axis==0?new Vec3(-.5,a*.5,b*.5):axis==1?new Vec3(a*.5,-.5,b*.5):new Vec3(a*.5,b*.5,-.5);
+                Vec3 along=axis==0?new Vec3(1,0,0):axis==1?new Vec3(0,1,0):new Vec3(0,0,1);
+                RenderHelper.renderLine(pose,entryLines,center.add(from).subtract(camera),center.add(from).add(along).subtract(camera),.2f,1,.35f);
+            }
+            RenderHelper.renderLine(pose,entryLines,center.subtract(camera),center.add(DebugSnapshot.vector(data,"entry_direction").scale(2)).subtract(camera),.2f,1,.35f);
+            buffers.endBatch(RenderType.lines());
+        }
+        if(data.getUUID("maid").equals(ClientDebugState.selection.selected())){
+            var selectedLines=buffers.getBuffer(DebugRenderTypes.SELECTED);
+            double h=Math.max(.8,data.getDouble("height")),half=Math.max(.35,data.getDouble("width")*.65);
+            Vec3 center=position.add(0,h*.5-.8,0);
+            var axis=new org.joml.Vector3f(1,0,0).rotate(event.getCamera().rotation());Vec3 right=new Vec3(axis.x,axis.y,axis.z);
+            for(int x:new int[]{-1,1})for(int y:new int[]{-1,1}){
+                Vec3 corner=center.add(right.scale(x*half)).add(0,y*h*.55,0);
+                RenderHelper.renderLine(pose,selectedLines,corner.subtract(camera),corner.subtract(right.scale(x*half*.4)).subtract(camera),.3f,1,.4f);
+                RenderHelper.renderLine(pose,selectedLines,corner.subtract(camera),corner.add(0,-y*Math.min(.3,h*.22),0).subtract(camera),.3f,1,.4f);
+            }buffers.endBatch(DebugRenderTypes.SELECTED);
+        }
         if (data.contains("target")) label(event, I18n.get("debug.winefox_skyfarer.target"), DebugSnapshot.vector(data, "target").add(0, 1, 0), 0xFF4444, 0);
         if (!route.isEmpty()) label(event, I18n.get("debug.winefox_skyfarer.route"), DebugSnapshot.vector(route.getCompound(0), "pos").add(0, 1, 0), 0x4488FF, 0);
     }
     @SubscribeEvent public static void hud(RenderGuiEvent.Post event) {
         var mc = Minecraft.getInstance(); var data = ClientDebugState.current();
-        if (mc.level == null || mc.options.hideGui || !data.hasUUID("maid")
-            || !mc.level.dimension().location().toString().equals(data.getString("dimension"))) return;
+        if (mc.level == null || mc.options.hideGui || mc.screen instanceof dev.winefox.skyfarer.client.gui.DebugMaidScreen || !data.hasUUID("maid")) return;
         String id = data.getUUID("maid").toString().substring(0, 8);
         String[] text = {
             "骑空士调试: " + data.getString("maid_name") + " [" + id + "]",
+            "维度: "+data.getString("dimension")+" | "+(ClientDebugState.selection.ids().indexOf(ClientDebugState.selection.selected())+1)+" / "+ClientDebugState.selection.ids().size(),
             "状态: " + data.getString("state"),
             "原因: " + data.getString("reason"),
             "扫描: " + data.getString("scan"),
@@ -75,12 +105,16 @@ public final class AirCombatDebugRenderer {
             String.format(Locale.ROOT, "Charge %s | 已用 %d / 前摇 %d ticks | 射程 %.2f", data.getBoolean("charging") ? "开启" : "关闭", data.getInt("charge_ticks"), data.getInt("charge_delay"), data.getDouble("spear_reach")),
             String.format(Locale.ROOT, "俯仰 %.1f° | 距目标 %.1f | 高于目标中心 %.1f", data.getDouble("pitch"), data.getDouble("target_distance"), data.getDouble("above_target")),
             String.format(Locale.ROOT, "转角 %.1f / %.0f° | 搜索 %.0f | 作战 %.0f", data.getDouble("angle"), data.getDouble("max_turn"), data.getDouble("search_range"), data.getDouble("combat_range")),
-            "蓝线: 当前引导/剩余航点 | 再次右键同一女仆关闭"
+            "蓝线: 引导航迹 | 绿方块: 攻击入口 | 方向键 ←/→: 切换女仆"
         };
         var graphics = event.getGuiGraphics();
         int width = Math.max(100, Math.min(420, graphics.guiWidth() - 16));
         var lines = new ArrayList<net.minecraft.util.FormattedCharSequence>();
-        for (String line : text) lines.addAll(mc.font.split(Component.literal(line), width - 10));
+        for (int i=0;i<text.length;i++){
+            var component=Component.literal(text[i]);
+            if(i==0){component=Component.literal("骑空士调试: "+data.getString("maid_name")).withStyle(s->s.withColor(0x80C0FF));if(data.getBoolean("unloaded"))component.append(Component.literal("（已卸载）").withStyle(s->s.withColor(0xFFD070)));component.append(" ["+id+"]");}
+            lines.addAll(mc.font.split(component,width-10));
+        }
         graphics.pose().pushPose();
         float scale = Math.min(1F, (graphics.guiHeight() - 16F) / (lines.size() * 10F + 10));
         graphics.pose().scale(scale, scale, 1);

@@ -49,6 +49,7 @@ public final class AirCombatController {
     private double laneGradientX,laneGradientZ;
     private double runFlare=14;
     private Vec3 slopeEntry;
+    private Vec3 debugEntry,debugEntryDirection;
     private CorridorProbe corridor;
     private FlightPrediction.State tickPrediction;
     private GlidePlanner.Request flightRequest;
@@ -361,7 +362,7 @@ public final class AirCombatController {
         if(!postChargeActive()) endCharge();
         secondaryTarget = null; multiDirection = Vec3.ZERO;
         laneExit=null; runHeightOffset=0; recoveryOrigin=null;
-        slopeEntry=null; runFlare=SkyfarerSettings.get("level_run_distance");
+        slopeEntry=null;debugEntry=null;debugEntryDirection=null; runFlare=SkyfarerSettings.get("level_run_distance");
         if (!TargetEvaluator.valid(maid, preferred, true, anchor())) scan();
         setupTicks = 0; setupAttempts = 0;
         if (preferred == null) transition(AirCombatState.LOITER_SEARCH, "SEARCHING_AFTER_PASS");
@@ -667,6 +668,7 @@ public final class AirCombatController {
             runSlope=-line.gradient(); runFlare=-1; runHeightOffset=line.height()-base;
             laneGradientX=bestGx; laneGradientZ=bestGz;
             slopeEntry=new Vec3(line.entryX(),line.entryY(),line.entryZ());
+            debugEntry=slopeEntry;debugEntryDirection=new Vec3(target.getX(),line.height(),target.getZ()).subtract(slopeEntry).normalize();
             laneExit=new Vec3(line.exitX(),line.exitY(),line.exitZ());
             laneStatus="slope="+line.gradient()+", samples="+slopes.samples()+", routeCost="+line.cost()+", continuous contact/exit"; return true;
         }
@@ -687,6 +689,7 @@ public final class AirCombatController {
                 exit=capExit(contact,exit,SkyfarerSettings.attackExitDistance());
                 if (corridor.lane(contact,intermediate,exit,side,vertical)) {
                     runHeightOffset=extra; laneExit=exit;
+                    debugEntry=maid.getEyePosition();debugEntryDirection=entry.subtract(debugEntry).normalize();
                     laneStatus="clear entry/contact/exit; offset="+extra+", rise="+rise+", turn="+turn; return true;
                 }
             }
@@ -711,6 +714,8 @@ public final class AirCombatController {
         Vec3 exit=last.add(direction.scale(SkyfarerSettings.attackExitDistance()*.65)).add(0,4,0);
         if(!corridor.segment(last,exit,side,vertical)) return false;
         runFlare=-2; runSlope=slope; runHeightOffset=0; slopeEntry=null; laneExit=exit;
+        debugEntry=maid.getEyePosition();double nextDistance=Math.max(0,distance-1);
+        debugEntryDirection=new Vec3(target.getX()-direction.x*nextDistance,FlightPrediction.pathHeight(nextDistance,base,slope,-2),target.getZ()-direction.z*nextDistance).subtract(debugEntry).normalize();
         laneGradientX=0; laneGradientZ=0;
         laneStatus="curved dive; rise="+rise+", distance="+distance; return true;
     }
@@ -1017,6 +1022,9 @@ public final class AirCombatController {
     public CompoundTag debugSnapshot() {
         var activeTarget=state==AirCombatState.CHAIN_ATTACK?chainTarget:runTarget;
         var data = DebugSnapshot.make(maid, state, preferred, activeTarget, previous, score, heading.desired(), heading.turnAngle(), route);
+        if(debugEntry!=null&&debugEntryDirection!=null&&(state==AirCombatState.APPROACH||state==AirCombatState.ATTACK_RUN||state==AirCombatState.DIVE||state==AirCombatState.SPEAR_CHARGE)){
+            DebugSnapshot.vector(data,"attack_entry",debugEntry);DebugSnapshot.vector(data,"entry_direction",debugEntryDirection);
+        }
         if(maid.isFallFlying() && corridor!=null) {
             if(surfaceLaunch!=null&&(launchControlTicks>0||state==AirCombatState.WATER_ESCAPE))DebugSnapshot.corridor(data,maid,SurfaceLaunchPlanner.trace(predictionStart(),surfaceLaunch,SurfaceLaunchPlanner.DEPARTURE_TICKS-launchControlTicks,gravity(),fireworks.remainingBoostTicks(),corridor,state==AirCombatState.WATER_ESCAPE?this::predictedWater:SurfaceLaunchPlanner.DRY));
             else if(compactGoal!=null&&compactPlan!=null)DebugSnapshot.corridor(data,maid,CompactTurnPlanner.trace(predictionStart(),compactGoal,compactPlan,fireworks.remainingBoostTicks(),gravity(),Math.max(5,SkyfarerSettings.turnRate()),corridor));

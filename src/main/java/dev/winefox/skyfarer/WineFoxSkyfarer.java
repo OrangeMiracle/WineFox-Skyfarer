@@ -27,11 +27,13 @@ public final class WineFoxSkyfarer {
         dev.winefox.skyfarer.flight.PredictionHorizon.multiplier=()->dev.winefox.skyfarer.config.SkyfarerSettings.get("prediction_length_multiplier");
         dev.winefox.skyfarer.command.CommandManager.install();
         bus.addListener(dev.winefox.skyfarer.command.CommandTickets::register);
+        bus.addListener(dev.winefox.skyfarer.runtime.DebugPanelManager::registerTickets);
         NeoForge.EVENT_BUS.addListener(dev.winefox.skyfarer.command.CommandManager::tick);
         NeoForge.EVENT_BUS.addListener(dev.winefox.skyfarer.command.CommandManager::died);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event)->{if(event.getEntity() instanceof com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid maid&&!event.getLevel().isClientSide())dev.winefox.skyfarer.command.CommandManager.observe(maid);});
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event)->dev.winefox.skyfarer.command.CommandManager.logout(event.getEntity().getUUID()));
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppingEvent event)->dev.winefox.skyfarer.command.CommandManager.clear());
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppingEvent event)->dev.winefox.skyfarer.runtime.DebugPanelManager.clear());
         bus.addListener(this::creativeTab);
         bus.addListener(dev.winefox.skyfarer.network.SkyfarerNetwork::register);
         NeoForge.EVENT_BUS.addListener(dev.winefox.skyfarer.runtime.DebugWatchManager::tick);
