@@ -1,4 +1,10 @@
 {
+  "item.winefox_skyfarer.command_spyglass": "骑空士指挥镜",
+  "item.winefox_skyfarer.creative_command_spyglass": "创造骑空士指挥镜",
+  "tooltip.winefox_skyfarer.command_spyglass": "左键切换目标标记（最多 5 个）；右键缩放。",
+  "tooltip.winefox_skyfarer.creative_command_spyglass": "创造模式：呼叫同维度远程骑空士，并临时加载飞行通道。",
+  "message.winefox_skyfarer.marked": "已标记 %s（%s/5）",
+  "message.winefox_skyfarer.unmarked": "已取消 %s 的标记（%s/5）",
   "item.winefox_skyfarer.maid_remote": "女仆遥控器",
   "item.winefox_skyfarer.debug_stick": "骑空士调试棒",
   "task.winefox_skyfarer.skyfarer": "骑空士",

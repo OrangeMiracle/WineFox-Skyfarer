@@ -1,0 +1,38 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+flat-near attack=78 hits=1 landed=211 peak=15.89 radius=31.77 rockets=2
+flat-normal attack=80 hits=1 landed=229 peak=15.89 radius=37.38 rockets=2
+flat-behind-long-pulse attack=102 hits=1 landed=234 peak=15.89 radius=31.77 rockets=2
+home-continuous attack=78 hits=3 landed=416 peak=15.89 radius=49.07 rockets=4
+flat-short-pulse attack=137 hits=1 landed=243 peak=26.31 radius=42.10 rockets=3
+flat-longest-pulse attack=99 hits=1 landed=201 peak=15.89 radius=32.78 rockets=2
+flat-far attack=160 hits=1 landed=224 peak=44.01 radius=62.47 rockets=2
+follow-continuous attack=80 hits=3 landed=660 peak=15.89 radius=46.57 rockets=7
+Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.
+
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+
+注: F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\ai\AirCombatController.java使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifySorties
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Bounded kinetic-to-height turns, curved dive contacts, lateral chain contact/recovery and blocked-chain rejection passed; no game launched.
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 10s
+7 actionable tasks: 5 executed, 2 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

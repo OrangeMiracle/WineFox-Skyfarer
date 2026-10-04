@@ -76,4 +76,16 @@ public final class SurfaceLaunchPlanner {
         }
         return worst+RocketProfile.expectedTicks(duration)*.1;
     }
+    public static java.util.List<GlidePlanner.TracePoint> trace(FlightPrediction.State start,Plan plan,int elapsed,
+            double gravity,int remaining,GlidePlanner.Corridor space,Water water) {
+        var path=new java.util.ArrayList<GlidePlanner.TracePoint>();var s=start;
+        path.add(new GlidePlanner.TracePoint(s,.04,.01));
+        for(int tick=0;tick<Math.min(64,remaining+16);tick++) {
+            double pitch=command(s,plan,elapsed+tick,gravity,tick<remaining);
+            var next=step(s,plan.yaw,pitch,gravity,tick<remaining,water.wet(s));
+            path.add(new GlidePlanner.TracePoint(next,.04,.01));
+            if(!space.clear(s,next,.04,.01))break;s=next;
+        }
+        return java.util.List.copyOf(path);
+    }
 }

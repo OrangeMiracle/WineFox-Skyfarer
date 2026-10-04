@@ -40,10 +40,13 @@ public final class SkyfarerConfig {
         define("combat", "level_run_distance", 14, 6, 24, "blocks");
         define("combat", "reposition_distance", 28, 16, 48, "blocks");
         define("combat", "attack_ground_clearance", 0.75, 0.4, 2, "blocks");
+        define("combat", "attack_aim_offset", 0.5, 0, 3, "blocks above target center");
         define("combat", "spear_vertical_expansion", 3, 0, 8, "blocks each side");
         define("combat", "max_failed_passes", 2, 1, 20, "attempts");
         define("combat", "post_attack_charge_ticks", 60, 0, 200, "ticks");
-        define("combat", "secondary_target_radius", 3, 0, 12, "blocks");
+        define("combat", "secondary_target_radius", 6, 0, 12, "blocks");
+        define("combat", "slope_sample_radius", 16, 3, 32, "blocks");
+        define("combat", "slope_sample_step", 0.5, 0.25, 1, "blocks");
         define("safety", "emergency_teleport_range", 96, 32, 512, "blocks");
         define("safety", "forward_collision_check_distance", 6, 2, 24, "blocks");
         define("safety", "corridor_side_margin", 0.35, 0.05, 1, "blocks");
@@ -52,6 +55,9 @@ public final class SkyfarerConfig {
         define("safety", "max_airborne_ticks", 2400, 200, 12000, "ticks");
         define("safety", "launch_retry_ticks", 60, 20, 400, "ticks");
         define("debug", "sync_interval_ticks", 5, 1, 40, "ticks");
+        define("command", "command_mark_range", 256, 16, 512, "blocks");
+        define("command", "command_home_range", 128, 16, 512, "blocks");
+        define("command", "command_mark_bonus", 150, 0, 1000, "score");
         define("debug", "log_interval_ticks", 100, 20, 1200, "ticks");
     }
     private static void define(String category, String name, double initial, double min, double max, String unit) {

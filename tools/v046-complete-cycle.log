@@ -1,0 +1,24 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyControllerReplay
+flat-near attack=78 hits=1 landed=211 peak=15.89 radius=31.77 rockets=2
+flat-normal attack=80 hits=1 landed=229 peak=15.89 radius=37.38 rockets=2
+flat-behind-long-pulse attack=102 hits=1 landed=234 peak=15.89 radius=31.77 rockets=2
+home-continuous attack=78 hits=3 landed=416 peak=15.89 radius=49.07 rockets=4
+flat-short-pulse attack=137 hits=1 landed=243 peak=26.31 radius=42.10 rockets=3
+flat-longest-pulse attack=99 hits=1 landed=201 peak=15.89 radius=32.78 rockets=2
+flat-far attack=160 hits=1 landed=224 peak=44.01 radius=62.47 rockets=2
+follow-continuous attack=80 hits=3 landed=660 peak=15.89 radius=46.57 rockets=7
+slope-cycle attack=72 hits=1 landed=217 peak=15.89 radius=67.35 rockets=3
+small-target-cycle attack=80 hits=1 landed=229 peak=15.89 radius=37.38 rockets=2
+target-despawn attack=80 hits=0 landed=127 peak=15.89 radius=31.77 rockets=1
+task-cancel attack=80 hits=0 landed=125 peak=15.89 radius=31.77 rockets=1
+Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.
+
+BUILD SUCCESSFUL in 8s
+2 actionable tasks: 2 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

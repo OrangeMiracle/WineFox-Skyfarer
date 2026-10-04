@@ -1,0 +1,99 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :processResources
+> Task :classes
+> Task :jarJar NO-SOURCE
+> Task :jar
+> Task :assemble
+> Task :compileTestJava NO-SOURCE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :test NO-SOURCE
+> Task :compileVerificationJava UP-TO-DATE
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses UP-TO-DATE
+
+> Task :verifyAttackPolicy
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Attack cycle, maneuver boundary, entry opportunity and repeated recovery checks passed.
+
+> Task :verifyCombatRecovery
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Short exits, charge-tail deduplication/failure settlement, dense slope fits passed; no game launched.
+
+> Task :compileControllerReplay
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+flat-near attack=77 hits=1 landed=208 peak=14.71 radius=30.56 rockets=2
+flat-normal attack=78 hits=1 landed=230 peak=14.71 radius=38.07 rockets=2
+flat-behind-long-pulse attack=100 hits=1 landed=230 peak=14.71 radius=31.25 rockets=2
+home-continuous attack=76 hits=3 landed=434 peak=14.71 radius=48.46 rockets=4
+flat-short-pulse attack=137 hits=1 landed=235 peak=22.28 radius=42.42 rockets=3
+flat-longest-pulse attack=111 hits=1 landed=411 peak=14.71 radius=46.60 rockets=3
+flat-far attack=155 hits=1 landed=219 peak=45.49 radius=61.98 rockets=2
+follow-continuous attack=78 hits=3 landed=729 peak=14.71 radius=50.49 rockets=8
+slope-cycle attack=71 hits=1 landed=199 peak=14.71 radius=48.29 rockets=3
+small-target-cycle attack=78 hits=1 landed=230 peak=14.71 radius=36.31 rockets=2
+target-despawn attack=78 hits=0 landed=124 peak=14.71 radius=30.56 rockets=1
+task-cancel attack=78 hits=0 landed=122 peak=14.71 radius=30.56 rockets=1
+snow-layer-cycle attack=78 hits=1 landed=230 peak=14.83 radius=38.07 rockets=2
+mixed-partial-cycle attack=78 hits=1 landed=225 peak=15.21 radius=32.15 rockets=2
+slab-cycle attack=78 hits=1 landed=230 peak=15.21 radius=38.07 rockets=2
+ice-inertia-cycle attack=78 hits=1 landed=228 peak=14.73 radius=35.57 rockets=2
+radius-32-cycle attack=78 hits=1 landed=230 peak=14.71 radius=38.07 rockets=2
+surface-and-cave attack=78 hits=1 landed=230 peak=14.71 radius=38.07 rockets=2
+Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.
+
+> Task :verifyFlightMath
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Charge timing checks passed; Minecraft was not launched.
+
+> Task :verifyFlightPrediction
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+162 powered/unpowered flight scenarios and rocket selection passed; Minecraft was not launched.
+
+> Task :verifyGlideCorridor
+144 new-planner attack/charge replays passed.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+48 closed-loop corridor replays and swept-body/energy checks passed; Minecraft was not launched.
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyMaidCombat
+Small-target vertical tolerance, horizontal/range limits, pass deduplication, target switching, withdrawal timing and primary-safe multi-pierce checks passed. Minecraft was not launched.
+
+> Task :verifyScanCadence
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Scan cadence checks passed; Minecraft was not launched.
+
+> Task :verifySorties
+Bounded kinetic-to-height turns, curved dive contacts, lateral chain contact/recovery and blocked-chain rejection passed; no game launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifySpearIntercept
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+144 native-sized spear intercept scenarios passed; Minecraft was not launched.
+
+> Task :verifySurfaceLaunch
+60 ice/snow/water departures across every rocket lifetime, low-roof side launch and sealed-water fallback passed; no game launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyTerrainCombat
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+36 steep/slow attack replays with finite pulses and planned exits passed.
+36 sloped attack replays, low-roof launch, target layers and airborne reengagement checks passed; no game launched.
+
+> Task :verifyYsmCompatibility
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+5 exact optional YSM 2.6.5 hooks and upstream missing elytra state verified without loading a game.
+
+> Task :check
+> Task :build
+
+BUILD SUCCESSFUL in 22s
+19 actionable tasks: 16 executed, 3 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

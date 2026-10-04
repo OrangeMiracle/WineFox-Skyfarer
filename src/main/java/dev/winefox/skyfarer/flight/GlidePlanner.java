@@ -24,7 +24,7 @@ public final class GlidePlanner {
         public Request withPulse(int ticks) { return new Request(yaw,height,distance,slope,flare,floor,ticks,
             yawRate,pitchRate,recoveryRate,gravity,sideMargin,verticalMargin,recovery,aim,exit); }
         public Request withExit(Exit destination) {
-            if(flare<0 && !Double.isFinite(destination.gradientX)) destination=new Exit(destination.x,destination.y,destination.z,
+            if(flare==-1 && !Double.isFinite(destination.gradientX)) destination=new Exit(destination.x,destination.y,destination.z,
                 slope*Math.sin(Math.toRadians(yaw)),-slope*Math.cos(Math.toRadians(yaw)));
             return new Request(yaw,height,distance,slope,flare,floor,rocketTicks,
                 yawRate,pitchRate,recoveryRate,gravity,sideMargin,verticalMargin,recovery,aim,destination);
@@ -135,7 +135,7 @@ public final class GlidePlanner {
                 goalVelocity=Math.max(0,active.exit.gradientX*s.vx()+active.exit.gradientZ*s.vz());
             double command=tick<(emergency?4:2)?pitch:feedbackPitch(s,goal,goalVelocity,r.gravity,tick<r.rocketTicks);
             if(active.flare<0 && !emergency && tick>=2) {
-                if((tick-2)%4==0) slopeCommand=FlightPrediction.choose(s,r.yaw,r.height+heightOffset,remaining,r.slope,-1,Double.NaN,
+                if((tick-2)%4==0) slopeCommand=FlightPrediction.choose(s,r.yaw,r.height+heightOffset,remaining,r.slope,r.flare,Double.NaN,
                     Math.max(0,r.rocketTicks-tick),r.yawRate,r.pitchRate,r.recoveryRate,r.gravity).pitch();
                 command=slopeCommand;
             }
@@ -157,11 +157,24 @@ public final class GlidePlanner {
             s=next;
         }
         if (r.aim!=null && Double.isFinite(bestMiss)) cost+=Math.min(bestMiss,16)*(r.distance<8?80:5);
-        cost+=0.025*Math.pow(FlightPrediction.turn(initial.pitch(),pitch,firstRate)-initial.pitch(),2);
+        cost+=0.02875*Math.pow(FlightPrediction.turn(initial.pitch(),pitch,firstRate)-initial.pitch(),2);
         return new Plan(yaw,pitch,yawRate,firstRate,mode,true,cost+Math.abs(heightOffset)*6,reserve,horizon,heightOffset);
     }
     public static boolean ordinary(Plan p) {
         return p.safe && p.mode!=Mode.AIRBRAKE && p.mode!=Mode.REVERSAL;
+    }
+    public record TracePoint(FlightPrediction.State state,double side,double vertical) {}
+    /** Re-run only the selected candidate through the same predictor used to certify its volume. */
+    public static java.util.List<TracePoint> trace(FlightPrediction.State start,Request request,Plan plan,Corridor space) {
+        var path=new java.util.ArrayList<TracePoint>();
+        for(double side:new double[]{request.sideMargin,.04}) {
+            path.clear();double vertical=side==request.sideMargin?request.verticalMargin:.04;
+            path.add(new TracePoint(start,side,vertical));
+            var result=evaluate(start,request,(a,b,s,v)->{path.add(new TracePoint(b,s,v));return space.clear(a,b,s,v);},
+                plan.yaw,plan.pitch,plan.mode,side,vertical,plan.heightOffset);
+            if(result.safe || !plan.safe)break;
+        }
+        return java.util.List.copyOf(path);
     }
     public record Forecast(boolean safe, double reserve, boolean passed, double miss) {
         public Forecast(boolean safe,double reserve) { this(safe,reserve,false,Double.POSITIVE_INFINITY); }
@@ -214,7 +227,7 @@ public final class GlidePlanner {
                 goalVelocity=Math.max(0,trajectory.exit.gradientX*s.vx()+trajectory.exit.gradientZ*s.vz());
             double pitch=local<2?active.pitch:feedbackPitch(s,goal,goalVelocity,r.gravity,tick<r.rocketTicks);
             if(trajectory.flare<0 && local>=2) {
-                if((local-2)%4==0) slopeCommand=FlightPrediction.choose(s,r.yaw,r.height+active.heightOffset,remaining,r.slope,-1,Double.NaN,
+                if((local-2)%4==0) slopeCommand=FlightPrediction.choose(s,r.yaw,r.height+active.heightOffset,remaining,r.slope,r.flare,Double.NaN,
                     Math.max(0,r.rocketTicks-tick),r.yawRate,r.pitchRate,r.recoveryRate,r.gravity).pitch();
                 pitch=slopeCommand;
             }

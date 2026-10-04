@@ -36,6 +36,25 @@ public final class AirCombatDebugRenderer {
             Vec3 point = DebugSnapshot.vector(route.getCompound(i), "pos");
             RenderHelper.renderLine(pose, lines, previous.subtract(camera), point.subtract(camera), 0.15f, 0.4f, 1); previous = point;
         }
+        var tube=data.getList("corridor",Tag.TAG_COMPOUND);Vec3[] last=null;
+        for(int i=0;i<tube.size();i++) {
+            var frame=tube.getCompound(i);Vec3 center=DebugSnapshot.vector(frame,"center");
+            Vec3 tangent=i+1<tube.size()?DebugSnapshot.vector(tube.getCompound(i+1),"center").subtract(center):
+                i>0?center.subtract(DebugSnapshot.vector(tube.getCompound(i-1),"center")):new Vec3(0,0,1);
+            double length=tangent.horizontalDistance();
+            Vec3 side=length<1.0e-6?new Vec3(1,0,0):new Vec3(tangent.z/length,0,-tangent.x/length);
+            // AABB projection onto the cross-section conservatively encloses the collision box.
+            double radius=frame.getDouble("radius")*(Math.abs(side.x)+Math.abs(side.z));
+            Vec3[] corners={center.add(side.scale(radius)).add(0,frame.getDouble("above"),0),
+                center.add(side.scale(-radius)).add(0,frame.getDouble("above"),0),
+                center.add(side.scale(-radius)).add(0,-frame.getDouble("below"),0),
+                center.add(side.scale(radius)).add(0,-frame.getDouble("below"),0)};
+            for(int edge=0;edge<4;edge++) {
+                if(last!=null)RenderHelper.renderLine(pose,lines,last[edge].subtract(camera),corners[edge].subtract(camera),1,.85f,.12f);
+                if(i%6==0||i==tube.size()-1)RenderHelper.renderLine(pose,lines,corners[edge].subtract(camera),corners[(edge+1)%4].subtract(camera),1,.85f,.12f);
+            }
+            last=corners;
+        }
         buffers.endBatch(RenderType.lines());
         if (data.contains("target")) label(event, I18n.get("debug.winefox_skyfarer.target"), DebugSnapshot.vector(data, "target").add(0, 1, 0), 0xFF4444, 0);
         if (!route.isEmpty()) label(event, I18n.get("debug.winefox_skyfarer.route"), DebugSnapshot.vector(route.getCompound(0), "pos").add(0, 1, 0), 0x4488FF, 0);

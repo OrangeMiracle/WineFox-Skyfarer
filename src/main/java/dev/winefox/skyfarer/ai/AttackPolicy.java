@@ -30,6 +30,13 @@ public final class AttackPolicy {
         // Never add a fresh climb_height on top of the altitude already recovered in breakaway.
         return Math.max(currentEyeY, targetEyeY + approachHeight);
     }
+    public static double exitLength(double breakaway,double speed,double turnRate) {
+        double radius=Math.clamp(speed/Math.toRadians(turnRate),8,32);
+        return Math.max(breakaway,radius*1.5)*2/3;
+    }
+    public static boolean exitComplete(int ticks,boolean reached,double travelled,double maximum,boolean safe) {
+        return safe && (reached || travelled>=maximum || ticks>100);
+    }
     public static double withdrawalEnvelope(int ticks, double speed, double turnRate, double breakaway) {
         if (ticks <= 0) return 0;
         double radius = Math.min(48, speed / Math.toRadians(turnRate));

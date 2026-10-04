@@ -1,0 +1,7 @@
+[WFS debug] maid=a83f1a60-8f90-4f9d-b915-b36db74afd76 TARGET_ACQUIRE -> TARGET_SELECTED; reason=TARGET_SELECTED; run=none
+[WFS debug] maid=a83f1a60-8f90-4f9d-b915-b36db74afd76 state=TARGET_SELECTED reason=TARGET_SELECTED scan=[nearby=2, in_range=2, valid=1, protected_radius=16.0] pos=(0.0,0.0,0.0) velocity=(0.0,0.0,0.0) ground=true glide=false clearance=NaN preferred=bacd8a05-2f59-452e-92d8-c40fb46890e0 run=none using=false chargeTicks=0 spearReach=2.25
+[WFS debug] maid=a83f1a60-8f90-4f9d-b915-b36db74afd76 TARGET_SELECTED -> TAKEOFF_PREP; reason=PREPARING_JUMP; run=none
+[WFS debug] maid=a83f1a60-8f90-4f9d-b915-b36db74afd76 TAKEOFF_PREP -> TAKEOFF; reason=CORRIDOR_JUMP; run=none
+[WFS debug] maid=a83f1a60-8f90-4f9d-b915-b36db74afd76 TAKEOFF -> CLIMB; reason=SURFACE_LAUNCH_ROCKET; run=none
+[WFS debug] maid=a83f1a60-8f90-4f9d-b915-b36db74afd76 CLIMB -> APPROACH; reason=ASSESS_NEXT_ATTACK_ENTRY; run=none
+[WFS debug] maid=a83f1a60-8f90-4f9d-b915-b36db74afd76 APPROACH -> REPOSITION; reason=UNSTABLE_ENTRY_EXTEND_AGAIN; run=none

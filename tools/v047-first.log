@@ -1,0 +1,42 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+flat-near attack=77 hits=1 landed=208 peak=14.71 radius=30.56 rockets=2
+flat-normal attack=78 hits=1 landed=230 peak=14.71 radius=38.07 rockets=2
+flat-behind-long-pulse attack=100 hits=1 landed=230 peak=14.71 radius=31.25 rockets=2
+home-continuous attack=76 hits=3 landed=434 peak=14.71 radius=48.46 rockets=4
+flat-short-pulse attack=137 hits=1 landed=235 peak=22.28 radius=42.42 rockets=3
+flat-longest-pulse attack=111 hits=1 landed=411 peak=14.71 radius=46.60 rockets=3
+flat-far attack=155 hits=1 landed=219 peak=45.49 radius=61.98 rockets=2
+follow-continuous attack=78 hits=3 landed=729 peak=14.71 radius=50.49 rockets=8
+slope-cycle attack=71 hits=1 landed=199 peak=14.71 radius=48.29 rockets=3
+small-target-cycle attack=78 hits=1 landed=230 peak=14.71 radius=36.31 rockets=2
+target-despawn attack=78 hits=0 landed=124 peak=14.71 radius=30.56 rockets=1
+task-cancel attack=78 hits=0 landed=122 peak=14.71 radius=30.56 rockets=1
+Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.
+
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyCombatRecovery
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Short exits, charge-tail deduplication/failure settlement, dense slope fits passed; no game launched.
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 12s
+7 actionable tasks: 5 executed, 2 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

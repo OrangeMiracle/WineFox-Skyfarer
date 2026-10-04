@@ -42,6 +42,8 @@ public final class DebugWatchManager {
     }
     private static void send(ServerPlayer player, EntityMaid maid) {
         var controller = SkyfarerRuntime.get(maid);
+        var transit=dev.winefox.skyfarer.command.CommandManager.debug(maid);
+        if(transit!=null){PacketDistributor.sendToPlayer(player,new AirCombatDebugPayload(transit));return;}
         PacketDistributor.sendToPlayer(player, new AirCombatDebugPayload(controller == null ? DebugSnapshot.make(maid, AirCombatState.GROUNDED, null, null, null, 0, maid.getLookAngle(), 0, AirRoute.EMPTY) : controller.debugSnapshot()));
     }
 }

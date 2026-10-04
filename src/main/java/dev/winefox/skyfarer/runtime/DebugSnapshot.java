@@ -10,6 +10,13 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
 public final class DebugSnapshot {
+    public static void corridor(CompoundTag data,EntityMaid maid,java.util.List<dev.winefox.skyfarer.flight.GlidePlanner.TracePoint> path) {
+        var list=new ListTag();
+        for(var point:path) {var t=new CompoundTag();var s=point.state();vector(t,"center",new Vec3(s.x(),s.y(),s.z()));
+            t.putDouble("radius",maid.getBbWidth()*.5+point.side());t.putDouble("below",maid.getEyeHeight()+point.vertical());
+            t.putDouble("above",maid.getBbHeight()-maid.getEyeHeight()+point.vertical());list.add(t);}
+        data.put("corridor",list);
+    }
     public static CompoundTag make(EntityMaid maid, AirCombatState state, LivingEntity preferred, LivingEntity run,
         java.util.UUID previous, double score, Vec3 desired, double angle, AirRoute route) {
         CompoundTag data = new CompoundTag();

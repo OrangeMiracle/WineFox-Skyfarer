@@ -57,6 +57,7 @@ public final class SkyfarerSettings {
     public static double climbHeight() { return get("climb_height"); }
     public static double attackEntryDistance() { return get("attack_entry_distance"); }
     public static double breakawayDistance() { return get("breakaway_distance"); }
+    public static double attackExitDistance() { return breakawayDistance()*2/3; }
     public static int ticks(String name) { return (int) get(name); }
     public static boolean debugLogging() { return SkyfarerConfig.SPEC.isLoaded() && SkyfarerConfig.DEBUG_LOGGING.get(); }
     public static void setDebugLogging(boolean enabled) {

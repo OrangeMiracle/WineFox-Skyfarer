@@ -20,8 +20,11 @@ public final class AttackLinePlanner {
         double groundGradient,double crossGradient,double minimumEntry,double exitDistance,double expansion,boolean pulseAvailable,Space space) {
         double distance=Math.hypot(x-s.x(),z-s.z()),direct=Math.clamp((y-s.y())/Math.max(1,distance),-1.5,1.5);
         Line best=null;
-        for(double grade:new double[]{groundGradient,direct,0,Math.clamp(groundGradient+.2,-1.5,1.5),Math.clamp(groundGradient-.2,-1.5,1.5)})
-            for(double extra:new double[]{0,.5,1,1.5,2,2.5}) {
+        var grades=new java.util.LinkedHashSet<Double>();
+        for(double candidate:new double[]{groundGradient,direct,0,groundGradient+.1,groundGradient-.1,groundGradient+.2,groundGradient-.2})
+            grades.add(Math.clamp(candidate,-1.5,1.5));
+        for(double grade:grades)
+            for(double extra=0;extra<=Math.min(2.5,expansion)+1e-6;extra+=.25) {
                 if(extra>expansion) continue;
                 double contact=y+extra;
                 double projection=((x-s.x())*dx+(contact-s.y())*grade+(z-s.z())*dz)/(1+grade*grade);

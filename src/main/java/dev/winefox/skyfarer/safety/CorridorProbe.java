@@ -4,7 +4,9 @@ import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 import dev.winefox.skyfarer.flight.FlightCorridor;
 import dev.winefox.skyfarer.flight.FlightPrediction;
 import dev.winefox.skyfarer.flight.GlidePlanner;
+import dev.winefox.skyfarer.flight.SupportSurface;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -42,6 +44,12 @@ public final class CorridorProbe implements GlidePlanner.Corridor {
         if (minX < border.getMinX() || maxX > border.getMaxX() || minZ < border.getMinZ() || maxZ > border.getMaxZ()) return false;
         double minY = Math.min(from.y,to.y)-eye-vertical;
         double maxY = Math.max(from.y,to.y)+height-eye+vertical;
+        // Loaded terrain can be outside entity simulation range. Do not plan into that shell.
+        if(maid.level() instanceof ServerLevel server) {
+            for(int cx=(int)Math.floor(minX/16);cx<=(int)Math.floor(maxX/16);cx++)
+                for(int cz=(int)Math.floor(minZ/16);cz<=(int)Math.floor(maxZ/16);cz++)
+                    if(!server.isPositionEntityTicking(new BlockPos(cx*16,(int)to.y,cz*16))) return false;
+        }
         // Repeated candidate trajectories query cached 4^3 spatial cells, not hundreds of air blocks.
         for (int x=cell(minX); x<=cell(maxX); x++)
             for (int z=cell(minZ); z<=cell(maxZ); z++)
@@ -62,21 +70,25 @@ public final class CorridorProbe implements GlidePlanner.Corridor {
         // One-block halo includes fences and shapes extending beyond their owning block.
         for(int x=cx*4-1;x<=cx*4+4;x++) for(int z=cz*4-1;z<=cz*4+4;z++) for(int y=cy*4-1;y<=cy*4+4;y++) {
             BlockPos pos=new BlockPos(x,y,z);
-            var shapes=blocks.get(pos);
-            if(shapes==null) {
-                if(blocks.size()>=24000 || !maid.level().hasChunkAt(pos)) return null;
-                var state=maid.level().getBlockState(pos);
-                shapes=new ArrayList<>();
-                for(var box:state.getCollisionShape(maid.level(),pos,context).toAabbs())
-                    shapes.add(new FlightCorridor.Box(x+box.minX,y+box.minY,z+box.minZ,x+box.maxX,y+box.maxY,z+box.maxZ));
-                var fluid=state.getFluidState();
-                if(!fluid.isEmpty() && !(waterEscape && fluid.is(FluidTags.WATER)))
-                    shapes.add(new FlightCorridor.Box(x,y,z,x+1,y+fluid.getHeight(maid.level(),pos),z+1));
-                blocks.put(pos,shapes);
-            }
+            var shapes=blockShapes(pos);
+            if(shapes==null) return null;
             result.addAll(shapes);
         }
         cells.put(key,result); return result;
+    }
+    private List<FlightCorridor.Box> blockShapes(BlockPos pos) {
+        var shapes=blocks.get(pos);
+        if(shapes!=null) return shapes;
+        if(blocks.size()>=24000 || !maid.level().hasChunkAt(pos)) return null;
+        var state=maid.level().getBlockState(pos);
+        shapes=new ArrayList<>();
+        int x=pos.getX(),y=pos.getY(),z=pos.getZ();
+        for(var box:state.getCollisionShape(maid.level(),pos,context).toAabbs())
+            shapes.add(new FlightCorridor.Box(x+box.minX,y+box.minY,z+box.minZ,x+box.maxX,y+box.maxY,z+box.maxZ));
+        var fluid=state.getFluidState();
+        if(!fluid.isEmpty() && !(waterEscape && fluid.is(FluidTags.WATER)))
+            shapes.add(new FlightCorridor.Box(x,y,z,x+1,y+fluid.getHeight(maid.level(),pos),z+1));
+        blocks.put(pos,shapes);return shapes;
     }
     public boolean lane(Vec3 entry, Vec3 contact, Vec3 exit, double side, double vertical) {
         // Split long diagonal queries to keep the inspected volume a tube rather than a large cuboid.
@@ -84,16 +96,23 @@ public final class CorridorProbe implements GlidePlanner.Corridor {
     }
     /** Nearest support surface to target feet; a roof above the room is not a ground sample. */
     public double supportNear(double x,double z,double referenceY) {
-        double best=Double.NaN,error=2.51;
-        for(int y=cell(referenceY-3);y<=cell(referenceY+2);y++) {
-            var shapes=cellShapes(cell(x),y,cell(z));
-            if(shapes==null) continue;
-            for(var box:shapes) if(x>=box.minX() && x<=box.maxX() && z>=box.minZ() && z<=box.maxZ()) {
-                double difference=Math.abs(box.maxY()-referenceY);
-                if(difference<error) { error=difference; best=box.maxY(); }
+        return supportNear(x,z,referenceY,2.51);
+    }
+    public double supportSample(double x,double z,double referenceY) {
+        // Adjacent stair tops are allowed, but a roof two blocks overhead cannot become the ground.
+        return supportNear(x,z,referenceY,1.26);
+    }
+    private double supportNear(double x,double z,double referenceY,double maximumStep) {
+        // Sample only the column and a one-block halo for protruding shapes, not entire 4^3 cells.
+        var column=new ArrayList<FlightCorridor.Box>();
+        int bx=(int)Math.floor(x),bz=(int)Math.floor(z);
+        for(int px=bx-1;px<=bx+1;px++) for(int pz=bz-1;pz<=bz+1;pz++)
+            for(int y=(int)Math.floor(referenceY-3);y<=Math.floor(referenceY+2);y++) {
+                var shapes=blockShapes(new BlockPos(px,y,pz));
+                if(shapes==null) return Double.NaN;
+                for(var box:shapes) if(x>=box.minX() && x<=box.maxX() && z>=box.minZ() && z<=box.maxZ()) column.add(box);
             }
-        }
-        return best;
+        return SupportSurface.nearest(column,x,z,referenceY,maximumStep,maid.getBbHeight());
     }
     /** Follow connected local support in one-block steps, including slopes steeper than 40 degrees. */
     public double supportAlong(double x,double z,double referenceY,double dx,double dz) {

@@ -13,6 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 public final class SkyfarerClient {
     @SubscribeEvent public static void setup(FMLClientSetupEvent event) {
         SkyfarerNetwork.debug = dev.winefox.skyfarer.client.debug.ClientDebugState::accept;
+        SkyfarerNetwork.marks=CommandClient::accept;
         SkyfarerNetwork.openRemote = payload -> {
             var minecraft = Minecraft.getInstance();
             if (minecraft.screen instanceof RemoteMaidTaskScreen screen && screen.session().equals(payload.session())) screen.update(payload);

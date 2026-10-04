@@ -4,6 +4,6 @@
   "package": "dev.winefox.skyfarer.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": ["EntityFlightAccessor", "TlmFollowOwnerMixin", "MobAirControlMixin", "TlmAirControlMixin", "SpearFriendlyFireMixin", "SpearMovementMixin", "MaidSpearChargeMixin", "MaidFlightPoseMixin", "FireworkLifetimeAccessor"],
-  "client": ["TlmSpearItemPoseMixin", "MaidFlightRenderMixin"],
+  "client": ["TlmSpearItemPoseMixin", "MaidFlightRenderMixin", "CommandSpyglassModelMixin"],
   "injectors": {"defaultRequire": 1}
 }

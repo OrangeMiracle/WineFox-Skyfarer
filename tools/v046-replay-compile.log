@@ -1,0 +1,32 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Task :compileControllerReplay FAILED
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\ai\AirCombatController.java:320: 错误: 找不到符号
+
+            if(!fluid.is(FluidTags.WATER)) { height=pos.getY()+4; break; }
+                                                       ^
+  符号:   方法 getY()
+  位置: 类型为BlockPos的变量 pos
+1 个错误
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileControllerReplay'.
+> Compilation failed; see the compiler output below.
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\ai\AirCombatController.java:320: 错误: 找不到符号
+              if(!fluid.is(FluidTags.WATER)) { height=pos.getY()+4; break; }
+                                                         ^
+    符号:   方法 getY()
+    位置: 类型为BlockPos的变量 pos
+  1 个错误
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to generate a Build Scan (powered by Develocity).
+
+BUILD FAILED in 6s
+1 actionable task: 1 executed

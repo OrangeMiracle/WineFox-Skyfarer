@@ -1,4 +1,10 @@
 {
+  "item.winefox_skyfarer.command_spyglass": "Skyfarer Command Spyglass",
+  "item.winefox_skyfarer.creative_command_spyglass": "Creative Skyfarer Command Spyglass",
+  "tooltip.winefox_skyfarer.command_spyglass": "Left-click to toggle a mark (up to 5); right-click to zoom.",
+  "tooltip.winefox_skyfarer.creative_command_spyglass": "Creative mode: dispatch distant Skyfarers in this dimension with temporary flight corridor tickets.",
+  "message.winefox_skyfarer.marked": "Marked %s (%s/5)",
+  "message.winefox_skyfarer.unmarked": "Unmarked %s (%s/5)",
   "item.winefox_skyfarer.maid_remote": "Maid Remote",
   "item.winefox_skyfarer.debug_stick": "Skyfarer Debug Stick",
   "task.winefox_skyfarer.skyfarer": "Skyfarer",

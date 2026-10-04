@@ -1,0 +1,15 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyDispatchReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+dispatch 180 blocks yaw=0 snow=false handoff=92 hit=122 landed=146 combat rockets=0
+dispatch 900 blocks yaw=180 snow=true handoff=611 hit=637 landed=648 combat rockets=0
+dispatch 256 blocks yaw=-90 snow=false handoff=161 hit=195 landed=218 combat rockets=0
+Dispatch full-cycle replay passed; transit consumes no inventory; combat and landing remain native controller decisions.
+
+BUILD SUCCESSFUL in 5s
+2 actionable tasks: 2 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

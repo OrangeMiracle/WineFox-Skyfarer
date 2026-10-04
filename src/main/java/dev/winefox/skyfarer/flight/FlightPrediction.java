@@ -58,10 +58,12 @@ public final class FlightPrediction {
         return new State(x, y, z, vx, vy, vz, yaw, pitch);
     }
     public static double pathHeight(double remaining, double levelHeight, double slope, double flareDistance) {
+        if(flareDistance==-2) { double d=Math.max(0,remaining); return levelHeight+slope*d*d/(d+8); }
         if(flareDistance<0) return levelHeight+remaining*slope;
         return levelHeight + Math.max(0, remaining - flareDistance) * slope;
     }
     public static double pathVerticalSpeed(State s,double remaining,double slope,double flareDistance) {
+        if(flareDistance==-2) { double d=Math.max(0,remaining); return -Math.hypot(s.vx,s.vz)*slope*d*(d+16)/((d+8)*(d+8)); }
         return flareDistance<0 || remaining>flareDistance ? -Math.hypot(s.vx,s.vz)*slope : 0;
     }
     public static Choice choose(State initial, double yaw, double levelHeight, double distance, double slope,
