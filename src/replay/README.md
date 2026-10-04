@@ -11,3 +11,5 @@
 逐 tick TSV 和状态日志位于 `build/reports/controller-replay/`。验证夹具、这些报告和 Minecraft/TLM/Spears 的模拟 API 均不属于 main source set，不进入交付 Jar。真实 NeoForge/TLM/Spears API 兼容性仍由 `compileJava` 验证；游戏行为由用户实测确认。
 
 `verifyDispatchReplay` 额外直接运行生产 `TransitFlight`，覆盖 180/256/900 格赶路、反向起飞、雪层，以及 48 格处向生产 `AirCombatController` 交接、命中、离场和降落。验证赶路不消耗库存、免费推进在交接时结束、没有非计划触地。夹具保留原版烟花物品默认 Flight 1，生产赶路代码必须显式设置 Flight 0 才与短脉冲预测一致。此回放的世界预先提供加载地形；NeoForge 异步区块加载、玩家网络输入和显示仍需实机确认。
+
+0.5.1 增加友好标记目标的完整远程攻击场景，以及未标记/已标记/取消标记的友好过滤切换。`verifyCommandDispatch` 检查创造驻留的四条件真值表、真实依赖中的 Home 回收入口和传送 API、24/240 ticks 实际预测采样、10 倍下的安全起飞与近处硬碰撞拒绝。Home Mixin 的游戏实际注入、区块卸载时序和传送事件链仍需实机验证，离线场景不宣称覆盖完整 Minecraft 生命周期。

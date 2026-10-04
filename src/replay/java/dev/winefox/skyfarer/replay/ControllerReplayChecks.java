@@ -146,6 +146,13 @@ public final class ControllerReplayChecks {
             SkyfarerSettings.set("attack_aim_offset",offset);
             if(Math.abs(TargetEvaluator.aimPoint(surface).y-surface.getBoundingBox().getCenter().y-offset)>1e-8)throw new AssertionError("live aim offset");
         }
+        var friendly=new LivingEntity(world,new Vec3(3,0,12));friendly.hostile=false;
+        if(TargetEvaluator.attackable(maid,friendly))throw new AssertionError("unmarked friendly became attackable");
+        CommandAccess.designated=(m,t)->m==maid&&t==friendly;
+        if(!TargetEvaluator.attackable(maid,friendly))throw new AssertionError("explicit friendly mark still blocked by native ally/canAttack rules");
+        if(TargetEvaluator.attackable(maid,maid.owner)||TargetEvaluator.attackable(maid,maid))throw new AssertionError("mark override bypassed owner/self exclusion");
+        CommandAccess.designated=(m,t)->false;
+        if(TargetEvaluator.attackable(maid,friendly))throw new AssertionError("unmark did not restore friendly protection");
         System.out.println("Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.");
     }
 }

@@ -17,10 +17,15 @@ public final class CommandTickets {
     public static void register(RegisterTicketControllersEvent event){event.register(CONTROLLER);}
     public static void update(ServerLevel level,UUID maid,Vec3 position,Vec3 toward) {
         Set<Long> wanted=new HashSet<>();
-        for(var cell:TicketWindow.around(position.x,position.z,toward.x-position.x,toward.z-position.z))wanted.add(ChunkPos.asLong(cell.x(),cell.z()));
+        for(var cell:TicketWindow.around(position.x,position.z,toward.x-position.x,toward.z-position.z,48*dev.winefox.skyfarer.flight.PredictionHorizon.factor()))wanted.add(ChunkPos.asLong(cell.x(),cell.z()));
         replace(level,maid,wanted);
     }
     public static void wake(ServerLevel level,UUID maid,net.minecraft.core.BlockPos pos){replace(level,maid,Set.of(new ChunkPos(pos).toLong()));}
+    public static void recall(ServerLevel level,UUID maid,net.minecraft.core.BlockPos from,net.minecraft.core.BlockPos home) {
+        var cells=new HashSet<Long>();cells.add(new ChunkPos(from).toLong());
+        var center=new ChunkPos(home);for(int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)cells.add(ChunkPos.asLong(center.x+x,center.z+z));
+        replace(level,maid,cells);
+    }
     public static boolean ready(UUID maid) {
         var held=HELD.get(maid);if(held==null)return false;
         for(long key:held.chunks){var p=new ChunkPos(key);if(!held.level.isPositionEntityTicking(new net.minecraft.core.BlockPos(p.x*16,64,p.z*16)))return false;}

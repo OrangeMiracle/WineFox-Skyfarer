@@ -35,8 +35,9 @@ public final class CompactTurnPlanner {
         Plan best=null;
         for(double brake:new double[]{-65,-55,-40,-25}) {
             var s=start; double cost=0,excursion=0; Command first=null; Goal active=g;
-            int horizon=Math.max(32,rocketTicks+16);
-            if(horizon>96) return null;
+            int baseline=Math.max(32,rocketTicks+16);
+            if(baseline>96) return null;
+            int horizon=PredictionHorizon.ticks(baseline);
             boolean safe=true;
             for(int tick=0;tick<horizon;tick++) {
                 if(active.readyInward(s.x(),s.z())) active=active.inward();
@@ -44,9 +45,12 @@ public final class CompactTurnPlanner {
                 if(first==null) first=c;
                 var next=FlightPrediction.step(s,c.yaw,c.pitch,c.yawRate,c.pitchRate,c.pitchRate,gravity,tick<rocketTicks);
                 double away=Math.hypot(next.x()-g.originX,next.z()-g.originZ);
-                if(away>active.radius || !space.clear(s,next,.04,.04)) { safe=false; break; }
+                if(away>active.radius || !space.clear(s,next,.04,.04)) {
+                    if(tick<baseline)safe=false;else cost+=PredictionHorizon.futureRisk(tick,baseline);
+                    break;
+                }
                 excursion=Math.max(excursion,away);
-                cost+=angle(next,active.x,active.z)*.03+Math.abs(next.y()-g.y)*.04+away*.015;
+                cost+=(angle(next,active.x,active.z)*.03+Math.abs(next.y()-g.y)*.04+away*.015)*PredictionHorizon.weight(tick,baseline);
                 s=next;
             }
             if(!safe) continue;
@@ -58,7 +62,7 @@ public final class CompactTurnPlanner {
     public static java.util.List<GlidePlanner.TracePoint> trace(FlightPrediction.State start,Goal goal,Plan plan,int rocket,double gravity,double rate,GlidePlanner.Corridor space) {
         var path=new java.util.ArrayList<GlidePlanner.TracePoint>();var state=start;var active=goal;
         path.add(new GlidePlanner.TracePoint(state,.04,.04));
-        for(int tick=0;tick<Math.max(32,rocket+16);tick++) {
+        for(int tick=0;tick<PredictionHorizon.ticks(Math.max(32,rocket+16));tick++) {
             if(active.readyInward(state.x(),state.z()))active=active.inward();
             var c=command(state,active,gravity,tick<rocket,rate,plan.brake);
             var next=FlightPrediction.step(state,c.yaw,c.pitch,c.yawRate,c.pitchRate,c.pitchRate,gravity,tick<rocket);

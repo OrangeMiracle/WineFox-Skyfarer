@@ -79,7 +79,7 @@ public final class CorridorProbe implements GlidePlanner.Corridor {
     private List<FlightCorridor.Box> blockShapes(BlockPos pos) {
         var shapes=blocks.get(pos);
         if(shapes!=null) return shapes;
-        if(blocks.size()>=24000 || !maid.level().hasChunkAt(pos)) return null;
+        if(blocks.size()>=24000*dev.winefox.skyfarer.flight.PredictionHorizon.factor() || !maid.level().hasChunkAt(pos)) return null;
         var state=maid.level().getBlockState(pos);
         shapes=new ArrayList<>();
         int x=pos.getX(),y=pos.getY(),z=pos.getZ();

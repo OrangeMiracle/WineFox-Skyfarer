@@ -13,8 +13,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class SpearFriendlyFireMixin {
     @Inject(method = "canHit", at = @At("HEAD"), cancellable = true)
     private static void wfs$respectMaidAllies(Entity attacker, Entity target, CallbackInfoReturnable<Boolean> ci) {
-        if (attacker instanceof EntityMaid maid && maid.getTask().getUid().equals(SkyfarerTask.ID)
-            && (!(target instanceof LivingEntity living) || target == maid || target == maid.getOwner()
-                || target instanceof net.minecraft.world.entity.player.Player || maid.isAlliedTo(target) || !maid.canAttack(living))) ci.setReturnValue(false);
+        if (attacker instanceof EntityMaid maid && maid.getTask().getUid().equals(SkyfarerTask.ID)) {
+            if(!(target instanceof LivingEntity living)||!dev.winefox.skyfarer.ai.TargetEvaluator.attackable(maid,living))ci.setReturnValue(false);
+        }
     }
 }

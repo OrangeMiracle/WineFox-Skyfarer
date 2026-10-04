@@ -58,6 +58,7 @@ public final class SkyfarerConfig {
         define("command", "command_mark_range", 256, 16, 512, "blocks");
         define("command", "command_home_range", 128, 16, 512, "blocks");
         define("command", "command_mark_bonus", 150, 0, 1000, "score");
+        define("flight", "prediction_length_multiplier", 1, 1, 10, "multiplier");
         define("debug", "log_interval_ticks", 100, 20, 1200, "ticks");
     }
     private static void define(String category, String name, double initial, double min, double max, String unit) {

@@ -20,7 +20,7 @@ public final class SkyfarerRuntime {
         return dev.winefox.skyfarer.command.CommandManager.inWaterEscape(maid) || controller!=null && controller.controlsAir() && controller.state()==dev.winefox.skyfarer.ai.AirCombatState.WATER_ESCAPE;
     }
     public static void workTick(EntityMaid maid) {
-        if(dev.winefox.skyfarer.command.CommandManager.inTransit(maid))return;
+        if(dev.winefox.skyfarer.command.CommandManager.inTransit(maid)||dev.winefox.skyfarer.command.CommandManager.recalling(maid))return;
         if (!maid.level().isClientSide && isSkyfarer(maid)) CONTROLLERS.computeIfAbsent(maid.getUUID(), id -> new AirCombatController(maid)).acquire();
     }
     public static void tick(EntityTickEvent.Pre event) {

@@ -13,15 +13,19 @@ import java.util.*;
 /** Production transit -> production combat -> landing, with external physics/world fixtures. */
 public final class DispatchReplayChecks {
     public static void main(String[] args) {
-        run(180,0,0,false);run(900,180,11,true);run(256,-90,5,false);
-        CommandAccess.targets=m->List.of();CommandAccess.anchor=m->null;
+        run(180,0,0,false);run(900,180,11,true);run(256,-90,5,false);run(180,0,5,false,true);
+        CommandAccess.targets=m->List.of();CommandAccess.anchor=m->null;CommandAccess.designated=(m,t)->false;
         System.out.println("Dispatch full-cycle replay passed; transit consumes no inventory; combat and landing remain native controller decisions.");
     }
     private static void run(double distance,float yaw,int jitter,boolean snow) {
+        run(distance,yaw,jitter,snow,false);
+    }
+    private static void run(double distance,float yaw,int jitter,boolean snow,boolean friendly) {
         SkyfarerSettings.reset("all");SkyfarerSettings.setDebugLogging(true);ReplayWorld.events.clear();var world=new ReplayWorld();world.loadedRadius=2048;world.rocketJitter=jitter;
         world.boxes.clear();world.boxes.add(new FlightCorridor.Box(-2048,-20,-2048,2048,snow?.125:0,2048));
         var maid=new EntityMaid(world,new Vec3(0,snow?.125:0,0));maid.owner=new Player(world,maid.pos);maid.yaw=yaw;maid.home=true;
         var target=new LivingEntity(world,new Vec3(0,maid.getY(),distance));
+        target.hostile=!friendly;CommandAccess.designated=(m,t)->m==maid&&t==target&&target.alive;
         CommandAccess.targets=m->target.alive?List.of(target):List.of();CommandAccess.anchor=m->target.pos;
         var transit=new TransitFlight();var controller=new AirCombatController(maid);
         int handoff=-1,hit=-1,landed=-1;boolean exit=false;
@@ -60,7 +64,7 @@ public final class DispatchReplayChecks {
         }
         transit.close();exit|=ReplayWorld.events.stream().anyMatch(s->s.contains(" -> ATTACK_EXIT;"));
         require(handoff>0&&hit>handoff&&exit&&landed>hit,"incomplete dispatch: "+handoff+"/"+hit+"/"+landed+" exit="+exit);
-        System.out.printf(Locale.ROOT,"dispatch %.0f blocks yaw=%.0f snow=%s handoff=%d hit=%d landed=%d combat rockets=%d%n",distance,yaw,snow,handoff,hit,landed,maid.inventory.consumed);
+        System.out.printf(Locale.ROOT,"dispatch %.0f blocks yaw=%.0f snow=%s friendly=%s handoff=%d hit=%d landed=%d combat rockets=%d%n",distance,yaw,snow,friendly,handoff,hit,landed,maid.inventory.consumed);
     }
     private static FlightPrediction.State state(EntityMaid m){return new FlightPrediction.State(m.getX(),m.getEyeY(),m.getZ(),m.velocity.x,m.velocity.y,m.velocity.z,m.yaw,m.pitch);}
     private static void require(boolean value,String message){if(!value)throw new AssertionError(message);}

@@ -119,7 +119,8 @@ public final class GlidePlanner {
         var s=initial; double cost=switch(mode) {case GLIDE->1;case RECOVERY->r.flare<0?1:4;case TURN->10;case PRECISION->14;case AIRBRAKE->30;default->50;};
         double dx=-Math.sin(Math.toRadians(r.yaw)), dz=Math.cos(Math.toRadians(r.yaw));
         double reserve=Double.POSITIVE_INFINITY, bestMiss=Double.POSITIVE_INFINITY;
-        int horizon=24;
+        int horizon=PredictionHorizon.ticks(24);
+        int clearTicks=horizon;
         double slopeCommand=pitch;
         Request active=r;
         for (int tick=0;tick<horizon;tick++) {
@@ -142,23 +143,29 @@ public final class GlidePlanner {
             double commandYaw=exiting?active.yaw:emergency||precise?yaw:tick<6?yaw:r.yaw;
             var next=FlightPrediction.step(s,commandYaw,command,exiting?active.yawRate:yawRate,pitchRate,
                 emergency?90:precise?pitchRate:active.recoveryRate,r.gravity,tick<r.rocketTicks);
-            if (!corridor.clear(s,next,side,vertical)) return new Plan(yaw,pitch,yawRate,firstRate,mode,false,
-                Double.POSITIVE_INFINITY,reserve,tick,heightOffset);
+            if (!corridor.clear(s,next,side,vertical)) {
+                if(tick<24)return new Plan(yaw,pitch,yawRate,firstRate,mode,false,Double.POSITIVE_INFINITY,reserve,tick,heightOffset);
+                // Beyond the committed control window, the next pulse and maneuver are unknown.
+                // Still sample real geometry and penalize this candidate, without banning takeoff
+                // because an indefinitely unpowered continuation eventually reaches the ground.
+                cost+=PredictionHorizon.futureRisk(tick,24);clearTicks=tick;break;
+            }
+            double weight=PredictionHorizon.weight(tick,24);
             double bandError=Math.max(0,Math.abs(next.y()-goal)-0.65);
             double verticalError=s.vy()-(r.flare<0?goalVelocity:0);
-            cost+=bandError*bandError*0.8+verticalError*verticalError*2;
+            cost+=(bandError*bandError*0.8+verticalError*verticalError*2)*weight;
             // Energy headroom above the next corridor, including the velocity that remains after drag.
             double available=energy(next,goal,r.gravity)-0.5*0.65*0.65;
-            reserve=Math.min(reserve,available);
-            cost+=Math.pow(Math.min(0,available),2)*35;
+            if(tick<24)reserve=Math.min(reserve,available);
+            cost+=Math.pow(Math.min(0,available),2)*35*weight;
             double lateral=(next.x()-initial.x())*dz-(next.z()-initial.z())*dx;
-            if(!exiting) cost+=lateral*lateral*0.06;
+            if(!exiting) cost+=lateral*lateral*0.06*weight;
             if (r.aim!=null && tick>=r.aim.readyIn()) bestMiss=Math.min(bestMiss,r.aim.missSquared(next,tick+1));
             s=next;
         }
         if (r.aim!=null && Double.isFinite(bestMiss)) cost+=Math.min(bestMiss,16)*(r.distance<8?80:5);
         cost+=0.02875*Math.pow(FlightPrediction.turn(initial.pitch(),pitch,firstRate)-initial.pitch(),2);
-        return new Plan(yaw,pitch,yawRate,firstRate,mode,true,cost+Math.abs(heightOffset)*6,reserve,horizon,heightOffset);
+        return new Plan(yaw,pitch,yawRate,firstRate,mode,true,cost+Math.abs(heightOffset)*6,reserve,clearTicks,heightOffset);
     }
     public static boolean ordinary(Plan p) {
         return p.safe && p.mode!=Mode.AIRBRAKE && p.mode!=Mode.REVERSAL;
@@ -199,6 +206,8 @@ public final class GlidePlanner {
         double dx=-Math.sin(Math.toRadians(r.yaw)), dz=Math.cos(Math.toRadians(r.yaw));
         // Modded very long rockets are not assumed safe beyond a bounded planning budget.
         if (r.rocketTicks>80) return new Forecast(false,Double.NEGATIVE_INFINITY);
+        // Hard proof of this finite pulse plus recovery remains separate from optional lookahead.
+        // choose() inside this rollout still scores its extended collision forecast.
         int horizon=Math.max(24,r.rocketTicks+16);
         double goal=r.height;
         Plan active=p;

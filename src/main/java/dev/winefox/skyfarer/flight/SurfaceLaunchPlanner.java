@@ -53,14 +53,17 @@ public final class SurfaceLaunchPlanner {
     private static double forecast(FlightPrediction.State start,Plan plan,double gravity,int life,
                                    GlidePlanner.Corridor space,Water water) {
         var s=start; double earlyRise=0,cost=0;
-        for(int tick=0;tick<life+16;tick++) {
+        for(int tick=0;tick<PredictionHorizon.ticks(life+16);tick++) {
             double pitch=command(s,plan,tick,gravity,tick<life);
             var next=step(s,plan.yaw,pitch,gravity,tick<life,water.wet(s));
             // Small physical clearance is essential over snow layers and during the first jump.
-            if(!space.clear(s,next,.04,.01)) return Double.POSITIVE_INFINITY;
+            if(!space.clear(s,next,.04,.01)) {
+                if(tick<life+16)return Double.POSITIVE_INFINITY;
+                cost+=PredictionHorizon.futureRisk(tick,life+16);break;
+            }
             s=next;
             if(tick==DEPARTURE_TICKS-1) earlyRise=s.y()-start.y();
-            cost+=Math.pow(Math.max(0,plan.height-s.y()),2)*.015;
+            cost+=Math.pow(Math.max(0,plan.height-s.y()),2)*.015*PredictionHorizon.weight(tick,life+16);
         }
         if(water.wet(s)) return Double.POSITIVE_INFINITY;
         return cost+Math.pow(Math.max(0,2-earlyRise),2)*12;
@@ -80,7 +83,7 @@ public final class SurfaceLaunchPlanner {
             double gravity,int remaining,GlidePlanner.Corridor space,Water water) {
         var path=new java.util.ArrayList<GlidePlanner.TracePoint>();var s=start;
         path.add(new GlidePlanner.TracePoint(s,.04,.01));
-        for(int tick=0;tick<Math.min(64,remaining+16);tick++) {
+        for(int tick=0;tick<PredictionHorizon.ticks(Math.min(64,remaining+16));tick++) {
             double pitch=command(s,plan,elapsed+tick,gravity,tick<remaining);
             var next=step(s,plan.yaw,pitch,gravity,tick<remaining,water.wet(s));
             path.add(new GlidePlanner.TracePoint(next,.04,.01));

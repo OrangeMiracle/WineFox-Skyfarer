@@ -18,7 +18,7 @@ public final class TargetEvaluator {
         var owner = maid.getOwner();
         return target != null && target != maid && target != owner && !(target instanceof net.minecraft.world.entity.player.Player) && owner != null && owner.level() == maid.level() && target.level() == maid.level()
             && target.isAlive() && !target.isRemoved() && !target.isSpectator() && !target.isInvulnerable()
-            && !maid.isAlliedTo(target) && maid.canAttack(target);
+            && (CommandAccess.designated.test(maid,target) || !maid.isAlliedTo(target) && maid.canAttack(target));
     }
     public static boolean valid(EntityMaid maid, LivingEntity target, boolean pursuing, Vec3 anchor) {
         return attackable(maid, target) && (CommandAccess.marked(maid,target)&&maid.distanceTo(target)<=64 || target.position().distanceTo(anchor)

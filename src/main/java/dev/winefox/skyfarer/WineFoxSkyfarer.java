@@ -24,6 +24,7 @@ public final class WineFoxSkyfarer {
 
     public WineFoxSkyfarer(IEventBus bus, ModContainer container) {
         ITEMS.register(bus);
+        dev.winefox.skyfarer.flight.PredictionHorizon.multiplier=()->dev.winefox.skyfarer.config.SkyfarerSettings.get("prediction_length_multiplier");
         dev.winefox.skyfarer.command.CommandManager.install();
         bus.addListener(dev.winefox.skyfarer.command.CommandTickets::register);
         NeoForge.EVENT_BUS.addListener(dev.winefox.skyfarer.command.CommandManager::tick);
