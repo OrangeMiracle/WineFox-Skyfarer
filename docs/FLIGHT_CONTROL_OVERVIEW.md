@@ -1,6 +1,6 @@
 # 飞控系统总设计与当前实现
 
-核对日期：2026-10-05。源码基线：Gradle 项目版本 `0.6.0`。本文描述当前源码，不是未来设计提案；版本元数据的已知差异见 [PROJECT_INDEX.md](PROJECT_INDEX.md)。
+核对日期：2026-10-05。源码基线：Gradle 项目版本 `0.6.1`。本文描述当前源码，不是未来设计提案；mapped 物理依据与完整路线认证详见 [VANILLA_PHYSICS.md](VANILLA_PHYSICS.md)。
 
 本文面向修改飞控算法、状态机和路径规划，以及排查飞行行为的维护者。新会话先读 [PROJECT_INDEX.md](PROJECT_INDEX.md)，线程池、快照、缓存与结果有效性细节继续读 [ASYNC_PLANNING.md](ASYNC_PLANNING.md)。配置、HUD 和命令见 [CONFIG_DEBUG_REFERENCE.md](CONFIG_DEBUG_REFERENCE.md)，验证入口见 [VALIDATION.md](VALIDATION.md)。
 
@@ -34,8 +34,8 @@
 | `FlightPrediction.State.y` | 通常为女仆眼睛的世界 Y，而非脚底 Y；地面起跳预测有显式构造的起点 |
 | `vx/vy/vz` | blocks/tick；主目标运动使用实际相邻 tick 的位置差 |
 | `yaw/pitch` | 角度；负 pitch 是抬头，正 pitch 是俯冲 |
-| 重力 | 主线程读取女仆 `Attributes.GRAVITY`，复制到请求 |
-| `FlightPrediction.step` | 先按受限姿态变化计算滑翔/阻力和位移，再加入本 tick 附着烟花对下一步速度的贡献 |
+| 物理上下文 | 主线程通过 `getGravity()` 读取实际 gravity（含 noGravity），采集缓降剩余时间，冻结到 `PhysicsContext`；异常回退 .08；合法负/零值保留 |
+| `FlightPrediction.step` | 受限姿态后调用 `VanillaElytra`：float 查表、速度 epsilon、原版滑翔/阻力、位移，最后附着火箭更新下一步速度；新火箭延后一个实体 tick 才推进 |
 | `HeadingController` | 在主线程从本 tick 开始姿态限速应用 yaw/pitch；重复调用不会无限叠加每 tick 转向额度 |
 | 创造赶路 | 明确例外：`CreativeTransitPlanner` 计算当前步输入速度，主线程设置 `setDeltaMovement`，交战前缩回正常速度范围 |
 
@@ -186,9 +186,10 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 ### 4.8 `APPROACH`
 
 - **目的：** 根据当前动量竞争直线、竖向坡面/速降与持续转弯路线，选出可实际接触并安全离场的攻击。
-- **进入/输入：** 初次爬升完成、离场完成、返航途中恢复战斗、指挥镜交接或重定位完成。`startApproach()` 清掉旧 run/curve/recovery，保留合法 preferred，评估次要穿刺目标。
+- **进入/输入：** 初次爬升完成、离场完成、返航途中恢复战斗、指挥镜交接或重定位完成。`startApproach()` 清掉旧 run/curve/recovery，保留合法 preferred，评估次要穿刺目标；同时记录本次是否从目标脚底以下开始进场。
 - **Worker：** `Sweep` 生成两段三次曲线及动力学预测；`Rejoin` 用当前状态重新认证；`Slope/Lane/Glide` 生成与评估常规路线。
-- **主线程：** 首先请求曲线候选，曲线候选仅在目标距离 6–64 格且滑翔时搜索。尚待结果的前 8 ticks 采用面向目标、保持当前高度的平缓引导，避免同时开始强烈重定位破坏候选起点。
+- **主线程：** 首先请求曲线候选，曲线候选仅在目标距离 6–64 格且滑翔时搜索。尚待结果的前 8 ticks 面向目标引导，普通入口保持当前高度；从下方开始的入口以 `attackHeight-min(3,spear_vertical_expansion)` 为准备高度，并贯穿本轮接近、重定位与低能量恢复，避免准备过程中又切换到目标上方巡航。它只影响准备引导，不能代替完整攻击认证。
+- **地形例外：** 坡面采样至少 12 点且不满足原平地门槛时，取消上述低位空中准备并清除较低 Compact 目标，恢复已有地形爬升规则。连续上坡与孤立高处目标不能共用低位准备高度。
 - **常规承诺条件：** look 和真实动量都可在到达前对正，剩余距离覆盖原生前摇；稳定高度/垂直速度或相应坡面曲线误差满足容差；入口、接触、出口走廊合法。见 `AttackPolicy.minimumEntry/canEnter`。
 - **输出/退出：** 确认路线后停止旧 charge session，设置 `runTarget/runOrigin/runDirection` 或 `sweepPath`，立即开启原生长矛使用并 `passHistory.begin()`，进入 `ATTACK_RUN`；同 tick 可执行攻击逻辑。
 - **失败/特殊：** 目标失效重扫；太近、朝向大偏差或常规走廊堵塞 -> `REPOSITION`；总 setup 超过 `attack_timeout_ticks*4` -> 记一次失败、换目标。合法锁定目标可以暂时被山体遮挡；并不要求整个 APPROACH 持续直视目标。
@@ -198,7 +199,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 - **目的：** 在固定局部区域内用爬升减速换取转向能力，恢复可用入口；不是继续向外高速飞到远端再绕圈。
 - **进入/输入：** 入口太近、未稳定、夹角过大、通道堵塞或低能量攻击恢复；目标、采样坡度、当前动量、前摇/触及距离。
 - **Worker：** `CompactTurnPlanner` 枚举制动 pitch `-65/-55/-40/-25°`，模拟固定 staging/inward 目标与局部半径约束；必要时评估所有烟花寿命的紧凑补能。
-- **主线程：** 入口 staging 距离钳制在 18–34 格附近（还受 reposition 配置），局部半径通常 32–48 格；平地目标使用至少额外 9 格的进场高度。实时重算廉价方向反馈，不复用旧的首帧角度。
+- **主线程：** 入口 staging 距离钳制在 18–34 格附近（还受 reposition 配置），局部半径通常 32–48 格；普通平地目标使用至少额外 9 格的进场高度，从下方开始的本轮入口沿用上节的准备高度。实时重算廉价方向反馈，不复用旧的首帧角度。
 - **退出：** 每 tick 仍先尝试可用持续转弯攻击；否则当转回目标角度 <18° 且距离足够，立即回 `APPROACH`，不要求完整绕完 staging。100 ticks 后重新评估入口。
 - **失败/特殊：** 低速无动力时禁止持续鼻尖高抬；只有真实低能量下降、水平速度 <.75、离地 <8 且目标高度未超出时请求恢复脉冲。普通 `manageEnergy()` 不在该状态自行补一个远距离巡航火箭。小角度末端修正缩小 15%，大角度仍保留控制能力。
 
@@ -324,7 +325,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 | 竖向速降/坡线/常规接触走廊 | `AttackLanePlanner`、`AttackLinePlanner`、`DiveProfile` | Lane 的 slope/flare/offset/entry/exit/梯度 |
 | 横向弧线与持续绕山攻击 | `SweepingAttackPlanner` | C1 拼接的 entry/exit 三次曲线、接触时刻、碰撞与命中预测 |
 
-曲线从当前实际速度方向构造起点切线；低速才退到目标方向。目标附近方向枚举直达和左右 `30/60/90/120°`，结合两档控制柄长度、两档高度和三档横向接触偏移，共 108 条几何候选。接触处 entry 末切线与 exit 起切线一致；出口继续顺着左/右趋势，而非强行回到旧直线。
+曲线从当前实际速度方向构造起点切线；低速才退到目标方向。目标附近方向枚举直达和左右 `30/60/90/120°`，结合两档控制柄长度、两档高度和三档横向接触偏移，每个动力条件共 108 条几何候选。当前无动力候选不可用时，还可按真实库存 duration 生成拟点火候选（最大预测推进 ≤80 ticks）；这种候选不代表当前已有推力。它仍走当前状态 Rejoin、全部随机寿命与真实点火后才能承诺攻击。接触处 entry 末切线与 exit 起切线一致；出口继续顺着左/右趋势，而非强行回到旧直线。
 
 `Path` 按控制多边形长度约每 `.75` 格采样，每段 8–160 步；先真实身体走廊过滤，再模拟原版动量/姿态/有限火箭。模拟在原生前摇之后检查最低攻击速度、长矛接触与逐步身体净空。命中后的提前成功退出条件要求至少再模拟 16 ticks，并达到火箭结束后 12 ticks；但总时域为 `min(160, max(budget, rocket + 16))`，达到上限时也会返回已模拟部分的 `safe/hit`。因此，接触发生在时域末尾时，当前实现不保证完整的上述恢复窗口；不能将有限预测写成整段离场安全的无条件证明。
 
@@ -361,7 +362,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 每条射线遇到洞口或未知空间即停止该方向，不终止其他方向；近场拟合用 3 格内样本，广域拟合用全半径，输出两组加权平面梯度及样本数。近、远梯度都 <.16 且样本 >=12 才被判为平地。控制器层通常每 5 ticks、目标位移超过 .25 格或设置变化重新请求；底层异步缓存还有自己的有效性限制。
 
-`AttackLinePlanner` 将沿路线的坡度和横坡梯度结合，候选包括地形坡度、当前直达坡度、水平以及坡度 ±.1/±.2；坡度限制 ±1.5。接触高度额外偏移按 .25 格采样，出口可侧向转弯并沿横坡变化高度。成本是实际接入/攻击/离场长度、转向、未来能量亏空和离场转角，没有“上升攻击类型本身更贵”的固定罚分；缺燃料且能量不足的坡线仍会被拒绝。
+`AttackLinePlanner` 将沿路线的坡度和横坡梯度结合，候选包括地形坡度、当前直达坡度、水平以及坡度 ±.1/±.2；坡度限制 ±1.5。接触高度额外偏移按 .25 格采样，出口可侧向转弯并沿横坡变化高度。成本是实际接入/攻击/离场长度、转向、未来能量亏空和离场转角，没有“上升攻击类型本身更贵”的固定罚分。能量亏空只参与成本，不能以单点机械能代替真实可达性。普通进攻承诺前由 `AttackCertificate` 完整验证新前摇、接触速度/射线、身体通道及离场；曲线由候选回放和 `Rejoin` 认证。
 
 局部坡面模型只能提出候选，不替代精确身体碰撞。绕山曲线不必与坡面拟合直线共线；陡坡或台阶没有一个全局单平面能代表全部通道。
 
@@ -409,10 +410,13 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 ```text
 E = gravity * (eyeY - referenceY) + 0.5 * (vx² + vy² + vz²)
-reserve = 预测末状态可用能量 - 0.5 * minimumSpeed²
+reserve(t) = E(t) - 0.5 * minimumSpeed(t)²
+routeReserve = min(reserve(t))，覆盖 Approach → Strike → Exit
 ```
 
-参考高度是即将到达的通道/接触/出口高度，预测同时包含阻力、速度与高度转换。`minimum_boost_speed=.8`、`energy_reserve=.08` 是普通默认门槛；精确攻击使用 `.4/.02`，且最低攻击速度至少达到武器伤害门槛 +.05。攻击并不追求始终最大速度。
+参考高度是未来路线需求：普通路线纳入剖面、接触与出口，曲线取剩余采样路径最高点；不引用脚下谷底或绝对世界高度。这个非守恒 heuristic 用于排序与补能，最终可达性由冻结物理逐 tick 回放决定；正 reserve 不能覆盖碰撞、错失接触或出口未完成，负 reserve 也不是不可达证明。`minimum_boost_speed=.8`、`energy_reserve=.08` 是普通默认门槛；精确攻击使用 `.4/.02`，且最低攻击速度至少达到武器伤害门槛 +.05。攻击并不追求始终最大速度。
+
+完整攻击预测上限 160 ticks；必须完成接触、离场行程、至少接触后 16 ticks 与火箭燃尽后 16 次无动力移动，结束水平速度至少 .3 且不低于请求门槛。出口高度按既有 ATTACK_EXIT 语义为导向与储备需求，完成条件仍是有界行程和安全通道，不强迫盘旋抵达一个已经掠过的空间点。时域耗尽不能当成部分路线成功。普通姿态选择的 24-tick 窗口不等于这份完整证书。
 
 `manageEnergy()` 先验证无新烟花能否继续，再检查朝向、入口长度和恢复通道；库存火箭都不安全时宁可重定位。它不会在 LANDING、REPOSITION、CHAIN_ATTACK 做普通巡航补能。Compact/曲线跟踪有各自受限补能分支。
 
@@ -426,11 +430,11 @@ maximumTicks(duration) = minimumTicks + 11
 expectedTicks(duration) = minimumTicks + 5.5
 ```
 
-每个 Flight duration 有 12 个可能的整数推进时长。起飞、攻击补能和恢复规划必须覆盖全部，而非只验证均值；活动火箭则读取真实 `life/lifetime`，剩余为 `max(0,lifetime-life+1)`。预测程序遵循火箭在女仆移动后更新速度的顺序。
+每个 Flight duration 有 12 个可能的整数推进时长。起飞、攻击补能和恢复规划必须覆盖全部，而非只验证均值；活动火箭则读取真实 `life/lifetime`，剩余为 `max(0,lifetime-life+1)`。预测程序遵循火箭在女仆移动后更新速度的顺序；EntityTick.Pre 新建火箭下 tick 才首次推进，0/1 tick 的 `rocketDelay` 单独冻结，不扣掉一次有效推进。
 
 `FireworkManager` 有默认 30 ticks CD，活动火箭期间也拒绝叠加。选择只在主线程遍历可提取的真实库存，按 duration 合并规划成本；带爆炸效果加 1000 成本但不是绝对禁用。成功 addFreshEntity 后才真正提取一件，失败时撤销新火箭。`release()` 会丢弃所管理的活动火箭。
 
-保守预算有上限：SurfaceLaunch 拒绝最大寿命 >64 ticks，Glide 完整 forecast 拒绝剩余推进 >80 ticks，Compact 基准 `max(32,rocket+16)>96` 则不接受。额外 Mod 自定义超长烟花不被假定为可安全预测。
+保守预算有上限：SurfaceLaunch 拒绝最大寿命 >64 ticks，Glide 完整 forecast 拒绝剩余推进 >80 ticks，Compact 基准 `max(32,rocket+rocketDelay+16)>96` 则不接受。额外 Mod 自定义超长烟花不被假定为可安全预测。
 
 源码：[FireworkManager](../src/main/java/dev/winefox/skyfarer/flight/FireworkManager.java)、[GlidePlanner.reviewPulse/forecast](../src/main/java/dev/winefox/skyfarer/flight/GlidePlanner.java)。
 
@@ -440,10 +444,11 @@ expectedTicks(duration) = minimumTicks + 5.5
 
 - coast 结果还在异步等待时，提前排队各库存 duration 的 pulse review，不能等待 coast 完成后才开始全部计算。
 - 精确攻击距矛尖触及还有 >4 格、闭合速度 <.8、能量 <.16 且预测 miss 较大时，允许提前尝试补能。
-- APPROACH 已有可用慢速入口且距目标不足“火箭速度入口长度 +6”时，不用突然增速毁掉前摇窗口。
+- APPROACH 无动力预测安全、水平速度 >.45、已达到攻击高度 -.2 且距目标不足“火箭速度入口长度 +6”时，不用突然增速毁掉前摇窗口；低于目标时不因眼前可滑翔就套用这个禁补能 heuristic。
 - 脉冲从现在一直验证到随机寿命结束和无动力恢复；如果会在前摇/瞄准完成前经过目标且 miss>.04，拒绝该火箭。
 - 低能量攻击因旧出口吸收不了火箭而被拒绝时，可评估直线/±45° 的新出口，而非立刻放弃接触。
 - ATTACK_EXIT 已安全且水平速度 >.6 或正在上升时不为普通储备再补能；Compact 目标必须固定，不能因补能而无限增长目标高度。
+- ATTACK_EXIT 在无新火箭预测不安全、水平速度 <.65、下降且距地 <4 格时，其恢复不再由 20° 对齐 heuristic 禁止点火：只有 Worker 证明全部随机寿命的受限转向、身体通道和燃尽后恢复安全时才补能。原因是等待对齐会让低速女仆在离场转弯中耗尽高度；离场行程上限与完成条件不变。普通进攻的对齐规则保持。
 - 如果正在下降、速度 <.65、离地 <6 且原攻击不安全，可验证局部 Compact 脉冲并转 `REPOSITION` 恢复。
 
 `pulseReview` 的 `async_pending`、`cooldown_*`、`active_pulse`、`pulse_trajectory_rejected` 与真正没有烟花是不同情况。增加 CD 或强制补能不能替代对这些分支的分析。

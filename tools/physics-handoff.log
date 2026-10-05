@@ -1,0 +1,38 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyDispatchReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+dispatch 180 blocks yaw=0 snow=false friendly=false creativeMultiplier=0 handoff=113 hit=138 landed=151 combat rockets=0
+dispatch 900 blocks yaw=180 snow=true friendly=false creativeMultiplier=0 handoff=620 hit=648 landed=738 combat rockets=1
+dispatch 256 blocks yaw=-90 snow=false friendly=false creativeMultiplier=0 handoff=165 hit=192 landed=240 combat rockets=1
+dispatch 180 blocks yaw=0 snow=false friendly=true creativeMultiplier=0 handoff=109 hit=137 landed=211 combat rockets=1
+dispatch 900 blocks yaw=0 snow=false friendly=false creativeMultiplier=2 handoff=318 hit=440 landed=525 combat rockets=2
+Exception in thread "main" java.lang.AssertionError: unplanned ground contact in ATTACK_EXIT tick=468 speed=100.0 before=State[x=12.528456004729613, y=0.4172958560999748, z=905.6241357904613, vx=-0.3474801858253174, vy=-0.06602832220776401, vz=0.07807209943142719, yaw=120.21025085449219, pitch=-20.0, physics=null, rocketDelay=0] next=(12.185804813749634,-0.050562246882371376,905.6744592644574)
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.run(DispatchReplayChecks.java:67)
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.main(DispatchReplayChecks.java:17)
+
+> Task :verifyDispatchReplay FAILED
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+
+FAILURE: Build failed with an exception.
+
+flat-longest-pulse attack=329 hits=1 landed=418 peak=17.96 radius=37.17 rockets=5
+Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.
+* What went wrong:
+Execution failed for task ':verifyDispatchReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 3m 5s
+3 actionable tasks: 3 executed

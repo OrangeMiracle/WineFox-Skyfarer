@@ -126,7 +126,7 @@ public final class GlidePlanner {
         for (int tick=0;tick<horizon;tick++) {
             double along=(s.x()-initial.x())*dx+(s.z()-initial.z())*dz;
             double remaining=r.distance-along;
-            if(active.exit!=null && !active.recovery && (exitDue(r,remaining)||bestMiss<=.04)) active=exitRequest(s,active,Math.max(0,r.rocketTicks-tick));
+            if(active.exit!=null && !active.recovery && (exitDue(r,remaining)||bestMiss<=.04)) active=exitRequest(s,active,RocketProfile.remaining(tick,r.rocketTicks,initial));
             boolean exiting=active!=r || active.recovery&&active.exit!=null;
             double goal=FlightPrediction.pathHeight(exiting?0:remaining,active.height,active.slope,active.flare)+heightOffset;
             if(exiting) goal=Math.max(goal,active.exit.supportHeight(s)+heightOffset);
@@ -134,15 +134,15 @@ public final class GlidePlanner {
             double goalVelocity=FlightPrediction.pathVerticalSpeed(s,exiting?0:remaining,active.slope,active.flare);
             if(exiting && Double.isFinite(active.exit.gradientX) && active.exit.supportHeight(s)>=active.height)
                 goalVelocity=Math.max(0,active.exit.gradientX*s.vx()+active.exit.gradientZ*s.vz());
-            double command=tick<(emergency?4:2)?pitch:feedbackPitch(s,goal,goalVelocity,r.gravity,tick<r.rocketTicks);
+            double command=tick<(emergency?4:2)?pitch:feedbackPitch(s,goal,goalVelocity,r.gravity,RocketProfile.active(tick,r.rocketTicks,initial));
             if(active.flare<0 && !emergency && tick>=2) {
                 if((tick-2)%4==0) slopeCommand=FlightPrediction.choose(s,r.yaw,r.height+heightOffset,remaining,r.slope,r.flare,Double.NaN,
-                    Math.max(0,r.rocketTicks-tick),r.yawRate,r.pitchRate,r.recoveryRate,r.gravity).pitch();
+                    RocketProfile.remaining(tick,r.rocketTicks,initial),r.yawRate,r.pitchRate,r.recoveryRate,r.gravity).pitch();
                 command=slopeCommand;
             }
             double commandYaw=exiting?active.yaw:emergency||precise?yaw:tick<6?yaw:r.yaw;
             var next=FlightPrediction.step(s,commandYaw,command,exiting?active.yawRate:yawRate,pitchRate,
-                emergency?90:precise?pitchRate:active.recoveryRate,r.gravity,tick<r.rocketTicks);
+                emergency?90:precise?pitchRate:active.recoveryRate,r.gravity,RocketProfile.active(tick,r.rocketTicks,initial));
             if (!corridor.clear(s,next,side,vertical)) {
                 if(tick<24)return new Plan(yaw,pitch,yawRate,firstRate,mode,false,Double.POSITIVE_INFINITY,reserve,tick,heightOffset);
                 // Beyond the committed control window, the next pulse and maneuver are unknown.
@@ -183,7 +183,8 @@ public final class GlidePlanner {
         }
         return java.util.List.copyOf(path);
     }
-    public record Forecast(boolean safe, double reserve, boolean passed, double miss,String reason) {
+    public record Forecast(boolean safe, double reserve, boolean passed, double miss,String reason, EnergyReserveEnvelope.Result envelope) {
+        public Forecast(boolean safe,double reserve,boolean passed,double miss,String reason){this(safe,reserve,passed,miss,reason,new EnergyReserveEnvelope.Result(reserve,-1,java.util.List.of()));}
         public Forecast(boolean safe,double reserve,boolean passed,double miss){this(safe,reserve,passed,miss,safe?"clear":"unsafe");}
         public Forecast(boolean safe,double reserve) { this(safe,reserve,false,Double.POSITIVE_INFINITY); }
     }
@@ -196,6 +197,7 @@ public final class GlidePlanner {
     }
     public static PulseReview reviewPulse(FlightPrediction.State start,Request request,Corridor corridor,int duration,double minimumSpeed,double reserve,
         java.util.Map<Integer,Plan> approvedPlans) {
+        start=start.withRocketDelay(1);
         double cost=0;
         for (int ticks=RocketProfile.minimumTicks(duration);ticks<=RocketProfile.maximumTicks(duration);ticks++) {
             var candidate=request.withPulse(ticks);
@@ -212,13 +214,23 @@ public final class GlidePlanner {
     }
     /** Validate the selected maneuver through pulse expiry AND its unpowered coast. */
     public static Forecast forecast(FlightPrediction.State start, Request r, Plan p, Corridor corridor, double minimumSpeed) {
+        return forecast(start,r,p,corridor,minimumSpeed,(state,aim,tick)->true);
+    }
+    public static Forecast forecast(FlightPrediction.State start, Request r, Plan p, Corridor corridor, double minimumSpeed,SweepingAttackPlanner.Contact contact) {
         var s=start;
         double dx=-Math.sin(Math.toRadians(r.yaw)), dz=Math.cos(Math.toRadians(r.yaw));
         // Modded very long rockets are not assumed safe beyond a bounded planning budget.
         if (r.rocketTicks>80) return new Forecast(false,Double.NEGATIVE_INFINITY);
         // Hard proof of this finite pulse plus recovery remains separate from optional lookahead.
         // choose() inside this rollout still scores its extended collision forecast.
-        int horizon=Math.max(24,r.rocketTicks+16);
+        boolean attackBundle=r.aim!=null && r.exit!=null && !r.recovery;
+        int horizon=attackBundle?160:Math.max(24,r.rocketTicks+start.rocketDelay()+16);
+        var envelope=new EnergyReserveEnvelope();
+        envelope.observe(start,0,r.recovery?EnergyReserveEnvelope.Stage.EXIT:EnergyReserveEnvelope.Stage.APPROACH,
+            EnergyReserveEnvelope.remainingHeight(FlightPrediction.pathHeight(r.distance,r.height,r.slope,r.flare),r.height,r.exit,r.recovery),minimumSpeed,r.gravity);
+        int hitTick=-1;
+        double exitTravel=0;
+        boolean exitComplete=false;
         double goal=r.height;
         Plan active=p;
         double slopeCommand=p.pitch;
@@ -229,13 +241,16 @@ public final class GlidePlanner {
             double remaining=r.distance-((s.x()-start.x())*dx+(s.z()-start.z())*dz);
             // The real controller leaves immediately after a confirmed hit. A forecast which
             // continues the attack line beyond that point can falsely reject every useful pulse.
-            boolean switchExit=trajectory.exit!=null && !trajectory.recovery && (exitDue(r,remaining)||bestMiss<=.04);
-            if(switchExit) trajectory=exitRequest(s,trajectory,Math.max(0,r.rocketTicks-tick));
+            boolean switchExit=trajectory.exit!=null && !trajectory.recovery && (exitDue(r,remaining)||(attackBundle?hitTick>=0:bestMiss<=.04));
+            if(attackBundle && hitTick<0 && exitDue(r,remaining))return new Forecast(false,envelope.result().worstReserve(),true,bestMiss,"contact_missed",envelope.result());
+            if(switchExit) trajectory=exitRequest(s,trajectory,RocketProfile.remaining(tick,r.rocketTicks,start));
             boolean exiting=trajectory!=r || trajectory.recovery&&trajectory.exit!=null;
             passed|=remaining<-.5;
             int local=tick%8;
-            if (switchExit || tick>0 && local==0) {
-                var future=new Request(trajectory.yaw,trajectory.height,exiting?0:remaining,trajectory.slope,trajectory.flare,r.floor,Math.max(0,r.rocketTicks-tick),
+            // Finish a finite proof with the already selected feedback. A new 24-tick
+            // search on its last tick would silently extend pulse+coast certification.
+            if (switchExit || tick>0 && local==0 && (attackBundle || horizon-tick>=8)) {
+                var future=new Request(trajectory.yaw,trajectory.height,exiting?0:remaining,trajectory.slope,trajectory.flare,r.floor,RocketProfile.remaining(tick,r.rocketTicks,start),
                     trajectory.yawRate,trajectory.pitchRate,trajectory.recoveryRate,r.gravity,r.sideMargin,r.verticalMargin,trajectory.recovery,
                     exiting||r.aim==null||r.exit==null?null:r.aim.after(tick),trajectory.exit);
                 active=choose(s,future,corridor);
@@ -246,28 +261,40 @@ public final class GlidePlanner {
             double goalVelocity=FlightPrediction.pathVerticalSpeed(s,exiting?0:remaining,trajectory.slope,trajectory.flare);
             if(exiting && Double.isFinite(trajectory.exit.gradientX) && trajectory.exit.supportHeight(s)>=trajectory.height)
                 goalVelocity=Math.max(0,trajectory.exit.gradientX*s.vx()+trajectory.exit.gradientZ*s.vz());
-            double pitch=local<2?active.pitch:feedbackPitch(s,goal,goalVelocity,r.gravity,tick<r.rocketTicks);
+            double pitch=local<2?active.pitch:feedbackPitch(s,goal,goalVelocity,r.gravity,RocketProfile.active(tick,r.rocketTicks,start));
             if(trajectory.flare<0 && local>=2) {
                 if((local-2)%4==0) slopeCommand=FlightPrediction.choose(s,r.yaw,r.height+active.heightOffset,remaining,r.slope,r.flare,Double.NaN,
-                    Math.max(0,r.rocketTicks-tick),r.yawRate,r.pitchRate,r.recoveryRate,r.gravity).pitch();
+                    RocketProfile.remaining(tick,r.rocketTicks,start),r.yawRate,r.pitchRate,r.recoveryRate,r.gravity).pitch();
                 pitch=slopeCommand;
             }
-            if(r.aim!=null && tick>=r.aim.readyIn()) {
+            if(r.aim!=null && tick>=r.aim.readyIn() && Math.hypot(s.vx(),s.vz())>=minimumSpeed) {
                 var aimed=new FlightPrediction.State(s.x(),s.y(),s.z(),s.vx(),s.vy(),s.vz(),
                     FlightPrediction.turn(s.yaw(),local<6?active.yaw:trajectory.yaw,active.yawRate),
                     FlightPrediction.turn(s.pitch(),pitch,active.pitchRate));
                 bestMiss=Math.min(bestMiss,r.aim.missSquared(aimed,tick));
+                if(hitTick<0 && r.aim.missSquared(aimed,tick)<=1e-8 && contact.clear(aimed,r.aim,tick))hitTick=tick;
             }
             var next=FlightPrediction.step(s,local<6?active.yaw:trajectory.yaw,pitch,active.yawRate,
                 active.mode==Mode.PRECISION?active.pitchRate:trajectory.pitchRate,
-                active.mode==Mode.PRECISION?active.pitchRate:trajectory.recoveryRate,r.gravity,tick<r.rocketTicks);
+                active.mode==Mode.PRECISION?active.pitchRate:trajectory.recoveryRate,r.gravity,RocketProfile.active(tick,r.rocketTicks,start));
             if (!corridor.clear(s,next,0.04,0.04)) return new Forecast(false,Double.NEGATIVE_INFINITY,passed,bestMiss,"sweep_"+tick);
+            if(hitTick>=0)exitTravel+=Math.sqrt(Math.pow(next.x()-s.x(),2)+Math.pow(next.y()-s.y(),2)+Math.pow(next.z()-s.z(),2));
+            double demand=EnergyReserveEnvelope.remainingHeight(goal,r.height,r.exit,exiting);
+            envelope.observe(next,tick+1,exiting?EnergyReserveEnvelope.Stage.EXIT:hitTick>=0?EnergyReserveEnvelope.Stage.STRIKE:EnergyReserveEnvelope.Stage.APPROACH,
+                demand,minimumSpeed,r.gravity);
             s=next;
+            if(attackBundle && hitTick>=0 && tick>=Math.max(r.rocketTicks+start.rocketDelay()+15,hitTick+16)) {
+                // Same bounded exit semantics as ATTACK_EXIT: travel through the recovery
+                // corridor, no obligation to orbit a waypoint already passed. Validate actual
+                // horizontal speed, plus the entire finite pulse and unpowered recovery.
+                double length=Math.hypot(r.exit.x-r.aim.x(),r.exit.z-r.aim.z());
+                if(exitTravel>=length && Math.hypot(s.vx(),s.vz())>=Math.max(.3,minimumSpeed)) {exitComplete=true;break;}
+            }
         }
-        // A short pulse ending before an uphill contact must leave enough energy to reach that
-        // contact/exit, not just enough to hover over the earlier, lower section of the slope.
-        if(r.aim!=null && !passed) goal=Math.max(goal,Math.max(r.height,r.exit==null?r.height:r.exit.y));
-        return new Forecast(true,energy(s,goal,r.gravity)-0.5*minimumSpeed*minimumSpeed,passed,bestMiss);
+        var result=envelope.result();
+        if(attackBundle && (hitTick<0 || !exitComplete))
+            return new Forecast(false,result.worstReserve(),passed,bestMiss,hitTick<0?"contact_unreachable":"exit_incomplete",result);
+        return new Forecast(true,result.worstReserve(),passed,bestMiss,"clear",result);
     }
     public static double feedbackPitch(FlightPrediction.State s,double goal,double goalVelocity,double gravity,boolean boost) {
         if (boost) {
@@ -281,8 +308,8 @@ public final class GlidePlanner {
     /** Forecast the coast after this finite pulse. Never treat a firework as persistent thrust. */
     public static double coastReserve(FlightPrediction.State start, double recoveryY, double gravity, int boostTicks) {
         var s=start;
-        int horizon=Math.min(90,Math.max(24,boostTicks+16));
-        for (int tick=0;tick<horizon;tick++) s=FlightPrediction.step(s,start.yaw(),-8,5,3,6,gravity,tick<boostTicks);
+        int horizon=Math.min(90,Math.max(24,boostTicks+start.rocketDelay()+16));
+        for (int tick=0;tick<horizon;tick++) s=FlightPrediction.step(s,start.yaw(),-8,5,3,6,gravity,RocketProfile.active(tick,boostTicks,start));
         return energy(s,recoveryY,gravity)-0.5*0.65*0.65;
     }
 }

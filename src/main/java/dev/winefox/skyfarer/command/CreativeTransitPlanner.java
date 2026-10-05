@@ -23,7 +23,7 @@ public final class CreativeTransitPlanner {
         speed=Math.min(speed,Math.max(.25,(targetDistance-DispatchPolicy.CREATIVE_HANDOFF_RANGE)*.65));
         // Shorter steps deal with new obstacles or chunk activation latency; never jump an unchecked gap.
         for(int attempt=0;attempt<12;attempt++,speed*=.5){
-            var input=new FlightPrediction.State(state.x(),state.y(),state.z(),dx/length*speed,dy/length*speed,dz/length*speed,yaw,pitch);
+            var input=new FlightPrediction.State(state.x(),state.y(),state.z(),dx/length*speed,dy/length*speed,dz/length*speed,yaw,pitch,state.physics());
             var next=FlightPrediction.step(input,yaw,pitch,180,90,90,gravity,false);
             if(swept.clear(input,next,.15,.12))return new Motion(input,next,yaw,pitch,speed/BASE_SPEED);
         }

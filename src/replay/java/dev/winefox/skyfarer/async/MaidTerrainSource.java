@@ -10,6 +10,7 @@ public final class MaidTerrainSource implements PlannerSession.Source {
     private int reads;
     public int lastReads(){return reads;}
     public MaidTerrainSource(EntityMaid maid){this.maid=maid;}
+    public Object levelIdentity(){return maid.level();}
     public String dimension(){return maid.world.dimension().location();}
     public CollisionSnapshot.Cell capture(long key){
         if(Thread.currentThread()!=owner)throw new AssertionError("World read from worker");

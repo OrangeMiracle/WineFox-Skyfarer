@@ -103,7 +103,7 @@ public final class ControllerReplayChecks {
                 }
                 maid.usedTicks++;
             }
-            boolean powered=world.rockets.stream().anyMatch(r->r.alive);
+            boolean powered=world.rockets.stream().anyMatch(r->r.alive&&r.createdAt<world.time);
             Vec3 next;
             if(maid.glide) {
                 var s=state(maid);var moved=FlightPrediction.step(s,maid.yaw,maid.pitch,180,90,90,.08,powered);
@@ -115,7 +115,7 @@ public final class ControllerReplayChecks {
                 maid.getEyePosition(),next.add(0,maid.getEyeHeight(),0),0,0)) {failure="body corridor collision during "+state;break;}
             if(next.y<=ground) {next=new Vec3(next.x,ground,next.z);maid.ground=true;maid.glide=false;maid.velocity=Vec3.ZERO;}
             maid.pos=next;
-            for(var r:world.rockets)if(r.alive&&++r.life>r.lifetime)r.discard();
+            for(var r:world.rockets)if(r.alive&&r.createdAt<world.time&&++r.life>r.lifetime)r.discard();
             maxHeight=Math.max(maxHeight,maid.getY());maxRadius=Math.max(maxRadius,maid.pos.horizontalDistance());
             var debug=controller.debugSnapshot();
             trace.add(String.format(Locale.ROOT,"%d\t%s\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.2f\t%d\t%d\t%s",tick,state,maid.getX(),maid.getY(),maid.getZ(),maid.velocity.x,maid.velocity.y,maid.velocity.z,maid.pitch,maid.inventory.count,hits,debug.getString("reason")));

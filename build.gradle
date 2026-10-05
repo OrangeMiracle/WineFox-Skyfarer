@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 group = 'dev.winefox.skyfarer'
-version = '0.6.0'
+version = '0.6.1'
 base { archivesName = 'winefox_skyfarer-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
@@ -35,6 +35,19 @@ tasks.register('verifyFlightPrediction', JavaExec) {
     mainClass = 'dev.winefox.skyfarer.flight.FlightPredictionChecks'
 }
 tasks.named('check') { dependsOn verifyFlightPrediction }
+tasks.register('verifyVanillaPhysics', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.VanillaPhysicsChecks'
+    systemProperty 'log4j.configurationFile', file('tools/offline-log4j2.xml').toURI().toString()
+}
+tasks.named('check') { dependsOn verifyVanillaPhysics }
+tasks.register('verifyAttackEnvelope', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.AttackEnvelopeChecks'
+}
+tasks.named('check') { dependsOn verifyAttackEnvelope }
 tasks.register('verifyAttackPolicy', JavaExec) {
     dependsOn verificationClasses
     classpath = sourceSets.verification.runtimeClasspath

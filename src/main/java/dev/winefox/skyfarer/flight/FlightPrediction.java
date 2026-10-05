@@ -3,7 +3,12 @@ package dev.winefox.skyfarer.flight;
 /** Vanilla Elytra/attached-firework equations used only for prediction, never to move an entity. */
 public final class FlightPrediction {
     private FlightPrediction() {}
-    public record State(double x, double y, double z, double vx, double vy, double vz, double yaw, double pitch) {}
+    public record State(double x, double y, double z, double vx, double vy, double vz, double yaw, double pitch, PhysicsContext physics, int rocketDelay) {
+        public State(double x,double y,double z,double vx,double vy,double vz,double yaw,double pitch) { this(x,y,z,vx,vy,vz,yaw,pitch,null,0); }
+        public State(double x,double y,double z,double vx,double vy,double vz,double yaw,double pitch,PhysicsContext physics) { this(x,y,z,vx,vy,vz,yaw,pitch,physics,0); }
+        public State withPhysics(PhysicsContext context) { return new State(x,y,z,vx,vy,vz,yaw,pitch,context,rocketDelay); }
+        public State withRocketDelay(int ticks) { return new State(x,y,z,vx,vy,vz,yaw,pitch,physics,Math.clamp(ticks,0,1)); }
+    }
     public record Choice(double pitch, double minimumY, double cost) {}
     /** Native Spears segment: half mob reach, real margin and forward-motion extension. */
     public record Aim(double x, double bottom, double z, double halfWidth, double height,
@@ -35,27 +40,7 @@ public final class FlightPrediction {
     public static State step(State s, double yaw, double pitch, double yawRate, double pitchRate, double pullRate, double gravity, boolean rocket) {
         yaw = turn(s.yaw, yaw, yawRate);
         pitch = turn(s.pitch, pitch, pitch < s.pitch ? pullRate : pitchRate);
-        double p = Math.toRadians(pitch), a = Math.toRadians(yaw), cos = Math.cos(p);
-        double lx = -Math.sin(a) * cos, ly = -Math.sin(p), lz = Math.cos(a) * cos;
-        double horizontalLook = Math.hypot(lx, lz), speed = Math.hypot(s.vx, s.vz), lift = cos * cos;
-        double vx = s.vx, vy = s.vy + gravity * (-1 + lift * 0.75), vz = s.vz;
-        if (vy < 0 && horizontalLook > 0) {
-            double conversion = -vy * 0.1 * lift;
-            vx += lx / horizontalLook * conversion; vy += conversion; vz += lz / horizontalLook * conversion;
-        }
-        if (pitch < 0 && horizontalLook > 0) {
-            double conversion = speed * -Math.sin(p) * 0.04;
-            vx -= lx / horizontalLook * conversion; vy += conversion * 3.2; vz -= lz / horizontalLook * conversion;
-        }
-        if (horizontalLook > 0) {
-            vx += (lx / horizontalLook * speed - vx) * 0.1;
-            vz += (lz / horizontalLook * speed - vz) * 0.1;
-        }
-        vx *= 0.99; vy *= 0.98; vz *= 0.99;
-        double x = s.x + vx, y = s.y + vy, z = s.z + vz;
-        // The attached rocket spawned after the maid ticks after her movement.
-        if (rocket) { vx = vx * 0.5 + lx * 0.85; vy = vy * 0.5 + ly * 0.85; vz = vz * 0.5 + lz * 0.85; }
-        return new State(x, y, z, vx, vy, vz, yaw, pitch);
+        return VanillaElytra.step(s,yaw,pitch,gravity,rocket);
     }
     public static double pathHeight(double remaining, double levelHeight, double slope, double flareDistance) {
         if(flareDistance==-2) { double d=Math.max(0,remaining); return levelHeight+slope*d*d/(d+8); }
@@ -87,7 +72,7 @@ public final class FlightPrediction {
                         turn(s.pitch, candidate, candidate < s.pitch ? pullRate : pitchRate));
                     bestMiss = Math.min(bestMiss, aim.missSquared(aimed, tick));
                 }
-                s = step(s, yaw, candidate, yawRate, pitchRate, pullRate, gravity, tick < rocketTicks);
+                s = step(s, yaw, candidate, yawRate, pitchRate, pullRate, gravity, RocketProfile.active(tick,rocketTicks,initial));
                 minimum = Math.min(minimum, s.y);
                 double remaining = distance - ((s.x - initial.x) * dx + (s.z - initial.z) * dz);
                 double goal = pathHeight(remaining, levelHeight, slope, flareDistance);

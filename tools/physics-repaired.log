@@ -1,0 +1,64 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :processResources
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyAttackEnvelope
+Attack envelope checks passed: downhill/uphill, cliff, translation, low/high speed, long approach, coast/inventory/12 lifetimes, active expiry, exit reserve, horizon and physics veto.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyGlideCorridor
+144 new-planner attack/charge replays passed.
+48 closed-loop corridor replays and swept-body/energy checks passed; Minecraft was not launched.
+
+> Task :compileControllerReplay
+
+> Task :verifyAsyncPlanning
+Async boundary checks passed: immutable DTOs, world-border keys, strict unknown cells, main-only capture, identical math, generation/target/config/dimension invalidation, cancellation, bounded queues and restart.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyAsyncSweep
+Snapshot curve=RIGHT_ARC contact=54
+tick 0 pending gen=2 cells=0 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=0
+tick 1 pending gen=2 cells=100 requested=138 jobs=1 cache=0 queue=1 cache=0 stale=0 failed=0 captureMs=0 workerMs=40
+tick 2 pending gen=2 cells=200 requested=54 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=48
+tick 3 ready=true gen=2 cells=254 requested=0 jobs=0 cache=1 queue=0 cache=1 stale=0 failed=0 captureMs=0 workerMs=55
+review=false hit=true contact=65 last=State[x=1.6514504812278745, y=10.083735267639568, z=8.941191037468837, vx=-0.09816358033251182, vy=-0.22015945867670728, vz=0.28012335114475573, yaw=11.628999710083008, pitch=-44.427005767822266, physics=null, rocketDelay=0]
+
+> Task :verifyCombatEntries
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+low-energy-summit hit=164 landed=238 upward=false maxSlowTicks=0 rockets=3
+upward-entry hit=141 landed=240 upward=true maxSlowTicks=0 rockets=2
+
+> Task :verifySweepingAttacks
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Continuous cubic attack, C1 contact/exit, occluded approach and final contact/body rejection passed.
+
+> Task :verifySweepingReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Occluded hillside mirror=1 curved hit=53 continued exit=true landed=142
+Occluded hillside mirror=-1 curved hit=53 continued exit=true landed=139
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+summit-cycle attack=102 hits=1 landed=205 peak=17.60 radius=47.36 rockets=3
+Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 1m 50s
+13 actionable tasks: 12 executed, 1 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

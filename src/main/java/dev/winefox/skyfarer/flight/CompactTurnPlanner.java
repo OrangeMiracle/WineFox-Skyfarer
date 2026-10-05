@@ -35,15 +35,15 @@ public final class CompactTurnPlanner {
         Plan best=null;
         for(double brake:new double[]{-65,-55,-40,-25}) {
             var s=start; double cost=0,excursion=0; Command first=null; Goal active=g;
-            int baseline=Math.max(32,rocketTicks+16);
+            int baseline=Math.max(32,rocketTicks+start.rocketDelay()+16);
             if(baseline>96) return null;
             int horizon=PredictionHorizon.ticks(baseline);
             boolean safe=true;
             for(int tick=0;tick<horizon;tick++) {
                 if(active.readyInward(s.x(),s.z())) active=active.inward();
-                var c=command(s,active,gravity,tick<rocketTicks,rate,brake);
+                var c=command(s,active,gravity,RocketProfile.active(tick,rocketTicks,start),rate,brake);
                 if(first==null) first=c;
-                var next=FlightPrediction.step(s,c.yaw,c.pitch,c.yawRate,c.pitchRate,c.pitchRate,gravity,tick<rocketTicks);
+                var next=FlightPrediction.step(s,c.yaw,c.pitch,c.yawRate,c.pitchRate,c.pitchRate,gravity,RocketProfile.active(tick,rocketTicks,start));
                 double away=Math.hypot(next.x()-g.originX,next.z()-g.originZ);
                 if(away>active.radius || !space.clear(s,next,.04,.04)) {
                     if(tick<baseline)safe=false;else cost+=PredictionHorizon.futureRisk(tick,baseline);
@@ -62,10 +62,10 @@ public final class CompactTurnPlanner {
     public static java.util.List<GlidePlanner.TracePoint> trace(FlightPrediction.State start,Goal goal,Plan plan,int rocket,double gravity,double rate,GlidePlanner.Corridor space) {
         var path=new java.util.ArrayList<GlidePlanner.TracePoint>();var state=start;var active=goal;
         path.add(new GlidePlanner.TracePoint(state,.04,.04));
-        for(int tick=0;tick<PredictionHorizon.ticks(Math.max(32,rocket+16));tick++) {
+        for(int tick=0;tick<PredictionHorizon.ticks(Math.max(32,rocket+start.rocketDelay()+16));tick++) {
             if(active.readyInward(state.x(),state.z()))active=active.inward();
-            var c=command(state,active,gravity,tick<rocket,rate,plan.brake);
-            var next=FlightPrediction.step(state,c.yaw,c.pitch,c.yawRate,c.pitchRate,c.pitchRate,gravity,tick<rocket);
+            var c=command(state,active,gravity,RocketProfile.active(tick,rocket,start),rate,plan.brake);
+            var next=FlightPrediction.step(state,c.yaw,c.pitch,c.yawRate,c.pitchRate,c.pitchRate,gravity,RocketProfile.active(tick,rocket,start));
             path.add(new GlidePlanner.TracePoint(next,.04,.04));
             if(!space.clear(state,next,.04,.04))break;state=next;
         }return path;
@@ -73,7 +73,7 @@ public final class CompactTurnPlanner {
     public static double pulseCost(FlightPrediction.State s,Goal goal,int duration,double gravity,double rate,GlidePlanner.Corridor space) {
         double cost=0;
         for(int ticks=RocketProfile.minimumTicks(duration);ticks<=RocketProfile.maximumTicks(duration);ticks++) {
-            var p=choose(s,goal,ticks,gravity,rate,space);
+            var p=choose(s.withRocketDelay(1),goal,ticks,gravity,rate,space);
             if(p==null) return Double.POSITIVE_INFINITY;
             cost+=p.cost;
         }

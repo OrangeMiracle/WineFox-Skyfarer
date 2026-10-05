@@ -1,6 +1,6 @@
 # 异步规划与线程边界
 
-核对日期：2026-10-05。实现基线：Gradle 项目版本 0.6.0。本文描述当前源码；元数据版本不一致见 [验证文档](VALIDATION.md#7-当前构建证据与已知缺口)。
+核对日期：2026-10-05。实现基线：Gradle 项目版本 0.6.1。本文描述当前源码；物理快照依据见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)，构建证据见 [验证文档](VALIDATION.md#7-当前构建证据与已知缺口)。
 
 本文是工程实现的一部分。修改调度、快照、任务类型、缓存、线程边界或结果应用规则时，必须同步更新本文及 [项目索引](PROJECT_INDEX.md)。源码是最终权威，发现文档冲突须修正文档。飞行行为与状态转换见 [飞控总览](FLIGHT_CONTROL_OVERVIEW.md)，配置/调试入口见 [配置与调试参考](CONFIG_DEBUG_REFERENCE.md)。
 
@@ -51,18 +51,21 @@
 | --- | --- | --- |
 | `Glide` | `GlidePlanner.choose`、forecast、trace，沿轨迹额外评估狭窄净空 | `GlideResult` 包含姿态、预测、轨迹和净空成本；调试复用同一轨迹 |
 | `Pulse` | 检查指定烟花 Flight 的完整随机寿命区间 | `PulseResult` 包含成本/原因和按实际寿命索引的已验证首步计划；点火可直接使用该姿态 |
+| `AttackCertificate` | 普通路线承诺前完整 Approach→Strike→Exit 物理认证 | 新前摇、命中速度与快照射线、身体通道、有限推进及无动力离场；返回最差 reserve 包络，160-tick 上限耗尽则拒绝 |
 | `Compact` | 紧凑爬升减速转向选择，或该转向下补能成本 | 转向方案或有限成本；执行时用当前状态重算便宜的首步指令 |
 | `Launch` | 地面/水面起飞候选、剩余推进重评估、起飞补能验证 | `SurfaceLaunchPlanner.Plan` / 成本；`wet` 为数值模式标志 |
 | `Slope` | `SlopeSampler.sample`，真实支撑面近/远坡度拟合 | `Estimate`；未知列不凭空产生坡面 |
 | `Lane` | `AttackLanePlanner` 的直线、坡面、竖向曲线入口与出口几何 | 主线程只接收并设置 lane/entry/exit 等元数据 |
 | `Exit` | `AttackExitPlanner` 离场候选与安全评分 | `Choice`；不在 Worker 切换状态 |
 | `Chain` | 主攻击接触预测或次要目标二段追击 | 数值接触状态 / 追击计划；实体筛选和实际目标引用仍在主线程 |
-| `Sweep` | 无 path 时生成连续转弯候选；有 path 时回放当前曲线跟踪 | `Selection` 或 `Rollout`；命中段射线查询数值碰撞盒 |
+| `Sweep` | 无 path 时生成连续转弯候选；有 path 时回放当前曲线跟踪 | `Selection` 或 `Rollout`；命中段射线查询数值碰撞盒。`ignition` 冻结拟点火条件，Worker 内追加首 tick 等待；候选仍需 Rejoin 的完整寿命认证 |
 | `SweepPulse` | 将一枚火箭所有 12 种随机寿命在一个任务中评估 | 任一寿命不安全/不能命中则不可行，否则按平均成本及推进时长评分；避免每种寿命分别排队造成饥饿 |
 | `Rejoin` | 用当前运动状态重新验证候选曲线接入；可选择增加出口净空和经验证的库存火箭 | `RejoinResult`；`duration=-1` 表示不新增火箭；此后仍由主线程实际点火 |
 | `Bounded` | 给上述任务加数值水平导航范围 | 不含 live 世界 callback |
 
-任务 slot 不是单纯“女仆 UUID”：包含类型、变体及选项。`Pulse` 的出口位置、`Chain` 的目标位置、`Launch/Compact` 的火箭种类、`Sweep` 的候选/跟踪区别参与区分，防止同轮多个候选互相取消。更改 slot 时要检查“同类多个合法请求并存”及重复提交是否受限。
+任务 slot 不是单纯“女仆 UUID”：包含类型、变体及选项。`Pulse` 的出口位置、`Chain` 的目标位置、`Launch/Compact` 的火箭种类、`Sweep` 的候选/跟踪、活动推进/拟点火及拟用寿命区别参与区分，防止同轮多个候选互相取消。更改 slot 时要检查“同类多个合法请求并存”及重复提交是否受限。
+
+`Rejoin` 按不可变 Path 的身份区分 slot，让失败的无动力提案与拟点火替代路线能够并存认证。否则逐 tick 重试旧提案会取消新的认证。仍受同一 24-slot/共享队列上限和严格兼容条件约束；无动力候选已取得但 Rejoin 明确失败时，控制器也可申请拟点火几何。
 
 ## 4. 共享池、背压与取消
 
@@ -122,7 +125,9 @@
 
 ## 6. Generation、旧结果与缓存
 
-`PlannerSession.begin(tick, phase, target, revision, horizon)` 比较逻辑阶段、目标和配置版本。不相同就增加 generation，取消 pending，清除结果缓存和几何 seed；维度改变还清空地形 cell/requested/frozen map。session/source 有创建线程断言。
+`PlannerSession.begin(tick, phase, target, revision, horizon)` 比较逻辑阶段、目标和配置版本。不相同就增加 generation，取消 pending，清除结果缓存和几何 seed；维度或 **Level 引用身份**改变还清空地形 cell/requested/frozen map。同名维度的新世界不能复用旧快照。session/source 有创建线程断言。
+
+`MaidTerrainSource` 经主线程 `PhysicsProvider` 捕获 gravity/缓降，按 entity、Level、dimension、游戏 tick 缓存，同 tick 只读一次。Worker 只接收 `State.physics` 数值 DTO 与 `rocketDelay`，不会收到 Provider/身份引用。物理改变取消旧 generation；正常缓降倒计时按任务年龄比较。读取失败回退 vanilla，close 释放引用，重新加入世界按新身份采集。每个预测 tick 只推进冻结 DTO。
 
 空战的逻辑阶段有意合并：
 
@@ -141,11 +146,11 @@
 | 坡面 `Slope` | 最多 20 ticks；目标采样中心误差 ≤0.5 格、采样半径/步长一致 |
 | 候选几何 `Sweep(path=null)` | 最多 12 ticks；位置差 ≤16 格、航向差 ≤90°；作为几何候选，不能直接承诺攻击 |
 | 几何 seed | 在兼容的候选 slot 内固定最多 12 ticks |
-| `Rejoin` 接触认证 | 在一般门槛之上，年龄 ≤2 ticks，位置差 ≤2.5 格，yaw/pitch 差各 ≤8°，速度 L1 差 ≤0.35 |
+| `Rejoin` / `AttackCertificate` 接触认证 | 在一般门槛之上，年龄 ≤2 ticks，位置差 ≤2.5 格，yaw/pitch 差各 ≤8°，速度 L1 差 ≤0.35 |
 | Pending 复用 | 6 ticks 内且兼容；否则取消并换新 |
 | Debug trace | 仅读 generation 相同、年龄 ≤8 ticks 的完成缓存，不新提交预测 |
 
-上述 age 从 **提交时刻** 算，不能从 Worker 完成时刻重新延长。cache 最多 96 条。普通 Glide 返回兼容缓存时会滚动提交下一次刷新，避免一个姿态僵持完整 4 ticks。
+上述 age 从 **提交时刻** 算，不能从 Worker 完成时刻重新延长。还比较按年龄推进后的 PhysicsContext 和启动延迟；Glide 请求不能跨“仍有火箭/已无火箭”复用。cache 最多 96 条。普通 Glide 返回兼容缓存时会滚动提交下一次刷新，避免一个姿态僵持完整 4 ticks。
 
 `PlanningTask.compatible` 还比较目标位置、目标速度、前摇、攻击范围、重力/转向率/碰撞余量等相关字段。例如 Aim 位置容差 1 格、速度每轴 0.2、前摇 4 ticks；不是只看 UUID。Compact 的当前恢复原点允许 2 格小幅变化，避免每 tick 移动让补能结果永远失配；远距离传送仍被拒绝。
 
@@ -161,6 +166,7 @@
 - 连续转弯候选等待时，控制器最多 8 ticks 保持向目标的温和转向/当前高度，并继续管理能量；pending 每 tick 领取，完成搜索后再采用 12-tick 重评估节奏。
 - 等待 ATTACK_EXIT 方案时先用反馈俯仰朝出口/较高目标控制，避免继续沿用上一阶段俯冲姿态。
 - 补能通过完整寿命认证后可缓存每种实际寿命的首步姿态，主线程生成烟花后立即匹配使用，减少“新火箭配旧姿态”。
+- 普通 `AttackCertificate` 等待时返回 `safe=false/async_pending`，拒绝承诺进攻，但继续本 tick 的普通引导和补能更新；不能直接抛 Pending 跳过控制，沿用高速赶路交接时的下降姿态。
 
 ## 8. 必须保留的主线程工作与限制
 

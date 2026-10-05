@@ -1,0 +1,141 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Downloading https://services.gradle.org/distributions/gradle-9.2.1-bin.zip
+............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%.............100%
+
+Welcome to Gradle 9.2.1!
+
+Here are the highlights of this release:
+ - Windows ARM support
+ - Improved publishing APIs
+ - Better guidance for dependency verification failures
+
+For more details see https://docs.gradle.org/9.2.1/release-notes.html
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Task :createMinecraftArtifacts
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Loaded 145 artifacts from F:\AI\AI_Project\.....\build\tmp\createMinecraftArtifacts\nfrt_artifact_manifest.properties
+*** Started working on downloadJson
+  DL    https://piston-meta.mojang.com/mc/game/version_manifest_v2.json
+  DL    https://piston-meta.mojang.com/v1/packages/22a1966494dfa4eeb5ee778c8e6ed5b774839582/1.21.1.json
+ DONE  Completed downloadJson in 0.43s
+*** Started working on downloadServer
+*** Started working on downloadClient
+*** Started working on downloadClientMappings
+  DL    https://piston-data.mojang.com/v1/objects/2244b6f072256667bcd9a73df124d6c58de77992/client.txt
+  DL    https://piston-data.mojang.com/v1/objects/59353fb40c36d304f2035d51e7d6e6baa98dc05c/server.jar
+  DL    https://piston-data.mojang.com/v1/objects/30c73b1c5da787909b2f73340419fdf13b9def88/client.jar
+ DONE  Completed downloadClientMappings in 0.50s
+*** Started working on mergeMappings
+ RUN   Running external tool net.neoforged.installertools:installertools:2.1.2:fatjar
+ DONE  Completed downloadServer in 1.40s
+ DONE  Completed downloadClient in 1.47s
+*** Started working on extractServer
+ RUN   Running external tool net.neoforged.installertools:installertools:2.1.2:fatjar
+*** Started working on stripClient
+ DONE  Completed extractServer in 0.53s
+*** Started working on stripServer
+ DONE  Completed mergeMappings in 1.66s
+ DONE  Completed stripServer in 1.07s
+ DONE  Completed stripClient in 1.70s
+*** Started working on merge
+ RUN   Running external tool net.neoforged:mergetool:2.0.3:fatjar
+ DONE  Completed merge in 1.95s
+*** Started working on rename
+ RUN   Running external tool net.neoforged:AutoRenamingTool:2.0.3:all
+ DONE  Completed rename in 2.73s
+*** Started working on decompile
+ RUN   Running external tool org.vineflower:vineflower:1.10.1
+ DONE  Completed decompile in 16.31s
+*** Started working on inject
+ DONE  Completed inject in 1.62s
+*** Started working on patch
+ RUN   Running external tool io.codechicken:DiffPatch:2.0.0.36:all
+ DONE  Completed patch in 6.43s
+*** Started working on applyNeoforgePatches
+ RUN   Running external tool io.codechicken:DiffPatch:2.0.0.36:all
+ DONE  Completed applyNeoforgePatches in 3.03s
+*** Started working on transformSources
+ RUN   Running external tool net.neoforged.jst:jst-cli-bundle:2.0.11
+ DONE  Completed transformSources in 12.26s
+*** Started working on recompile
+ 110 items on the compile classpath
+ 0 items on the sourcepath
+*** Started working on sourcesWithNeoForge
+ Compiling 5364 source files
+ DONE  Completed sourcesWithNeoForge in 2.81s
+Copied 0 resource files
+ DONE  Completed recompile in 16.71s
+*** Started working on compiledWithNeoForge
+ DONE  Completed compiledWithNeoForge in 4.19s
+*** Started working on sourcesAndCompiledWithNeoForge
+ DONE  Completed sourcesAndCompiledWithNeoForge in 1.65s
+Total runtime: 80.81s
+
+
+> Task :compileJava
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\SweepingAttackPlanner.java:14: 错误: 找不到符号
+            double along=nearest(p,exiting);int index=0;
+                         ^
+  符号:   方法 nearest(Point,boolean)
+  位置: 类 Point
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\SweepingAttackPlanner.java:15: 错误: 找不到符号
+            while(index+1<lengths.length&&lengths[index+1]<=along)index++;
+                          ^
+  符号:   变量 lengths
+  位置: 类 Point
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\SweepingAttackPlanner.java:15: 错误: 找不到符号
+            while(index+1<lengths.length&&lengths[index+1]<=along)index++;
+                                          ^
+  符号:   变量 lengths
+  位置: 类 Point
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\SweepingAttackPlanner.java:16: 错误: 找不到符号
+            return remainingHeights[index];
+                   ^
+  符号:   变量 remainingHeights
+  位置: 类 Point
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+4 个错误
+
+> Task :compileJava FAILED
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler output below.
+  注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\SweepingAttackPlanner.java:15: 错误: 找不到符号
+              while(index+1<lengths.length&&lengths[index+1]<=along)index++;
+                            ^
+    符号:   变量 lengths
+    位置: 类 Point
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\SweepingAttackPlanner.java:15: 错误: 找不到符号
+              while(index+1<lengths.length&&lengths[index+1]<=along)index++;
+                                            ^
+    符号:   变量 lengths
+    位置: 类 Point
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\SweepingAttackPlanner.java:16: 错误: 找不到符号
+              return remainingHeights[index];
+                     ^
+    符号:   变量 remainingHeights
+    位置: 类 Point
+  注: 某些输入文件使用或覆盖了已过时的 API。
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\SweepingAttackPlanner.java:14: 错误: 找不到符号
+              double along=nearest(p,exiting);int index=0;
+                           ^
+    符号:   方法 nearest(Point,boolean)
+    位置: 类 Point
+  4 个错误
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to generate a Build Scan (powered by Develocity).
+
+BUILD FAILED in 2m 22s
+2 actionable tasks: 2 executed

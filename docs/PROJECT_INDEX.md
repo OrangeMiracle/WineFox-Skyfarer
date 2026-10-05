@@ -1,6 +1,6 @@
 # WineFox: Skyfarer 工程总索引
 
-这是**项目总索引、当前项目事实总览和新开发会话的第一阅读入口**，面向维护者与后续 Codex。玩家安装与使用介绍保留在 [README](../README.md)。本文按 2026-10-05 的源码核对；构建版本为 **0.6.0**，版本元数据不一致见下文。
+这是**项目总索引、当前项目事实总览和新开发会话的第一阅读入口**，面向维护者与后续 Codex。玩家安装与使用介绍保留在 [README](../README.md)。本文按 2026-10-05 的源码核对；构建版本为 **0.6.1**。
 
 ## 先读：长期维护规则
 
@@ -17,7 +17,7 @@
 新会话按以下顺序阅读：
 
 1. 首先阅读本文件。
-2. 涉及飞控、攻击或状态机，再读 [FLIGHT_CONTROL_OVERVIEW](FLIGHT_CONTROL_OVERVIEW.md)。
+2. 涉及飞控、攻击或状态机，再读 [FLIGHT_CONTROL_OVERVIEW](FLIGHT_CONTROL_OVERVIEW.md)；物理公式、采集生命周期和完整路线认证见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)。
 3. 涉及 Snapshot、Worker、Planner、缓存或性能，再读 [ASYNC_PLANNING](ASYNC_PLANNING.md)。
 4. 涉及参数、命令、指挥镜、HUD 或兼容层，再读 [CONFIG_DEBUG_REFERENCE](CONFIG_DEBUG_REFERENCE.md)；验证与复现看 [VALIDATION](VALIDATION.md)。
 5. 需要历史原因，再查 [buildHistory](../buildHistory.md)。历史章节描述当时版本，不是当前规范。
@@ -35,8 +35,7 @@
 | Java / 构建 | Java 21；Gradle Wrapper；ModDev 插件 2.0.148；[build.gradle](../build.gradle)、[gradle.properties](../gradle.properties) |
 | 必需依赖 | `libs/touhoulittlemaid-1.5.3-neoforge+mc1.21.1.jar`、`libs/spear-backport-neoforge-1.8.0-1.21.1.jar` |
 | 可选兼容 | YSM；`tools/ysm-reference.jar` 只用于编译参考；兼容检查针对其 2.6.5 接口，不是必需依赖 |
-| 构建版本 | `build.gradle` 的 `version='0.6.0'`，Jar Manifest 的 `Implementation-Version` 来自它 |
-| **版本已知不一致** | [neoforge.mods.toml](../src/main/resources/META-INF/neoforge.mods.toml) 仍写死 `version="0.5.4"`；当前构建脚本没有资源版本替换。不能声称所有元数据都已同步到 0.6.0；本次文档整理不改生产文件 |
+| 构建版本 | `build.gradle` 的 `version='0.6.1'`，Jar Manifest 的 `Implementation-Version` 来自它；[neoforge.mods.toml](../src/main/resources/META-INF/neoforge.mods.toml) 同步为 0.6.1。修正了此前 0.6.0/0.5.4 不一致；发版仍须核对实际 Jar |
 | 运行依赖范围 | 元数据限定 MC `[1.21.1]`、NeoForge `[21.1.250,21.2)`、TLM `[1.5.3,1.6)`、Spears `[1.8.0,1.9)`，均为 BOTH；范围声明不等于每个版本均已实测 |
 | 许可证 | [LGPL-3.0-only](../LICENSE) |
 
@@ -121,7 +120,7 @@ Java 包根为 `src/main/java/dev/winefox/skyfarer/`。目录名称不能直接�
 | --- | --- | --- |
 | [WineFoxSkyfarer](../src/main/java/dev/winefox/skyfarer/WineFoxSkyfarer.java) | 注册物品、配置、事件、网络、票据控制器和命令 | Mod 初始化；实际事件各回到自己的游戏生命周期 |
 | [SkyfarerRuntime](../src/main/java/dev/winefox/skyfarer/runtime/SkyfarerRuntime.java) | Maid UUID / 实体 tick → 唯一控制器与当前空中控制权 | 主线程静态 Map；实体离开 release，服务器停止清空；赶路/回收先于战斗控制器 |
-| [AirCombatController](../src/main/java/dev/winefox/skyfarer/ai/AirCombatController.java) | 当前 Entity、工作/装备状态、目标与规划结果 → 姿态、物品使用、阶段迁移 | 每女仆一份；主线程。`managed` 是实际接管状态，不等同于枚举的 `controlsAir()` 推断；release 释放规划会话和推进/蓄力 |
+| [AirCombatController](../src/main/java/dev/winefox/skyfarer/ai/AirCombatController.java) | 当前 Entity、工作/装备状态、目标与规划结果 → 姿态、物品使用、阶段迁移 | 每女仆一份；主线程。`managed` 是实际接管状态，不等同于枚举的 `controlsAir()` 推断；每轮准备保留是否从下方进场，攻击仍需完整物理认证；release 释放规划会话和推进/蓄力 |
 | [TargetEvaluator](../src/main/java/dev/winefox/skyfarer/ai/TargetEvaluator.java) / [TargetPriority](../src/main/java/dev/winefox/skyfarer/ai/TargetPriority.java) | 已加载实体、锚点、标记/上一目标/失败集合 → 有效目标与分层排名 | 前者主线程读实体与射线，后者纯比较。获取时检查可见性，已锁定接近不能每 tick 强制直视目标 |
 | [CombatAnchor](../src/main/java/dev/winefox/skyfarer/ai/CombatAnchor.java) | 指挥任务 / Home 限制中心 / 主人 → 工作中心 | 主线程；控制器在攻击周期间保存，不能因主人移动打断已承诺攻击 |
 | [SpearPassHistory](../src/main/java/dev/winefox/skyfarer/ai/SpearPassHistory.java) | 每轮主目标、命中 UUID、结算 → 去重和失败换目标记录 | 控制器所有；主线程，避免原生命中与扩展判定双击 |
@@ -132,6 +131,8 @@ Java 包根为 `src/main/java/dev/winefox/skyfarer/`。目录名称不能直接�
 | [PlannerExecutor](../src/main/java/dev/winefox/skyfarer/async/PlannerExecutor.java) | Task + Snapshot + 冻结倍率 → Ticket / Outcome | 全服共享惰性线程池；控制与几何队列分离；取消标记原子化、结果 volatile 发布，停止时清队列并中断 |
 | [PlannerSession](../src/main/java/dev/winefox/skyfarer/async/PlannerSession.java) | 主线程上下文/请求、完成票据 → 缓存、数据请求或经过验证的结果 | 每女仆/赶路会话；全服预算轮转；generation 与任务参数共同限制复用，close 清理 |
 | [GlidePlanner](../src/main/java/dev/winefox/skyfarer/flight/GlidePlanner.java) / [FlightPrediction](../src/main/java/dev/winefox/skyfarer/flight/FlightPrediction.java) | 状态、目标/路线、有限推进 → 姿态候选、物理轨迹、接触/能量预测 | 完整搜索经 Worker；少量数值反馈/单步数学仍可在主线程作即时控制 |
+| [VanillaElytra](../src/main/java/dev/winefox/skyfarer/flight/VanillaElytra.java) / [PhysicsContext](../src/main/java/dev/winefox/skyfarer/flight/PhysicsContext.java) / [PhysicsProvider](../src/main/java/dev/winefox/skyfarer/flight/PhysicsProvider.java) | 1.21.1 mapped 源码自由飞行公式；gravity/缓降冻结 DTO；实体/Level 身份绑定采集 | Provider 只在主线程；step 只读 DTO，不发明空气阻力属性 |
+| [EnergyReserveEnvelope](../src/main/java/dev/winefox/skyfarer/flight/EnergyReserveEnvelope.java) | Approach→Strike→Exit 每步未来需求与最差 reserve | Worker 中的评分/补能指标；普通 AttackCertificate 和曲线 Rejoin 的动力学认证拥有最终否决权 |
 | [SweepingAttackPlanner](../src/main/java/dev/winefox/skyfarer/flight/SweepingAttackPlanner.java) | 当前动量、接触方向、目标 → C1 连续入口/离场曲线与闭环回放 | 候选/评分/接入重验证在 Worker；当前曲线指令与进度判断是主线程轻量跟踪 |
 | [HeadingController](../src/main/java/dev/winefox/skyfarer/flight/HeadingController.java) / [FireworkManager](../src/main/java/dev/winefox/skyfarer/flight/FireworkManager.java) | 规划姿态 / 已验证寿命代价和背包 → 朝向 / 实际火箭及消耗 | 主线程；前者每 tick 起始姿态避免多次指令累加转向，后者每控制器维护活动火箭与冷却 |
 | [CommandManager](../src/main/java/dev/winefox/skyfarer/command/CommandManager.java) | 玩家标记、女仆记录、目标与区域 → 分配、赶路、战斗交接、回收 | 主线程服务；玩家退出/死亡/卸载/关服对应清理；不按所有女仆机械选列表第一项 |
@@ -220,21 +221,21 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 - HUD：状态、原因、目标、蓄力、姿态与异步指标。`captureMs` 是累计快照采集墙钟时间，`workerMs` 是各任务累计墙钟耗时，**不是 CPU profiler 结果**；`stale` 包含被失效取消的 pending，不是每 tick 过期比例。
 - 世界调试：红色目标线、蓝色引导、黄色身体预测通道、绿色入口方块与方向、青绿色拟合曲线；当前 HUD 女仆亮绿色粗透视框。不同线表示不同数据，不能用蓝色单一 waypoint 代替完整预测轨迹。
 - 指挥目标标记：普通亮红橙、创造亮紫，角框 + `▼` + 序号；穿墙简化，只有标记者可见。它和调试棒的女仆选择框是独立系统。
-- 入口命令：`./gradlew.bat build` 触发 `check` 及 22 项 verify；只编译可用 `classes`。当前环境包装脚本为 `tools/build.ps1`，参数和限制见 [验证文档](VALIDATION.md)。
-- 本次文档整理核对已有 `tools/v060-release.log`，没有重跑这些行为验证。已有全量记录包含 21 个控制器生命周期、2 个特殊攻击入口、2 个镜像山腰和 7 个赶路生命周期；不是对任意世界/模组组合的全覆盖证明。
+- 入口命令：`./gradlew.bat build` 触发 `check` 及 24 项 verify；只编译可用 `classes`。当前环境包装脚本为 `tools/build.ps1`，参数和限制见 [验证文档](VALIDATION.md)。
+- 完整验证包括 21 个控制器生命周期、2 个特殊攻击入口、2 个镜像山腰、7 个赶路生命周期，以及物理差分与包络验证；本轮实际结果与日志见 [buildHistory](../buildHistory.md)。离线通过不是对任意世界/模组组合的全覆盖证明。
 
 ## 10. 当前开发状态与限制
 
 | 状态 | 当前事实 |
 | --- | --- |
-| 已实现 | 骑空士空战、直线/曲线与坡面攻击、持续作战、指挥调度/区块票据、调试体系，以及 0.6.0 异步重计算流水线 |
+| 已实现 | 骑空士空战、直线/曲线与坡面攻击、持续作战、指挥调度/区块票据、调试体系、共享异步流水线，以及 0.6.1 mapped 物理预测/冻结上下文/全程能量包络 |
 | 正在长期维护 | 预测与实际执行一致性、取消/旧结果边界、兼容 Mixin、配置消费者、离线回放，以及这套 `docs/`；不是承诺后台另有自动维护任务 |
-| 已知问题 | 构建版本 0.6.0 与 Mod 元数据 0.5.4 不一致，现有验证未覆盖两者相等；需在后续发版修正并复核 |
+| 当前边界 | 预测不覆盖第三方 travel Mixin、外部火箭或外力；完整攻击认证时域最多 160 ticks。原生效果/实体 tick 时序与复杂模组组合仍需实机确认 |
 | 已知遗留 | 三个不驱动当前行为的配置，以及保留但当前没有普通入口的状态分支；不要为“文档看起来齐全”编造作用或自动删除兼容字段 |
 | 性能边界 | 快照约 2 ms 是全服单 tick 累计采集软预算，不包含所有 Mod 工作；即时世界查询、实体扫描和创造极高速实际位移仍在主线程。缓存可短暂陈旧，依赖验收和实时安全检查 |
 | 验证边界 | 离线世界与外部 API 是夹具，不能完全复现真实区块时序、服务端调度、碰撞形状模组或网络同步；合成负载不是 MC MSPT/GC 基准 |
 | 需要实机验证 | 异步延迟对复杂地形命中与连续作战的影响、多女仆 MSPT/内存/GC、区块加载/卸载/回家竞态、高速赶路、YSM 各模型视觉与客户端同步 |
-| 暂时不处理 | 本次只整理工程知识，不调整飞控、修复版本元数据、发布新 Jar、添加配方、安装或启动游戏；没有据此宣布所有历史行为问题已被实机验证解决 |
+| 暂时不处理 | 不新增配方、不安装或启动游戏，不在本轮构造第三方物理 Mod 的专用集成；没有据此宣布所有历史行为问题已被实机验证解决 |
 
 不要把用户对上一版本的良好体验或单个回放的命中数写成全局成功率。也不要把历史日志中的失败当作当前仍稳定存在的故障；先定位代码版本、配置、场景和真正完成的验证任务。
 

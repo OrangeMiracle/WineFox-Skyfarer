@@ -22,7 +22,7 @@ public final class CombatEntryReplayChecks {
         for(int tick=0;tick<800;tick++){
             world.advance(tick);controller.tick();
             var v=maid.velocity;var state=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.yaw,maid.pitch);
-            boolean powered=world.rockets.stream().anyMatch(r->r.alive);
+            boolean powered=world.rockets.stream().anyMatch(r->r.alive&&r.createdAt<world.time);
             if(controller.spearAttackActive()&&target.alive){
                 upward|=maid.getEyeY()<target.getY()&&v.y>.05&&maid.pitch<0;
                 slow=!powered&&v.horizontalDistance()<.45&&maid.distanceTo(target)>8?slow+1:0;maxSlow=Math.max(maxSlow,slow);
@@ -37,7 +37,7 @@ public final class CombatEntryReplayChecks {
             else if(!maid.ground){next=maid.pos.add(maid.velocity);maid.velocity=new Vec3(v.x*.91,(v.y-.08)*.98,v.z*.91);}else next=maid.pos;
             double ground=world.ground(next.x,next.z,next.y+2);
             if(Double.isFinite(ground)&&next.y<=ground){next=new Vec3(next.x,ground,next.z);maid.ground=true;maid.glide=false;maid.pose=Pose.STANDING;maid.velocity=Vec3.ZERO;}else maid.ground=false;
-            maid.pos=next;for(var rocket:world.rockets)if(rocket.alive&&++rocket.life>rocket.lifetime)rocket.discard();
+            maid.pos=next;for(var rocket:world.rockets)if(rocket.alive&&rocket.createdAt<world.time&&++rocket.life>rocket.lifetime)rocket.discard();
             if(hit>=0&&maid.ground&&controller.state()==AirCombatState.GROUNDED){landed=tick;break;}
         }
         try{java.nio.file.Files.createDirectories(java.nio.file.Path.of("build/reports/controller-replay"));java.nio.file.Files.write(java.nio.file.Path.of("build/reports/controller-replay/"+name+".events.log"),ReplayWorld.events);}catch(java.io.IOException e){throw new RuntimeException(e);}

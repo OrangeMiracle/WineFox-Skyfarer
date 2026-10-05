@@ -54,17 +54,22 @@ public final class DispatchReplayChecks {
             if(maid.using)maid.usedTicks++;
             var before=state(maid);Vec3 next;
             if(maid.glide) {
-                var s=FlightPrediction.step(before,maid.yaw,maid.pitch,180,90,90,.08,world.rockets.stream().anyMatch(r->r.alive));
+                var s=FlightPrediction.step(before,maid.yaw,maid.pitch,180,90,90,.08,world.rockets.stream().anyMatch(r->r.alive&&r.createdAt<world.time));
                 next=new Vec3(s.x(),s.y()-maid.getEyeHeight(),s.z());maid.velocity=new Vec3(s.vx(),s.vy(),s.vz());
             } else if(!maid.ground){next=maid.pos.add(maid.velocity);maid.velocity=new Vec3(maid.velocity.x*.91,(maid.velocity.y-.08)*.98,maid.velocity.z*.91);}
             else next=maid.pos;
             double floor=snow?.125:0;
             if(next.y<=floor){
-                require(!maid.glide||controller.state()==AirCombatState.LANDING,"unplanned ground contact in "+controller.state());
+                if(maid.glide&&controller.state()!=AirCombatState.LANDING){
+                    try{java.nio.file.Files.createDirectories(java.nio.file.Path.of("build/reports/controller-replay"));
+                        java.nio.file.Files.write(java.nio.file.Path.of("build/reports/controller-replay/dispatch-failure.events.log"),ReplayWorld.events);
+                    }catch(java.io.IOException e){throw new RuntimeException(e);}
+                    throw new AssertionError("unplanned ground contact in "+controller.state()+" tick="+tick+" speed="+creativeSpeed+" before="+before+" next="+next);
+                }
                 next=new Vec3(next.x,floor,next.z);maid.ground=true;maid.glide=false;maid.pose=Pose.STANDING;maid.velocity=Vec3.ZERO;
             }
             else maid.ground=false;
-            maid.pos=next;for(var r:world.rockets)if(r.alive&&++r.life>r.lifetime)r.discard();
+            maid.pos=next;for(var r:world.rockets)if(r.alive&&r.createdAt<world.time&&++r.life>r.lifetime)r.discard();
             if(handoff<0)require(maid.getY()<(creativeSpeed>0?215:35),"unbounded transit ascent tick="+tick+" pos="+maid.pos+" pitch="+maid.pitch+" v="+maid.velocity+" details="+transit.diagnostics());
             if(hit>=0&&maid.ground&&controller.state()==AirCombatState.GROUNDED){landed=tick;break;}
         }

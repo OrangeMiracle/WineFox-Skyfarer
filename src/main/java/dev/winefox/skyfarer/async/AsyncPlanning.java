@@ -18,6 +18,7 @@ public final class AsyncPlanning {
     private record ApprovedPulse(GlidePlanner.Request request,PlanningTask.PulseResult result) {}
     private final java.util.ArrayList<ApprovedPulse> approvedPulses=new java.util.ArrayList<>();
     public AsyncPlanning(EntityMaid maid){session=new PlannerSession(new MaidTerrainSource(maid));}
+    public PhysicsContext physics(){return session.physics();}
     public void begin(long tick,Object phase,Object target,long revision){waiting=false;approvedPulses.clear();session.begin(tick,phase,target,revision,PredictionHorizon.factor());}
     public boolean waiting(){return waiting;}
     public boolean lastPending(){return lastPending;}
@@ -45,6 +46,12 @@ public final class AsyncPlanning {
         var result=(PlanningTask.GlideResult)optional(bounded(new PlanningTask.Glide(s,r),ignored),null);if(result==null)return new GlidePlanner.Forecast(false,Double.NaN);
         var f=result.forecast();return new GlidePlanner.Forecast(f.safe(),f.reserve()-.5*speed*speed,f.passed(),f.miss(),f.reason());
     }
+    public GlidePlanner.Forecast certifyAttack(FlightPrediction.State s,GlidePlanner.Request r,double minimum,GlidePlanner.Corridor space){
+        // A pending certificate must veto commitment without aborting this tick's
+        // ordinary steering/energy update (especially after a descending handoff).
+        return (GlidePlanner.Forecast)optional(bounded(new PlanningTask.AttackCertificate(s,r,minimum),space),
+            new GlidePlanner.Forecast(false,Double.NaN,false,Double.POSITIVE_INFINITY,"async_pending"));
+    }
     public GlidePlanner.PulseReview reviewPulse(FlightPrediction.State s,GlidePlanner.Request r,GlidePlanner.Corridor ignored,int duration,double speed,double reserve){
         var result=(PlanningTask.PulseResult)optional(bounded(new PlanningTask.Pulse(s,r,duration,speed,reserve),ignored),null);
         if(result==null)return new GlidePlanner.PulseReview(Double.POSITIVE_INFINITY,"async_pending");
@@ -69,6 +76,10 @@ public final class AsyncPlanning {
     public SweepingAttackPlanner.Selection sweep(FlightPrediction.State s,SweepingAttackPlanner.Point target,FlightPrediction.Aim aim,int rocket,double gravity,double rate,double minimum,double exit,GlidePlanner.Corridor ignored,SweepingAttackPlanner.Contact contact,double turn){
         return (SweepingAttackPlanner.Selection)optional(bounded(new PlanningTask.Sweep(s,target,aim,rocket,gravity,rate,minimum,exit,turn,null,false,120),ignored),null);
     }
+    /** Speculative inventory-funded geometry only; Rejoin still certifies every lifetime before ignition. */
+    public SweepingAttackPlanner.Selection fundedSweep(FlightPrediction.State s,SweepingAttackPlanner.Point target,FlightPrediction.Aim aim,int duration,double gravity,double rate,double minimum,double exit,GlidePlanner.Corridor space,double turn){
+        return (SweepingAttackPlanner.Selection)optional(bounded(new PlanningTask.Sweep(s,target,aim,RocketProfile.maximumTicks(duration),gravity,rate,minimum,exit,turn,null,false,120,true),space),null);
+    }
     public PlanningTask.RejoinResult rejoin(FlightPrediction.State s,SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,double minimum,GlidePlanner.Corridor space,List<Integer> durations){
         return (PlanningTask.RejoinResult)optional(bounded(new PlanningTask.Rejoin(s,path,aim,rocket,gravity,rate,minimum,durations),space),null);
     }
@@ -76,6 +87,6 @@ public final class AsyncPlanning {
         var result=(SweepingAttackPlanner.Rollout)optional(bounded(new PlanningTask.Sweep(s,null,aim,rocket,gravity,rate,minimum,0,0,path,exiting,budget),ignored),
             new SweepingAttackPlanner.Rollout(true,false,-1,Double.POSITIVE_INFINITY,Double.POSITIVE_INFINITY,SweepingAttackPlanner.command(s,path,aim,exiting,rocket,gravity,rate),List.of()));
         return new SweepingAttackPlanner.Rollout(result.safe(),result.hit(),result.contactTick(),result.cost(),result.miss(),
-            SweepingAttackPlanner.command(s,path,aim,exiting,rocket,gravity,rate),result.trace());
+            SweepingAttackPlanner.command(s,path,aim,exiting,rocket,gravity,rate),result.trace(),result.envelope());
     }
 }

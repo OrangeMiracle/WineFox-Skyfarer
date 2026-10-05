@@ -1,6 +1,6 @@
 # 验证、离线回放与构建
 
-核对日期：2026-10-05。实现基线：Gradle 项目版本 0.6.0。本文根据当前 `build.gradle`、验证源码、回放夹具、构建工具及已有报告整理；**这次文档整理没有重新执行构建或验证**。
+核对日期：2026-10-05。实现基线：Gradle 项目版本 0.6.1。本文根据当前构建、验证源码与回放夹具整理；本轮新增 mapped 物理差分与全路线包络验证。
 
 本文属于工程实现的一部分。修改验证入口、夹具、场景或发布方式时必须更新本文及 [项目索引](PROJECT_INDEX.md)。飞控语义见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)，并发保证见 [ASYNC_PLANNING.md](ASYNC_PLANNING.md)。历史构建与问题修复原因仍记入 [buildHistory.md](../buildHistory.md)，不以本文代替 changelog。
 
@@ -13,7 +13,7 @@
 在仓库根目录用 PowerShell：
 
 ```powershell
-# 完整发布检查：build → check → 所有 22 项 verify 任务
+# 完整发布检查：build → check → 所有 24 项 verify 任务
 & .\tools\build.ps1 -Stage maintenance-release -Tasks @('build', '--continue')
 
 # 有针对性的并发、几何和生命周期检查
@@ -30,7 +30,7 @@
 
 [tools/build.ps1](../tools/build.ps1) 只有 `-Stage` 与 `-Tasks` 两个参数，没有 `-ExtraArgs`。它在已安装路径存在时设置 JDK 21.0.10；为本机 Windows 的 AF_UNIX 限制设置 `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir`，让 JDK 回退 TCP；调用根目录 wrapper，日志写入 `tools/<Stage>.log`，显示尾部 65 行并保留 Gradle 返回码。移植到其他机器需核对本地 JDK/该环境专用设置，不把此路径当作项目必装目录。
 
-`build` 同时构建 Jar 和检查；仅 `assemble` 或 `jar` 成功不代表回归通过。`test` 目前是 `NO-SOURCE`，真正检查是 22 个 `JavaExec` 任务，它们的 `main()` 抛 `AssertionError` 判失败，不依赖 Java `-ea`。需要强制复跑时按 Gradle 方式传 `--rerun-tasks`；不要同时启动多个构建去争用相同的 `build/classes/controllerReplay` 和报告文件。
+`build` 同时构建 Jar 和检查；仅 `assemble` 或 `jar` 成功不代表回归通过。`test` 目前是 `NO-SOURCE`，真正检查是 24 个 `JavaExec` 任务，它们的 `main()` 抛 `AssertionError` 判失败，不依赖 Java `-ea`。需要强制复跑时按 Gradle 方式传 `--rerun-tasks`；不要同时启动多个构建去争用相同的 `build/classes/controllerReplay` 和报告文件。
 
 ## 2. 三类证据必须区分
 
@@ -42,7 +42,7 @@
 
 数值片段测试不能代替生命周期回放。过去有“单段算法测试通过，但连续状态机一直盘旋”的回归；新增/修改状态时应有真实控制器从地面或明确外部起始状态开始的场景，不直接篡改 controller 私有状态来凑通过。
 
-## 3. 当前全部 22 项 Gradle 验证任务
+## 3. 当前全部 24 项 Gradle 验证任务
 
 注册和 `check` 依赖以 [build.gradle](../build.gradle) 为准。表内类名可在 [verification 源码](../src/verification/java/dev/winefox/skyfarer) 或 [replay 源码](../src/replay/java/dev/winefox/skyfarer) 下按包找到。
 
@@ -50,6 +50,8 @@
 | --- | --- | --- |
 | `verifyScanCadence` | `ai.ScanCadenceChecks` | Brain 奇数 tick 回调、Entity/Brain 同 tick 去重、间隔动态缩短、时钟倒退 |
 | `verifyFlightMath` | `flight.FlightMathChecks` | 掠过平面及长矛蓄力时机的基本数值边界 |
+| `verifyVanillaPhysics` | `flight.VanillaPhysicsChecks` | 18,000 步真实 Mth/Vec3 源码 oracle 差分；float、epsilon、俯冲/拉升、重力/缓降/火箭时序及 Provider 身份/fallback |
+| `verifyAttackEnvelope` | `flight.AttackEnvelopeChecks` | 上下攻击、悬崖绝对高度平移、长 Approach、不同活动火箭余寿命/未点燃库存/完整随机寿命、最差 reserve、出口阻挡与时域否决 |
 | `verifyFlightPrediction` | `flight.FlightPredictionChecks` | 162 组有/无推进拦截、不同速度/高度/剩余火箭寿命、火箭选择和固定出口转向 |
 | `verifyAttackPolicy` | `ai.AttackPolicyChecks` | 攻击周期保护、返航/失控范围、Charge 尾段范围预算、入口距离与对齐、重复恢复高度不累加 |
 | `verifySpearIntercept` | `flight.SpearInterceptChecks` | 144 组原生尺寸长矛拦截，前摇、速度、姿态和接触预测 |
@@ -83,9 +85,9 @@
 
 其中生产 `ElytraFlightController` 和 `MaidTerrainSource` 排除，由 `src/replay/java` 中的同名外部世界适配替换。编译输出独立放在 `build/classes/controllerReplay`，classpath 不引用真实游戏启动代码。`src/replay` 不属于 main source set，不进入交付 Jar。
 
-夹具提供 EntityMaid、LivingEntity、库存、Vec3/AABB、方块盒、加载边界、世界时间、烟花实体、TLM/Spears 适配等。生产 `FlightCorridor` 判断身体扫掠；生产 `FlightPrediction` 方程推进每 tick 位移，实际 `FireworkManager` 选择推进；起跳夹具提供初速度和重力。命中夹具仍要求前摇、使用长矛、射线接触与无遮挡，然后调用生产命中回调，但不运行原生 Spears 的全部伤害系统。
+夹具提供 EntityMaid、LivingEntity、库存、Vec3/AABB、方块盒、加载边界、世界时间、烟花实体、TLM/Spears 适配等。生产 `FlightCorridor` 判断身体扫掠；生产 `FlightPrediction` 方程推进每 tick 位移，实际 `FireworkManager` 选择推进；起跳夹具提供初速度和重力。命中夹具仍要求前摇、使用长矛、射线接触与无遮挡，然后调用生产命中回调，但不运行原生 Spears 的全部伤害系统。0.6.1 的四类生命周期火箭夹具记录 createdAt，下一实体 tick 才首次推进/递增 life，对齐 mapped EntityTickList；完整原版公式另外由独立差分 oracle 检查。
 
-0.6.0 回放使用**真实共享异步线程池**，没有用同步 executor 冒充后台计算。`ReplayWorld.advance()` 推进时钟、调用 `PlannerSession.serverTick()`，默认等待 50 ms 给 Worker 运行；结果到达 tick 会随机器负载改变。`wfs.replayTickMillis` 是回放 JVM 的调试属性，当前 Gradle 任务未像 `wfs.replayCase` 一样转发它，不能假设给 Gradle 加同名 `-D` 会自动作用到 JavaExec。
+回放使用**真实共享异步线程池**，没有用同步 executor 冒充后台计算。`ReplayWorld.advance()` 推进时钟、调用 `PlannerSession.serverTick()`，默认等待 50 ms 给 Worker 运行；结果到达 tick 会随机器负载改变。`wfs.replayTickMillis` 是回放 JVM 的调试属性，当前 Gradle 任务未像 `wfs.replayCase` 一样转发它，不能假设给 Gradle 加同名 `-D` 会自动作用到 JavaExec。
 
 `verifyControllerReplay` 的 `wfs.replayCase` 按场景名精确筛选；空值运行全部。发布验证必须不带筛选，否则“任务成功”仅代表选中场景通过。
 
@@ -129,18 +131,11 @@
 
 ## 7. 当前构建证据与已知缺口
 
-截至此次源码核对，已有记录为 [tools/v060-release.log](../tools/v060-release.log)：`BUILD SUCCESSFUL in 6m 9s`，22 项 verify 全部执行通过；28 个 actionable tasks 中 23 executed、5 up-to-date。这是此前 0.6.0 的记录，不是 2026-10-05 文档整理重新运行的结果。
+2026-10-05 的最终完整构建见 [tools/v061-acceptance.log](../tools/v061-acceptance.log)：**BUILD SUCCESSFUL in 8m 28s**。第 3 节列出的全部 **24 项 verify 任务均执行并通过**，未使用场景筛选；包含 21 个 Controller、7 个 Dispatch、2 个特殊进场、2 个镜像曲线场景，以及新增的 18,000 步物理差分和完整攻击包络检查。连续上坡与孤立高处上升入口在同一完整构建中通过。API、并发/队列、配置冻结、Level/物理变化和陈旧结果检查亦通过。
 
-可核对的既有结果：
+最终 Jar 大小、SHA-256 与逐项证据记录在 [buildHistory](../buildHistory.md)。`tools/physics-*.log`、`v061-release`、`v061-verified`、`v061-final`、`v061-complete`、`v061-validation` 是中间验证记录，其中存在失败；名字包含 final/release 并不代表交付成功。此前 0.6.0 的独立记录保留在 [tools/v060-release.log](../tools/v060-release.log)，不与本轮结果混用。
 
-- Controller 21 个全生命周期场景通过；`follow-continuous` 命中 3 次、第 300 tick 落地。
-- 左右镜像山腰曲线均第 53 tick 命中，分别第 136/134 tick 落地。
-- 2 个专门攻击进场、7 个远程赶路交接场景通过。
-- 合成 24-session/100-tick：main p50 0.443 ms、p95 2.035 ms、max 28.024 ms；任务累计墙钟约 998.610 ms。包含冷启动/JIT等，不是服务器 MSPT 或 GC 改善测量。
-
-`tools/v060-final.log` 是失败中间构建（`verifyControllerReplay` 失败），不能因为文件名含 final 就当作交付证据。历史迭代日志应保留其原本事实。
-
-**已知版本元数据不一致：** [build.gradle](../build.gradle) 的 project.version 为 `0.6.0`，Jar manifest 使用该值；[neoforge.mods.toml](../src/main/resources/META-INF/neoforge.mods.toml) 却写死 `version="0.5.4"`。当前构建没有 `processResources` 替换/expand 规则。旧构建历史中“已核对版本元数据”的描述不能证明这两处一致。此次仅文档整理，没有修改运行时资源或重建 Jar；下次发版须同时核对修正，现有 22 项验证没有覆盖该一致性。
+Gradle、最终 Jar 的 Manifest 与 Mod 元数据已核对统一为 0.6.1，修正此前 0.6.0/0.5.4 的已知差异。最终包的模块、Mixin/语言资源及夹具隔离均已检查；未启动 Minecraft。
 
 下次交付至少检查：
 
@@ -151,6 +146,7 @@
 
 ## 8. 必须实机确认的事项
 
+- gravity/noGravity、缓降到期、魂符收起后跨维度放出、同名 Level 重建以及其他 Mod 修改 travel 或实体 tick 顺序时的真实行为。
 - 真正 NeoForge/TLM/Mixin 生命周期、服务端关服/重新开世界、实体卸载重载/跨维度、玩家退出时序。
 - 创造指挥镜的未加载女仆唤醒、滚动票据、目标区块卸载、Home 回收、真实传送的安全落点和资源释放。
 - 客户端网络、望远镜左键/缩放、标记动效音效、Debug 多女仆切换、穿墙框、HUD、预测走廊/曲线渲染。

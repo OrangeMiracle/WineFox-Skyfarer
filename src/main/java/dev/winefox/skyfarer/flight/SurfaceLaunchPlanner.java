@@ -15,18 +15,18 @@ public final class SurfaceLaunchPlanner {
         if (!wet) return FlightPrediction.step(s,yaw,pitch,180,90,90,gravity,rocket);
         // EntityMaid.travel with wantToSwim: move by current velocity, then apply 0.9 drag.
         double vx=s.vx()*.9,vy=s.vy()*.9,vz=s.vz()*.9;
-        if(rocket) {
-            double a=Math.toRadians(yaw),p=Math.toRadians(pitch);
-            vx=vx*.5-Math.sin(a)*Math.cos(p)*.85;
-            vy=vy*.5-Math.sin(p)*.85;
-            vz=vz*.5+Math.cos(a)*Math.cos(p)*.85;
+        if(rocket && s.rocketDelay()==0) {
+            var look=VanillaElytra.look(yaw,pitch);
+            vx+=look.x()*.1+(look.x()*1.5-vx)*.5;
+            vy+=look.y()*.1+(look.y()*1.5-vy)*.5;
+            vz+=look.z()*.1+(look.z()*1.5-vz)*.5;
         }
-        return new FlightPrediction.State(s.x()+s.vx(),s.y()+s.vy(),s.z()+s.vz(),vx,vy,vz,yaw,pitch);
+        return new FlightPrediction.State(s.x()+s.vx(),s.y()+s.vy(),s.z()+s.vz(),vx,vy,vz,yaw,pitch,s.physics()==null?null:s.physics().nextTick(),Math.max(0,s.rocketDelay()-1));
     }
     /** One attitude must work for every possible lifetime of the selected inventory rocket. */
     public static Plan choose(FlightPrediction.State start,double yaw,double height,double gravity,int duration,
                               GlidePlanner.Corridor space,Water water) {
-        return choose(start,yaw,height,gravity,RocketProfile.minimumTicks(duration),RocketProfile.maximumTicks(duration),space,water);
+        return choose(start.withRocketDelay(1),yaw,height,gravity,RocketProfile.minimumTicks(duration),RocketProfile.maximumTicks(duration),space,water);
     }
     public static Plan chooseRemaining(FlightPrediction.State start,double yaw,double height,double gravity,int ticks,
                                        GlidePlanner.Corridor space,Water water) {
@@ -53,17 +53,17 @@ public final class SurfaceLaunchPlanner {
     private static double forecast(FlightPrediction.State start,Plan plan,double gravity,int life,
                                    GlidePlanner.Corridor space,Water water) {
         var s=start; double earlyRise=0,cost=0;
-        for(int tick=0;tick<PredictionHorizon.ticks(life+16);tick++) {
-            double pitch=command(s,plan,tick,gravity,tick<life);
-            var next=step(s,plan.yaw,pitch,gravity,tick<life,water.wet(s));
+        for(int tick=0;tick<PredictionHorizon.ticks(life+start.rocketDelay()+16);tick++) {
+            double pitch=command(s,plan,tick,gravity,RocketProfile.active(tick,life,start));
+            var next=step(s,plan.yaw,pitch,gravity,RocketProfile.active(tick,life,start),water.wet(s));
             // Small physical clearance is essential over snow layers and during the first jump.
             if(!space.clear(s,next,.04,.01)) {
-                if(tick<life+16)return Double.POSITIVE_INFINITY;
-                cost+=PredictionHorizon.futureRisk(tick,life+16);break;
+                if(tick<life+start.rocketDelay()+16)return Double.POSITIVE_INFINITY;
+                cost+=PredictionHorizon.futureRisk(tick,life+start.rocketDelay()+16);break;
             }
             s=next;
             if(tick==DEPARTURE_TICKS-1) earlyRise=s.y()-start.y();
-            cost+=Math.pow(Math.max(0,plan.height-s.y()),2)*.015*PredictionHorizon.weight(tick,life+16);
+            cost+=Math.pow(Math.max(0,plan.height-s.y()),2)*.015*PredictionHorizon.weight(tick,life+start.rocketDelay()+16);
         }
         if(water.wet(s)) return Double.POSITIVE_INFINITY;
         return cost+Math.pow(Math.max(0,2-earlyRise),2)*12;
@@ -73,7 +73,7 @@ public final class SurfaceLaunchPlanner {
         if(RocketProfile.maximumTicks(duration)>64) return Double.POSITIVE_INFINITY;
         double worst=0;
         for(int life=RocketProfile.minimumTicks(duration);life<=RocketProfile.maximumTicks(duration);life++) {
-            double score=forecast(start,plan,gravity,life,space,water);
+            double score=forecast(start.withRocketDelay(1),plan,gravity,life,space,water);
             if(!Double.isFinite(score)) return Double.POSITIVE_INFINITY;
             worst=Math.max(worst,score);
         }
@@ -83,9 +83,9 @@ public final class SurfaceLaunchPlanner {
             double gravity,int remaining,GlidePlanner.Corridor space,Water water) {
         var path=new java.util.ArrayList<GlidePlanner.TracePoint>();var s=start;
         path.add(new GlidePlanner.TracePoint(s,.04,.01));
-        for(int tick=0;tick<PredictionHorizon.ticks(Math.min(64,remaining+16));tick++) {
-            double pitch=command(s,plan,elapsed+tick,gravity,tick<remaining);
-            var next=step(s,plan.yaw,pitch,gravity,tick<remaining,water.wet(s));
+        for(int tick=0;tick<PredictionHorizon.ticks(Math.min(64,remaining+start.rocketDelay()+16));tick++) {
+            double pitch=command(s,plan,elapsed+tick,gravity,RocketProfile.active(tick,remaining,start));
+            var next=step(s,plan.yaw,pitch,gravity,RocketProfile.active(tick,remaining,start),water.wet(s));
             path.add(new GlidePlanner.TracePoint(next,.04,.01));
             if(!space.clear(s,next,.04,.01))break;s=next;
         }

@@ -32,7 +32,7 @@ public final class AttackLanePlanner {
             if(fit==1&&Math.hypot(gx-r.slopes.nearX(),gz-r.slopes.nearZ())<.025)continue;
             double gradient=Math.clamp(gx*r.dx+gz*r.dz,-1.5,1.5);
             if(Math.abs(gradient)<=.06&&s.y()>=r.y-.2)continue;
-            var line=AttackLinePlanner.choose(s,r.x,r.y,r.z,r.dx,r.dz,gradient,-gx*r.dz+gz*r.dx,r.minimum,r.exit,r.expansion,r.fuel,
+            var line=AttackLinePlanner.choose(s,r.x,r.y,r.z,r.dx,r.dz,gradient,-gx*r.dz+gz*r.dx,r.minimum,r.exit,r.expansion,r.fuel,r.gravity,
                 (ax,ay,az,bx,by,bz)->space.clear(ax,ay,az,bx,by,bz,r.side,r.vertical));
             if(line!=null&&(best==null||line.cost()<best.cost())){best=line;bestX=gx;bestZ=gz;}
         }

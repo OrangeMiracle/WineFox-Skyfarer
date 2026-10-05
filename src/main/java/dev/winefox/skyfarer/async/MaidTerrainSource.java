@@ -16,6 +16,16 @@ public final class MaidTerrainSource implements PlannerSession.Source {
     private int reads;
     @Override public int lastReads(){return reads;}
     public MaidTerrainSource(EntityMaid maid){this.maid=maid;}
+    private final dev.winefox.skyfarer.flight.PhysicsProvider physics = new dev.winefox.skyfarer.flight.PhysicsProvider();
+    @Override public Object levelIdentity(){check();return maid.level();}
+    @Override public dev.winefox.skyfarer.flight.PhysicsContext physics(long tick){
+        check();return physics.capture(maid,maid.level(),dimension(),tick,()->{
+            var effect=maid.getEffect(net.minecraft.world.effect.MobEffects.SLOW_FALLING);
+            return new dev.winefox.skyfarer.flight.PhysicsContext(maid.getGravity(),effect==null?0:
+                effect.isInfiniteDuration()?Integer.MAX_VALUE:Math.max(0,effect.getDuration()-1));
+        });
+    }
+    @Override public void releasePhysics(){check();physics.clear();}
     @Override public String dimension(){check();return maid.level().dimension().location().toString();}
     @Override public void failed(String message){check();dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.error("[WFS] Async planner failed; result discarded: {}",message);}
     @Override public CollisionSnapshot.Cell capture(long key){

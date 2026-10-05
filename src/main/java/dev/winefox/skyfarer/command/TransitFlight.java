@@ -6,7 +6,6 @@ import dev.winefox.skyfarer.flight.*;
 import dev.winefox.skyfarer.mixin.FireworkLifetimeAccessor;
 import dev.winefox.skyfarer.safety.CorridorProbe;
 import net.minecraft.world.entity.Pose;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import net.minecraft.world.item.*;
 import net.minecraft.world.phys.Vec3;
@@ -17,6 +16,7 @@ final class TransitFlight {
     private FireworkRocketEntity rocket;
     private SurfaceLaunchPlanner.Plan launch;
     private int ticks,departure,waterTicks;
+    private long boostedAt=Long.MIN_VALUE;
     private GlidePlanner.Plan cached;
     private GlidePlanner.Request lastRequest;
     private EntityMaid swimmer;
@@ -27,7 +27,7 @@ final class TransitFlight {
     boolean waterEscape(){return swimmer!=null;}
     String diagnostics(){return "launch="+launch+" departure="+departure+" plan="+cached+" rocket="+remaining()+" jobs="+(planning==null?0:planning.pending());}
     boolean tick(EntityMaid maid,Vec3 target) {
-        return tickFlight(maid,target,false);
+        return tick(maid,target,false);
     }
     boolean tick(EntityMaid maid,Vec3 target,boolean creative) {
         if(planning==null)planning=new dev.winefox.skyfarer.async.AsyncPlanning(maid);
@@ -36,10 +36,10 @@ final class TransitFlight {
         try{return tickFlight(maid,target,creative);}
         catch(dev.winefox.skyfarer.async.PlannerSession.Pending wait){
             if(maid.onGround()){ticks=Math.max(0,ticks-1);return true;}
-            var v=maid.getDeltaMovement();var s=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot());
+            var v=maid.getDeltaMovement();var s=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot(),planning.physics(),ignitionDelay(maid));
             var space=new CorridorProbe(maid,maid.getBbWidth(),maid.getBbHeight(),maid.getEyeHeight(),maid.isInWaterOrBubble());
             for(double pitch:new double[]{maid.getXRot(),-35,-65,-88}){
-                var next=SurfaceLaunchPlanner.step(s,maid.getYRot(),pitch,maid.getAttributeValue(Attributes.GRAVITY),remaining()>0,maid.isInWaterOrBubble());
+                var next=SurfaceLaunchPlanner.step(s,maid.getYRot(),pitch,planning.physics().gravity(),remaining()>0,maid.isInWaterOrBubble());
                 if(space.clear(s,next,.02,.01)){heading.steerAngles(maid,maid.getYRot(),pitch,180,90);break;}
             }
             return true;
@@ -47,7 +47,7 @@ final class TransitFlight {
     }
     private boolean tickFlight(EntityMaid maid,Vec3 target,boolean creative) {
         ticks++;heading.beginTick(maid);TlmFollowCompat.clearGroundMovement(maid);
-        double gravity=maid.getAttributeValue(Attributes.GRAVITY);
+        double gravity=planning.physics().gravity();
         Vec3 v=maid.getDeltaMovement(),toward=target.subtract(maid.position());
         double yaw=Math.toDegrees(Math.atan2(-toward.x,toward.z));
         if(maid.isInWaterOrBubble())return escapeWater(maid,yaw,gravity);
@@ -55,14 +55,14 @@ final class TransitFlight {
         if(maid.onGround()) {
             if(ticks>80)return false;
             if(!new CorridorProbe(maid).segment(maid.getEyePosition().add(0,.01,0),maid.getEyePosition().add(0,.45,0),.02,0))return false;
-            var jump=new FlightPrediction.State(maid.getX(),maid.getY()+.82,maid.getZ(),v.x,.33,v.z,maid.getYRot(),maid.getXRot());
+            var jump=new FlightPrediction.State(maid.getX(),maid.getY()+.82,maid.getZ(),v.x,.33,v.z,maid.getYRot(),maid.getXRot(),planning.physics(),ignitionDelay(maid));
             launch=planning.launch(jump,yaw,maid.getY()+7,gravity,0,new CorridorProbe(maid,maid.getBbWidth(),.6,.4),SurfaceLaunchPlanner.DRY);
             if(launch==null)return false;
             heading.steerAngles(maid,launch.yaw(),launch.pitch(),180,90);maid.getJumpControl().jump();return true;
         }
         if(!maid.isFallFlying()&&!ElytraFlightController.startGliding(maid))return false;
         maid.setPose(Pose.FALL_FLYING);
-        var start=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot());
+        var start=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot(),planning.physics(),ignitionDelay(maid));
         var space=new CorridorProbe(maid);
         if(launch!=null && departure==0) {
             launch=planning.launch(start,yaw,launch.height(),gravity,0,space,SurfaceLaunchPlanner.DRY);
@@ -125,7 +125,7 @@ final class TransitFlight {
         if(++waterTicks>100)return false;
         if(maid.onGround())maid.getJumpControl().jump();
         if(!ElytraFlightController.startGliding(maid,true))return true;
-        var v=maid.getDeltaMovement();var start=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot());
+        var v=maid.getDeltaMovement();var start=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot(),planning.physics(),ignitionDelay(maid));
         var space=new CorridorProbe(maid,maid.getBbWidth(),.6,.4,true);
         double height=start.y()+4;
         for(int up=0;up<32;up++){var pos=maid.blockPosition().above(up);if(!maid.level().hasChunkAt(pos))break;if(!maid.level().getFluidState(pos).is(net.minecraft.tags.FluidTags.WATER)){height=pos.getY()+4;break;}}
@@ -138,8 +138,8 @@ final class TransitFlight {
         heading.steerAngles(maid,launch.yaw(),pitch,180,90);return true;
     }
     void debug(net.minecraft.nbt.CompoundTag data,EntityMaid maid) {
-        var v=maid.getDeltaMovement();var start=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot());
-        var space=new CorridorProbe(maid,maid.getBbWidth(),.6,.4,waterEscape());double gravity=maid.getAttributeValue(Attributes.GRAVITY);
+        var v=maid.getDeltaMovement();var start=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot(),planning.physics(),ignitionDelay(maid));
+        var space=new CorridorProbe(maid,maid.getBbWidth(),.6,.4,waterEscape());double gravity=planning.physics().gravity();
         if(fastMotion!=null){
             var path=new java.util.ArrayList<GlidePlanner.TracePoint>();var to=fastMotion.next();int count=Math.max(1,(int)Math.ceil(new Vec3(to.x(),to.y(),to.z()).distanceTo(maid.getEyePosition())/2));
             for(int i=0;i<=count;i++){var p=maid.getEyePosition().lerp(new Vec3(to.x(),to.y(),to.z()),i/(double)count);path.add(new GlidePlanner.TracePoint(new FlightPrediction.State(p.x,p.y,p.z,0,0,0,to.yaw(),to.pitch()),.15,.12));}
@@ -153,8 +153,9 @@ final class TransitFlight {
         var stack=new ItemStack(Items.FIREWORK_ROCKET);
         // The vanilla item defaults to Flight 1. Explicit Flight 0 must match our short-pulse forecast.
         stack.set(net.minecraft.core.component.DataComponents.FIREWORKS,new net.minecraft.world.item.component.Fireworks(0,java.util.List.of()));
-        rocket=new FireworkRocketEntity(maid.level(),stack,maid);maid.level().addFreshEntity(rocket);
+        boostedAt=maid.level().getGameTime();rocket=new FireworkRocketEntity(maid.level(),stack,maid);maid.level().addFreshEntity(rocket);
     }
+    private int ignitionDelay(EntityMaid maid){return remaining()>0&&boostedAt==maid.level().getGameTime()?1:0;}
     private int remaining(){if(rocket==null||!rocket.isAlive())return 0;var life=(FireworkLifetimeAccessor)rocket;return Math.max(0,life.wfs$lifetime()-life.wfs$life()+1);}
     private void restoreSwimming(){if(swimmer!=null){swimmer.getSwimManager().setWantToSwim(previousSwimming);swimmer=null;launch=null;departure=0;waterTicks=0;cached=null;}}
     void close(){if(planning!=null)planning.close();if(rocket!=null)rocket.discard();rocket=null;restoreSwimming();}

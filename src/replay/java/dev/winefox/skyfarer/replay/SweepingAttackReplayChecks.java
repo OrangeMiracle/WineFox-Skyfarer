@@ -36,13 +36,13 @@ public final class SweepingAttackReplayChecks {
                 }
             }
             if(maid.using)maid.usedTicks++;
-            boolean powered=world.rockets.stream().anyMatch(r->r.alive);Vec3 next;
+            boolean powered=world.rockets.stream().anyMatch(r->r.alive&&r.createdAt<world.time);Vec3 next;
             if(maid.glide){var moved=FlightPrediction.step(s,maid.yaw,maid.pitch,180,90,90,.08,powered);next=new Vec3(moved.x(),moved.y()-maid.getEyeHeight(),moved.z());maid.velocity=new Vec3(moved.vx(),moved.vy(),moved.vz());}
             else if(!maid.ground){next=maid.pos.add(v);maid.velocity=new Vec3(v.x*.91,(v.y-.08)*.98,v.z*.91);}else next=maid.pos;
             if(maid.glide&&controller.state()!=AirCombatState.LANDING&&!new CorridorProbe(maid).clear(maid.getEyePosition(),next.add(0,maid.getEyeHeight(),0),0,0)){failure="Body collision at "+tick+" state="+controller.state();break;}
             double ground=world.ground(next.x,next.z,Math.max(maid.pos.y,next.y)+.1);
             if(Double.isFinite(ground)&&next.y<=ground){next=new Vec3(next.x,ground,next.z);maid.ground=true;maid.glide=false;maid.velocity=Vec3.ZERO;}else maid.ground=false;
-            maid.pos=next;for(var r:world.rockets)if(r.alive&&++r.life>r.lifetime)r.discard();
+            maid.pos=next;for(var r:world.rockets)if(r.alive&&r.createdAt<world.time&&++r.life>r.lifetime)r.discard();
             trace.add(tick+"\t"+controller.state()+"\t"+next+"\t"+maid.yaw+"\t"+debug.getString("reason"));
             if(hit>=0&&maid.ground&&controller.state()==AirCombatState.GROUNDED){landed=tick;break;}
         }

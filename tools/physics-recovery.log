@@ -1,0 +1,44 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyDispatchReplay
+dispatch 180 blocks yaw=0 snow=false friendly=false creativeMultiplier=0 handoff=113 hit=138 landed=151 combat rockets=0
+dispatch 900 blocks yaw=180 snow=true friendly=false creativeMultiplier=0 handoff=620 hit=648 landed=738 combat rockets=1
+dispatch 256 blocks yaw=-90 snow=false friendly=false creativeMultiplier=0 handoff=165 hit=192 landed=240 combat rockets=1
+dispatch 180 blocks yaw=0 snow=false friendly=true creativeMultiplier=0 handoff=109 hit=137 landed=211 combat rockets=1
+dispatch 900 blocks yaw=0 snow=false friendly=false creativeMultiplier=2 handoff=318 hit=440 landed=525 combat rockets=2
+dispatch 900 blocks yaw=180 snow=false friendly=false creativeMultiplier=100 handoff=41 hit=584 landed=660 combat rockets=7
+dispatch 180 blocks yaw=90 snow=false friendly=true creativeMultiplier=2 handoff=71 hit=160 landed=255 combat rockets=2
+Dispatch full-cycle replay passed; transit consumes no inventory; combat and landing remain native controller decisions.
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+flat-longest-pulse attack=-1 hits=0 landed=-1 peak=17.96 radius=41.54 rockets=5
+Exception in thread "main" java.lang.AssertionError: flat-longest-pulse: no attack within 400 ticks; state=REPOSITION; trace=build\reports\controller-replay\flat-longest-pulse.tsv
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.run(ControllerReplayChecks.java:134)
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.main(ControllerReplayChecks.java:24)
+
+> Task :verifyControllerReplay FAILED
+
+> Task :verifyAsyncPlanning
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Async boundary checks passed: immutable DTOs, world-border keys, strict unknown cells, main-only capture, identical math, generation/target/config/dimension invalidation, cancellation, bounded queues and restart.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyControllerReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 3m 35s
+4 actionable tasks: 4 executed

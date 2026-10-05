@@ -12,6 +12,12 @@ public final class AsyncPlannerChecks {
     private static FlightPrediction.State start(){return new FlightPrediction.State(0,12,0,0,0,1,0,0);}
     private static PlanningTask.Glide task(){return new PlanningTask.Glide(start(),new GlidePlanner.Request(0,12,0,0,14,Double.NaN,0,5,3,8,.08,.25,.25,false,null));}
     public static void main(String[] args)throws Exception{
+        require(!PlanningTask.request(task().request(),task().request().withPulse(1)),"expired rocket plan reused for a powered request");
+        require(!PlanningTask.rocket(1,0,4)&&PlanningTask.rocket(5,7,4),"rocket expiry boundary lost");
+        var alternatives=SweepingAttackPlanner.candidates(start(),new SweepingAttackPlanner.Point(0,16,28),8);
+        var joinA=new PlanningTask.Rejoin(start(),alternatives.get(0),null,0,.08,5,.3,List.of(1));
+        var joinB=new PlanningTask.Rejoin(start(),alternatives.get(1),null,0,.08,5,.3,List.of(1));
+        require(!joinA.slot().equals(joinB.slot()),"coast rejoin cancels alternative funded certification");
         for(int x:new int[]{-7_500_000,-1,0,1,7_500_000})for(int y:new int[]{-16,0,80})for(int z:new int[]{-7_500_000,-1,0,1,7_500_000}){
             long key=CollisionSnapshot.key(x,y,z);require(CollisionSnapshot.x(key)==x&&CollisionSnapshot.y(key)==y&&CollisionSnapshot.z(key)==z,"cell key aliases coordinates");
         }
@@ -42,10 +48,13 @@ public final class AsyncPlannerChecks {
         var cold=PlannerExecutor.submit(task(),snapshot(Map.of()),1);await(cold);
         require(!cold.outcome.missing().isEmpty()&&!((PlanningTask.GlideResult)cold.outcome.value()).plan().safe(),"exploration escaped certification boundary");
         final Thread owner=Thread.currentThread();final String[] dimension={"a"};
+        final Object[] level={new Object()}; final PhysicsContext[] physics={PhysicsContext.VANILLA};
         var source=new PlannerSession.Source(){
             public CollisionSnapshot.Cell capture(long key){require(Thread.currentThread()==owner,"world read off main thread");return AIR;}
             public CollisionSnapshot snapshot(Map<Long,CollisionSnapshot.Cell> ignored,boolean wet,boolean launch){require(Thread.currentThread()==owner,"snapshot created off main thread");return full;}
             public String dimension(){return dimension[0];}
+            public Object levelIdentity(){return level[0];}
+            public PhysicsContext physics(long tick){require(Thread.currentThread()==owner,"physics read off main");return physics[0];}
         };
         var session=new PlannerSession(source);session.begin(0,"attack","target-a",1,1);
         pending(session,task());require(session.pendingCount()==1,"job not queued");
@@ -56,8 +65,24 @@ public final class AsyncPlannerChecks {
         require(result!=null,"main mailbox never receives result");
         first=session.generation();dimension[0]="b";session.begin(2,"exit","target-b",1,1);require(session.generation()>first,"dimension not invalidated");pending(session,task());
         first=session.generation();session.begin(3,"exit","target-b",2,1);require(session.generation()>first,"config not invalidated");
+        first=session.generation();level[0]=new Object();session.begin(3,"exit","target-b",2,1);
+        require(session.generation()>first,"same dimension new Level kept old generation");pending(session,task());
+        first=session.generation();physics[0]=new PhysicsContext(.04,0);session.begin(4,"exit","target-b",2,1);
+        require(session.generation()>first&&session.pendingCount()==0,"changed physics kept old async result");pending(session,task());
+        physics[0]=new PhysicsContext(.04,10);session.begin(5,"exit","target-b",2,1);first=session.generation();
+        physics[0]=new PhysicsContext(.04,9);session.begin(6,"exit","target-b",2,1);
+        require(session.generation()==first,"natural effect countdown cancelled compatible tasks");
+        physics[0]=new PhysicsContext(.04,30);session.begin(7,"exit","target-b",2,1);
+        require(session.generation()>first,"effect refresh retained old physics proof");
         var error=new java.util.concurrent.atomic.AtomicReference<Throwable>();var wrong=new Thread(()->{try{session.query(task());}catch(Throwable e){error.set(e);}});wrong.start();wrong.join();require(error.get() instanceof IllegalStateException,"off-thread mailbox access accepted");
         session.close();require(session.pendingCount()==0&&session.cellCount()==0,"close retains jobs/world snapshot");
+        var maid=new com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid(
+            new dev.winefox.skyfarer.replay.ReplayWorld(),new net.minecraft.world.phys.Vec3(0,12,0));
+        var facade=new AsyncPlanning(maid);facade.begin(0,"entry","target",0);
+        var waiting=facade.certifyAttack(start(),task().request(),.3,(a,b,side,vertical)->true);
+        require(!waiting.safe()&&facade.waiting()&&waiting.reason().equals("async_pending"),
+            "cold certificate must veto commitment while allowing this tick's steering to continue");
+        facade.close();
         long rejected=PlannerExecutor.rejected.sum();var jobs=new ArrayList<PlannerExecutor.Ticket<Object>>();
         for(int i=0;i<400;i++){var job=PlannerExecutor.submit(task(),full,10);if(job!=null)jobs.add(job);require(PlannerExecutor.queued()<=64,"unbounded queue");}
         require(PlannerExecutor.rejected.sum()>rejected,"backpressure was not exercised");for(var job:jobs)job.cancel();

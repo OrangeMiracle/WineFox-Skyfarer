@@ -20,17 +20,18 @@ public sealed interface PlanningTask extends PlannerExecutor.Task<Object> {
         if(this instanceof Pulse p)return new Slot(getClass(),p.duration,p.request.exit()==null?Long.MIN_VALUE:CollisionSnapshot.key((int)Math.floor(p.request.exit().x()),(int)Math.floor(p.request.exit().y()),(int)Math.floor(p.request.exit().z())));
         if(this instanceof Launch l)return new Slot(getClass(),l.duration,(l.plan==null?0:2)+(l.remaining?1:0));
         if(this instanceof Compact c)return new Slot(getClass(),c.duration,0);
-        if(this instanceof Sweep s)return new Slot(getClass(),s.path==null?-1:s.budget,s.rocket==0?0:1);
+        if(this instanceof Sweep s)return new Slot(getClass(),s.path==null?-1:s.budget,s.ignition?2+s.rocket:s.rocket==0?0:1);
         if(this instanceof Chain c)return new Slot(getClass(),c.primary==null?0:1,c.aim==null?0:CollisionSnapshot.key((int)Math.floor(c.aim.x()),(int)Math.floor(c.aim.bottom()),(int)Math.floor(c.aim.z())));
         return new Slot(getClass(),0,0);
     }
     default boolean compatible(PlanningTask old){return equals(old);}
     static boolean near(double a,double b,double tolerance){return Double.doubleToLongBits(a)==Double.doubleToLongBits(b)||Math.abs(a-b)<=tolerance;}
+    static boolean rocket(int a,int b,int tolerance){return (a==0)==(b==0)&&near(a,b,tolerance);}
     static boolean aim(FlightPrediction.Aim a,FlightPrediction.Aim b){return a==b||a!=null&&b!=null&&near(a.x(),b.x(),1)&&near(a.z(),b.z(),1)&&near(a.bottom(),b.bottom(),1)
         &&a.height()==b.height()&&a.halfWidth()==b.halfWidth()&&a.maxReach()==b.maxReach()&&a.minReach()==b.minReach()&&a.margin()==b.margin()
         &&near(a.vx(),b.vx(),.2)&&near(a.vy(),b.vy(),.2)&&near(a.vz(),b.vz(),.2)&&near(a.readyIn(),b.readyIn(),4);}
     static boolean request(GlidePlanner.Request a,GlidePlanner.Request b){return a.recovery()==b.recovery()&&a.flare()==b.flare()&&near(a.yaw(),b.yaw(),12)&&near(a.height(),b.height(),2)
-        &&near(a.slope(),b.slope(),.15)&&near(a.rocketTicks(),b.rocketTicks(),4)&&aim(a.aim(),b.aim())&&exit(a.exit(),b.exit())
+        &&near(a.slope(),b.slope(),.15)&&rocket(a.rocketTicks(),b.rocketTicks(),4)&&aim(a.aim(),b.aim())&&exit(a.exit(),b.exit())
         &&a.gravity()==b.gravity()&&a.sideMargin()==b.sideMargin()&&a.verticalMargin()==b.verticalMargin()&&a.yawRate()==b.yawRate()&&a.pitchRate()==b.pitchRate()&&a.recoveryRate()==b.recoveryRate()&&near(a.floor(),b.floor(),0);}
     static boolean exit(GlidePlanner.Exit a,GlidePlanner.Exit b){return a==b||a!=null&&b!=null&&near(a.x(),b.x(),2)&&near(a.y(),b.y(),2)&&near(a.z(),b.z(),2)&&near(a.gradientX(),b.gradientX(),.1)&&near(a.gradientZ(),b.gradientZ(),.1);}
     record GlideResult(GlidePlanner.Plan plan,GlidePlanner.Forecast forecast,List<GlidePlanner.TracePoint> trace,double narrowCost){}
@@ -51,6 +52,16 @@ public sealed interface PlanningTask extends PlannerExecutor.Task<Object> {
         }
         public boolean compatible(PlanningTask p){return p instanceof Glide g&&PlanningTask.request(request,g.request);}
     }
+    /** Full Approach -> Strike -> Exit certificate, separate from a short steering hint. */
+    record AttackCertificate(FlightPrediction.State start,GlidePlanner.Request request,double minimum) implements PlanningTask {
+        public Object compute(CollisionSnapshot.Space s){
+            var plan=GlidePlanner.choose(start,request,s);
+            if(!GlidePlanner.ordinary(plan))return new GlidePlanner.Forecast(false,Double.NEGATIVE_INFINITY);
+            return GlidePlanner.forecast(start,request,plan,s,minimum,(state,aim,tick)->s.ray(state.x(),state.y(),state.z(),
+                aim.x()+aim.vx()*tick,aim.bottom()+aim.height()*.5+aim.vy()*tick,aim.z()+aim.vz()*tick));
+        }
+        public boolean compatible(PlanningTask p){return p instanceof AttackCertificate a&&minimum==a.minimum&&PlanningTask.request(request,a.request);}
+    }
     record Pulse(FlightPrediction.State start,GlidePlanner.Request request,int duration,double minimum,double reserve) implements PlanningTask {
         public Object compute(CollisionSnapshot.Space s){var plans=new java.util.HashMap<Integer,GlidePlanner.Plan>();var review=GlidePlanner.reviewPulse(start,request,s,duration,minimum,reserve,plans);return new PulseResult(review,plans);}
         public boolean compatible(PlanningTask p){return p instanceof Pulse g&&duration==g.duration&&minimum==g.minimum&&reserve==g.reserve&&PlanningTask.request(request,g.request);}
@@ -61,7 +72,7 @@ public sealed interface PlanningTask extends PlannerExecutor.Task<Object> {
             &&near(goal.x(),g.goal.x(),1)&&near(goal.y(),g.goal.y(),1)&&near(goal.z(),g.goal.z(),1)
             &&near(goal.originX(),g.goal.originX(),2)&&near(goal.originZ(),g.goal.originZ(),2)&&near(goal.radius(),g.goal.radius(),2)
             &&near(goal.nextX(),g.goal.nextX(),1)&&near(goal.nextZ(),g.goal.nextZ(),1)
-            &&near(rocket,g.rocket,4)&&gravity==g.gravity&&rate==g.rate;}
+            &&PlanningTask.rocket(rocket,g.rocket,4)&&gravity==g.gravity&&rate==g.rate;}
     }
     record Launch(FlightPrediction.State start,double yaw,double height,double gravity,int duration,boolean remaining,SurfaceLaunchPlanner.Plan plan,boolean wet) implements PlanningTask {
         public Object compute(CollisionSnapshot.Space s){var water=wet?(SurfaceLaunchPlanner.Water)s:SurfaceLaunchPlanner.DRY;
@@ -79,14 +90,17 @@ public sealed interface PlanningTask extends PlannerExecutor.Task<Object> {
     }
     record Chain(FlightPrediction.State start,FlightPrediction.Aim aim,double height,int rocket,double gravity,double minimum,int budget,double distance,GlidePlanner.Request primary) implements PlanningTask {
         public Object compute(CollisionSnapshot.Space s){return primary!=null?ChainAttackPlanner.primaryContact(start,primary,s):ChainAttackPlanner.choose(start,aim,height,rocket,gravity,minimum,budget,distance,s);}
-        public boolean compatible(PlanningTask p){return p instanceof Chain g&&PlanningTask.aim(aim,g.aim)&&near(height,g.height,1)&&near(rocket,g.rocket,3)&&budget==g.budget&&(primary==null?g.primary==null:g.primary!=null&&PlanningTask.request(primary,g.primary));}
+        public boolean compatible(PlanningTask p){return p instanceof Chain g&&PlanningTask.aim(aim,g.aim)&&near(height,g.height,1)&&PlanningTask.rocket(rocket,g.rocket,3)&&budget==g.budget&&(primary==null?g.primary==null:g.primary!=null&&PlanningTask.request(primary,g.primary));}
     }
     record Sweep(FlightPrediction.State start,SweepingAttackPlanner.Point target,FlightPrediction.Aim aim,int rocket,double gravity,double rate,double minimum,double exit,double turn,
-        SweepingAttackPlanner.Path path,boolean exiting,int budget) implements PlanningTask {
+        SweepingAttackPlanner.Path path,boolean exiting,int budget,boolean ignition) implements PlanningTask {
+        public Sweep(FlightPrediction.State start,SweepingAttackPlanner.Point target,FlightPrediction.Aim aim,int rocket,double gravity,double rate,double minimum,double exit,double turn,
+            SweepingAttackPlanner.Path path,boolean exiting,int budget){this(start,target,aim,rocket,gravity,rate,minimum,exit,turn,path,exiting,budget,false);}
         public Object compute(CollisionSnapshot.Space s){SweepingAttackPlanner.Contact contact=(a,b,t)->s.ray(a.x(),a.y(),a.z(),b.x()+b.vx()*t,b.bottom()+b.height()*.5+b.vy()*t,b.z()+b.vz()*t);
-            return path==null?SweepingAttackPlanner.choose(start,target,aim,rocket,gravity,rate,minimum,exit,s,contact,turn)
-                :SweepingAttackPlanner.simulate(start,path,aim,rocket,gravity,rate,minimum,exiting,s,contact,budget);}
-        public boolean compatible(PlanningTask p){return p instanceof Sweep g&&path==g.path&&exiting==g.exiting&&PlanningTask.aim(aim,g.aim)&&near(rocket,g.rocket,3)&&rate==g.rate&&budget==g.budget&&gravity==g.gravity&&minimum==g.minimum&&exit==g.exit;}
+            var initial=ignition?start.withRocketDelay(1):start;
+            return path==null?SweepingAttackPlanner.choose(initial,target,aim,rocket,gravity,rate,minimum,exit,s,contact,turn)
+                :SweepingAttackPlanner.simulate(initial,path,aim,rocket,gravity,rate,minimum,exiting,s,contact,budget);}
+        public boolean compatible(PlanningTask p){return p instanceof Sweep g&&ignition==g.ignition&&path==g.path&&exiting==g.exiting&&PlanningTask.aim(aim,g.aim)&&PlanningTask.rocket(rocket,g.rocket,3)&&rate==g.rate&&budget==g.budget&&gravity==g.gravity&&minimum==g.minimum&&exit==g.exit;}
     }
     record SweepPulse(FlightPrediction.State start,SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,int duration,double gravity,double rate,double minimum,boolean exiting) implements PlanningTask {
         public Slot slot(){return new Slot(getClass(),duration,exiting?1:0);}
@@ -95,7 +109,7 @@ public sealed interface PlanningTask extends PlannerExecutor.Task<Object> {
             SweepingAttackPlanner.Contact contact=(a,b,t)->s.ray(a.x(),a.y(),a.z(),b.x()+b.vx()*t,b.bottom()+b.height()*.5+b.vy()*t,b.z()+b.vz()*t);
             double cost=0;
             for(int ticks=RocketProfile.minimumTicks(duration);ticks<=RocketProfile.maximumTicks(duration);ticks++){
-                var prediction=SweepingAttackPlanner.simulate(start,path,aim,ticks,gravity,rate,minimum,exiting,s,contact,exiting?24:100);
+                var prediction=SweepingAttackPlanner.simulate(start.withRocketDelay(1),path,aim,ticks,gravity,rate,minimum,exiting,s,contact,exiting?24:100);
                 if(!prediction.safe()||!prediction.hit())return Double.POSITIVE_INFINITY;cost+=prediction.cost();
             }
             return cost/12+RocketProfile.expectedTicks(duration)*.02;
@@ -104,17 +118,18 @@ public sealed interface PlanningTask extends PlannerExecutor.Task<Object> {
     record RejoinResult(SweepingAttackPlanner.Selection selection,int duration) {}
     record Rejoin(FlightPrediction.State start,SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,double minimum,List<Integer> durations) implements PlanningTask {
         public Rejoin {durations=List.copyOf(durations);}
-        public boolean compatible(PlanningTask p){return p instanceof Rejoin r&&path==r.path&&PlanningTask.aim(aim,r.aim)&&near(rocket,r.rocket,3)&&gravity==r.gravity&&rate==r.rate&&minimum==r.minimum&&durations.equals(r.durations);}
+        public Slot slot(){return new Slot(getClass(),System.identityHashCode(path),0);}
+        public boolean compatible(PlanningTask p){return p instanceof Rejoin r&&path==r.path&&PlanningTask.aim(aim,r.aim)&&PlanningTask.rocket(rocket,r.rocket,3)&&gravity==r.gravity&&rate==r.rate&&minimum==r.minimum&&durations.equals(r.durations);}
         public Object compute(CollisionSnapshot.Space s){
             SweepingAttackPlanner.Contact contact=(a,b,t)->s.ray(a.x(),a.y(),a.z(),b.x()+b.vx()*t,b.bottom()+b.height()*.5+b.vy()*t,b.z()+b.vz()*t);
             var coast=SweepingAttackPlanner.rejoin(start,path,aim,rocket,gravity,rate,minimum,s,contact);
             if(coast!=null)return new RejoinResult(coast,-1);
             if(rocket>0)return null;
             for(int duration:durations){
-                var funded=SweepingAttackPlanner.rejoin(start,path,aim,RocketProfile.maximumTicks(duration),gravity,rate,minimum,s,contact);
+                var funded=SweepingAttackPlanner.rejoin(start.withRocketDelay(1),path,aim,RocketProfile.maximumTicks(duration),gravity,rate,minimum,s,contact);
                 if(funded==null)continue;boolean safe=true;
                 for(int ticks=RocketProfile.minimumTicks(duration);ticks<=RocketProfile.maximumTicks(duration);ticks++){
-                    var prediction=SweepingAttackPlanner.simulate(start,funded.path(),aim,ticks,gravity,rate,minimum,false,s,contact,120);
+                    var prediction=SweepingAttackPlanner.simulate(start.withRocketDelay(1),funded.path(),aim,ticks,gravity,rate,minimum,false,s,contact,120);
                     if(!prediction.safe()||!prediction.hit()){safe=false;break;}
                 }
                 if(safe)return new RejoinResult(funded,duration);

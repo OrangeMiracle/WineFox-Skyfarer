@@ -53,6 +53,8 @@ public final class FireworkManager {
         return false;
     }
     public boolean active() { return activeRocket != null && activeRocket.isAlive() && !activeRocket.isRemoved(); }
+    /** EntityTickList iterates a stable map: an entity added during the maid tick first ticks next server tick. */
+    public int ignitionDelay(EntityMaid maid){return active()&&lastBoost==maid.level().getGameTime()?1:0;}
     public int remainingBoostTicks() {
         if (!active()) return 0;
         var lifetime = (FireworkLifetimeAccessor)activeRocket;

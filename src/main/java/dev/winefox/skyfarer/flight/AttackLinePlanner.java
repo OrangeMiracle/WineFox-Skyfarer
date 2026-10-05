@@ -18,6 +18,11 @@ public final class AttackLinePlanner {
     }
     public static Line choose(FlightPrediction.State s,double x,double y,double z,double dx,double dz,
         double groundGradient,double crossGradient,double minimumEntry,double exitDistance,double expansion,boolean pulseAvailable,Space space) {
+        return choose(s,x,y,z,dx,dz,groundGradient,crossGradient,minimumEntry,exitDistance,expansion,pulseAvailable,
+            s.physics()==null?.08:s.physics().gravity(),space);
+    }
+    public static Line choose(FlightPrediction.State s,double x,double y,double z,double dx,double dz,
+        double groundGradient,double crossGradient,double minimumEntry,double exitDistance,double expansion,boolean pulseAvailable,double gravity,Space space) {
         double distance=Math.hypot(x-s.x(),z-s.z()),direct=Math.clamp((y-s.y())/Math.max(1,distance),-1.5,1.5);
         Line best=null;
         var grades=new java.util.LinkedHashSet<Double>();
@@ -41,8 +46,8 @@ public final class AttackLinePlanner {
                     double speed=Math.sqrt(s.vx()*s.vx()+s.vy()*s.vy()+s.vz()*s.vz());
                     double cosine=(s.vx()*vx+s.vy()*vy+s.vz()*vz)/Math.max(.001,speed*Math.sqrt(vx*vx+vy*vy+vz*vz));
                     double turnCost=Math.toDegrees(Math.acos(Math.clamp(cosine,-1,1)))*.15;
-                    double deficit=Math.max(0,.32-GlidePlanner.energy(s,Math.max(contact,oy),.08));
-                    if(deficit>0 && !pulseAvailable) continue;
+                    double deficit=Math.max(0,.32-GlidePlanner.energy(s,Math.max(ey,Math.max(contact,oy)),gravity));
+                    // Heuristic ranking only; commitment requires a forward-simulated certificate.
                     double cost=approach+entry*Math.sqrt(1+grade*grade)+Math.hypot(exitDistance,oy-contact)+turnCost+deficit*8+Math.abs(turn)*.04;
                     if(best==null || cost<best.cost) best=new Line(grade,contact,ex,ey,ez,ox,oy,oz,cost);
                 }

@@ -10,6 +10,9 @@ public final class PlannerSession {
         CollisionSnapshot snapshot(Map<Long,CollisionSnapshot.Cell> cells,boolean wet,boolean launch);
         default int lastReads(){return 216;}
         default String dimension(){return "unknown";}
+        default Object levelIdentity(){return this;}
+        default PhysicsContext physics(long tick){return PhysicsContext.VANILLA;}
+        default void releasePhysics(){}
         default void failed(String message){}
     }
     public static final class Pending extends RuntimeException {
@@ -43,6 +46,10 @@ public final class PlannerSession {
     private long now,generation,config;private Object phase,target;private double horizon=1;
     private boolean closed;
     private String dimension;
+    private Object levelIdentity;
+    private PhysicsContext physics=PhysicsContext.VANILLA;
+    private long physicsAt;
+    public PhysicsContext physics(){check();return physics;}
     private int localEpoch=-1,capturedThisEpoch,lastQueryEpoch=-1000;
     private FlightPrediction.State urgent=CollisionSnapshot.point(0,0,0);
     private Map<Long,CollisionSnapshot.Cell> frozen=Map.of();private boolean dirty;
@@ -52,14 +59,22 @@ public final class PlannerSession {
         check();if(closed){closed=false;sessions.add(this);}
         now=tick;
         String currentDimension=source.dimension();
-        if(!Objects.equals(dimension,currentDimension)){
-            invalidate();cells.clear();requested.clear();frozen=Map.of();dirty=false;dimension=currentDimension;
+        Object currentLevel=source.levelIdentity();
+        if(levelIdentity!=currentLevel||!Objects.equals(dimension,currentDimension)){
+            invalidate();cells.clear();requested.clear();frozen=Map.of();dirty=false;dimension=currentDimension;levelIdentity=currentLevel;
         }
+        PhysicsContext captured;
+        try{captured=Objects.requireNonNullElse(source.physics(tick),PhysicsContext.VANILLA);}
+        catch(RuntimeException failure){captured=PhysicsContext.VANILLA;}
+        // Natural effect countdown is represented in every frozen State. Changes of the
+        // governing law cancel certificates; a duration refresh also invalidates them.
+        if(!physics.after(tick-physicsAt).equals(captured))invalidate();
+        physics=captured;physicsAt=tick;
         if(!Objects.equals(this.phase,phase)||!Objects.equals(this.target,target)||this.config!=config){invalidate();this.phase=phase;this.target=target;this.config=config;}
         this.horizon=horizon;pump();
     }
     public void invalidate(){check();generation++;staleResults+=pending.size();for(var work:pending.values())work.ticket.cancel();pending.clear();cache.clear();seeds.clear();}
-    public void close(){check();invalidate();cells.clear();requested.clear();frozen=Map.of();closed=true;sessions.remove(this);}
+    public void close(){check();invalidate();cells.clear();requested.clear();frozen=Map.of();source.releasePhysics();physics=PhysicsContext.VANILLA;levelIdentity=null;closed=true;sessions.remove(this);}
     private void pump(){
         check();
         for(var it=pending.entrySet().iterator();it.hasNext();){var work=it.next().getValue();var done=work.ticket.outcome;
@@ -134,7 +149,9 @@ public final class PlannerSession {
             // Committing a contact curve is more sensitive than reusing a steering hint.
             // Especially under a long rocket pulse, two ticks of turning can invalidate
             // the hit forecast even though the old general-purpose position bound passes.
-            if(unbound instanceof PlanningTask.Rejoin&&!contactStateCompatible(a,b,now-cached.tick))continue;
+            if((unbound instanceof PlanningTask.Rejoin||unbound instanceof PlanningTask.AttackCertificate)&&!contactStateCompatible(a,b,now-cached.tick))continue;
+            if(!Objects.equals(a.physics(),b.physics()==null?null:b.physics().after(now-cached.tick)))continue;
+            if(a.rocketDelay()!=Math.max(0,b.rocketDelay()-(now-cached.tick)))continue;
             double distance=Math.sqrt(Math.pow(a.x()-b.x(),2)+Math.pow(a.y()-b.y(),2)+Math.pow(a.z()-b.z(),2));
             if(!terrain&&(distance>(geometry?16:4)||Math.abs(FlightPrediction.turn(a.yaw(),b.yaw(),180)-a.yaw())>(geometry?90:24)
                 ||!geometry&&Math.abs(a.vx()-b.vx())+Math.abs(a.vy()-b.vy())+Math.abs(a.vz()-b.vz())>1.2))continue;

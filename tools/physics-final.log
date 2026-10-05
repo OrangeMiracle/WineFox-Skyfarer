@@ -1,0 +1,258 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :jarJar NO-SOURCE
+> Task :jar
+> Task :assemble
+> Task :compileTestJava NO-SOURCE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :test NO-SOURCE
+> Task :compileControllerReplay UP-TO-DATE
+
+> Task :verifyAsyncPlanning
+Async boundary checks passed: immutable DTOs, world-border keys, strict unknown cells, main-only capture, identical math, generation/target/config/dimension invalidation, cancellation, bounded queues and restart.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyAsyncSweep FAILED
+Exception in thread "main" java.lang.AssertionError: Full immutable snapshot changed hillside geometry
+	at dev.winefox.skyfarer.async.AsyncSweepChecks.main(AsyncSweepChecks.java:17)
+
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyAttackEnvelope FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: horizon exhaustion cannot certify partial exit
+	at dev.winefox.skyfarer.flight.AttackEnvelopeChecks.require(AttackEnvelopeChecks.java:6)
+	at dev.winefox.skyfarer.flight.AttackEnvelopeChecks.main(AttackEnvelopeChecks.java:44)
+
+> Task :verifyAttackPolicy
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Attack cycle, maneuver boundary, entry opportunity and repeated recovery checks passed.
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyCombatEntries
+low-energy-summit hit=166 landed=237 upward=false maxSlowTicks=0 rockets=1
+Exception in thread "main" java.lang.AssertionError: upward-entry hit=570 landed=611 upward=false slowTicks=0
+	at dev.winefox.skyfarer.replay.CombatEntryReplayChecks.run(CombatEntryReplayChecks.java:44)
+	at dev.winefox.skyfarer.replay.CombatEntryReplayChecks.main(CombatEntryReplayChecks.java:13)
+
+> Task :verifyCombatEntries FAILED
+
+> Task :verifyCombatRecovery
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Short exits, charge-tail deduplication/failure settlement, dense slope fits passed; no game launched.
+
+> Task :verifyCommandDispatch
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Command queue, ownership/range policy, handoff, route priority, bounded tickets, debug forecast and actual spyglass/Home bytecode checks passed.
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+flat-near attack=96 hits=1 landed=171 peak=16.09 radius=63.15 rockets=2
+flat-normal attack=89 hits=1 landed=205 peak=17.96 radius=42.77 rockets=2
+flat-behind-long-pulse attack=142 hits=1 landed=225 peak=17.96 radius=54.20 rockets=3
+home-continuous attack=89 hits=3 landed=367 peak=17.60 radius=49.33 rockets=6
+flat-short-pulse attack=114 hits=1 landed=215 peak=26.45 radius=38.79 rockets=4
+flat-longest-pulse attack=211 hits=1 landed=317 peak=17.96 radius=38.47 rockets=3
+flat-far attack=108 hits=1 landed=258 peak=19.06 radius=51.52 rockets=4
+follow-continuous attack=91 hits=3 landed=429 peak=17.96 radius=60.84 rockets=6
+slope-cycle attack=86 hits=1 landed=216 peak=17.96 radius=50.01 rockets=2
+small-target-cycle attack=90 hits=1 landed=188 peak=17.96 radius=42.74 rockets=3
+target-despawn attack=89 hits=0 landed=186 peak=17.96 radius=42.77 rockets=2
+task-cancel attack=89 hits=0 landed=122 peak=17.96 radius=42.77 rockets=2
+snow-layer-cycle attack=89 hits=1 landed=203 peak=18.09 radius=42.77 rockets=2
+mixed-partial-cycle attack=86 hits=1 landed=183 peak=18.46 radius=42.74 rockets=3
+slab-cycle attack=88 hits=1 landed=180 peak=18.46 radius=42.76 rockets=3
+ice-inertia-cycle attack=94 hits=1 landed=157 peak=19.06 radius=64.72 rockets=3
+radius-32-cycle attack=89 hits=1 landed=205 peak=17.96 radius=42.77 rockets=2
+surface-and-cave attack=89 hits=1 landed=205 peak=17.96 radius=42.77 rockets=2
+Exception in thread "main" java.lang.AssertionError: summit-cycle: no attack within 400 ticks; state=APPROACH; trace=build\reports\controller-replay\summit-cycle.tsv
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.run(ControllerReplayChecks.java:134)
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.main(ControllerReplayChecks.java:37)
+summit-cycle attack=-1 hits=0 landed=-1 peak=17.17 radius=47.47 rockets=3
+
+> Task :verifyControllerReplay FAILED
+
+> Task :verifyDebugTools
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Debug tools: multi-binding, wraparound, unloaded snapshot retention, reload, unbind, logout, exact TLM/teleport APIs and common-side isolation passed.
+
+> Task :verifyDispatchReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+dispatch 180 blocks yaw=0 snow=false friendly=false creativeMultiplier=0 handoff=92 hit=122 landed=139 combat rockets=0
+dispatch 900 blocks yaw=180 snow=true friendly=false creativeMultiplier=0 handoff=615 hit=643 landed=660 combat rockets=0
+dispatch 256 blocks yaw=-90 snow=false friendly=false creativeMultiplier=0 handoff=163 hit=196 landed=252 combat rockets=0
+dispatch 180 blocks yaw=0 snow=false friendly=true creativeMultiplier=0 handoff=109 hit=137 landed=211 combat rockets=1
+dispatch 900 blocks yaw=0 snow=false friendly=false creativeMultiplier=2 handoff=318 hit=450 landed=472 combat rockets=2
+dispatch 900 blocks yaw=180 snow=false friendly=false creativeMultiplier=100 handoff=41 hit=375 landed=462 combat rockets=4
+dispatch 180 blocks yaw=90 snow=false friendly=true creativeMultiplier=2 handoff=71 hit=202 landed=231 combat rockets=2
+Dispatch full-cycle replay passed; transit consumes no inventory; combat and landing remain native controller decisions.
+
+> Task :verifyFlightMath
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Charge timing checks passed; Minecraft was not launched.
+
+> Task :verifyFlightPrediction
+162 powered/unpowered flight scenarios and rocket selection passed; Minecraft was not launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyGlideCorridor FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: short pulse has a safe coast before the distant wall
+	at dev.winefox.skyfarer.flight.GlideCorridorChecks.require(GlideCorridorChecks.java:138)
+	at dev.winefox.skyfarer.flight.GlideCorridorChecks.main(GlideCorridorChecks.java:62)
+
+> Task :verifyMaidCombat
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Small-target vertical tolerance, horizontal/range limits, pass deduplication, target switching, withdrawal timing and primary-safe multi-pierce checks passed. Minecraft was not launched.
+
+> Task :verifyPlannerLoad
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Synthetic 24-owner / 100-tick scheduler load (not MC TPS): ready=1961; main p50=0.388 ms, p95=2.028 ms, max=31.180 ms; worker CPU=1080.432 ms; captured block reads=2095200; every owner served; queue <=64, per-owner jobs <=24 and cells <=768; shutdown clean.
+
+> Task :verifyScanCadence
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Scan cadence checks passed; Minecraft was not launched.
+
+> Task :verifySorties
+Bounded kinetic-to-height turns, curved dive contacts, lateral chain contact/recovery and blocked-chain rejection passed; no game launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifySpearIntercept
+144 native-sized spear intercept scenarios passed; Minecraft was not launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifySurfaceLaunch
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+60 ice/snow/water departures across every rocket lifetime, low-roof side launch and sealed-water fallback passed; no game launched.
+
+> Task :verifySweepingAttacks FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: No attack around an occluding hill shoulder
+	at dev.winefox.skyfarer.flight.SweepingAttackChecks.main(SweepingAttackChecks.java:28)
+
+> Task :verifySweepingReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: hill mirror=1 hit=-1 landed=-1 curve=false exit=false Body collision at 187 state=ATTACK_EXIT
+	at dev.winefox.skyfarer.replay.SweepingAttackReplayChecks.run(SweepingAttackReplayChecks.java:50)
+	at dev.winefox.skyfarer.replay.SweepingAttackReplayChecks.main(SweepingAttackReplayChecks.java:14)
+
+> Task :verifySweepingReplay FAILED
+
+> Task :verifyTerrainCombat
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+36 steep/slow attack replays with finite pulses and planned exits passed.
+36 sloped attack replays, low-roof launch, target layers and airborne reengagement checks passed; no game launched.
+
+> Task :verifyVanillaPhysics
+18000 mapped 1.21.1 differential physics steps passed; dive/pull-up, drag, float lookup, epsilon, negative/zero gravity, slow-fall expiry and rocket order.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyYsmCompatibility
+5 exact optional YSM 2.6.5 hooks and upstream missing elytra state verified without loading a game.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+FAILURE: Build completed with 7 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyAsyncSweep'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyAttackEnvelope'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+3: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyCombatEntries'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+4: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyControllerReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+5: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyGlideCorridor'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+6: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifySweepingAttacks'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+7: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifySweepingReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+BUILD FAILED in 8m 18s
+30 actionable tasks: 26 executed, 4 up-to-date
