@@ -1,0 +1,44 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\ai\AirCombatController.java使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava UP-TO-DATE
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses UP-TO-DATE
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifySweepingAttacks FAILED
+RIGHT_ARC lift=13.4 safe=false hit=true miss=0.0 steps=66 end=State[x=1.4440295100611857, y=11.69324895072269, z=8.819849796444888, vx=-0.12215779487455644, vy=-0.15294004642533102, vz=0.29345186138848023, yaw=16.40391428389319, pitch=-44.4270040008057]
+RIGHT_ARC lift=14.6 safe=false hit=false miss=0.0 steps=75 end=State[x=1.48411001786395, y=8.939845059319685, z=8.758889110373826, vx=-0.12316282418244673, vy=-0.23092392365359898, vz=0.29607184538233877, yaw=21.556781823460692, pitch=-44.4270040008057]
+RIGHT_ARC lift=13.4 safe=false hit=true miss=0.0 steps=64 end=State[x=1.6342811333625256, y=11.797710492361727, z=8.848979535924164, vx=-0.18750330038992935, vy=-0.13385783457506223, vz=0.2621394808655408, yaw=26.246121623693664, pitch=-44.4270040008057]
+RIGHT_ARC lift=13.4 safe=false hit=true miss=0.0 steps=64 end=State[x=2.001756789071965, y=11.791973850806421, z=8.935896228557452, vx=-0.2120777392017209, vy=-0.13521550881519112, vz=0.2429412736300446, yaw=37.669062354030494, pitch=-44.4270040008057]
+RIGHT_ARC lift=14.6 safe=false hit=true miss=0.0 steps=71 end=State[x=1.5101311163251496, y=10.142495553692475, z=8.917685868163373, vx=-0.16233865424801283, vy=-0.21311691015203985, vz=0.26009499287532417, yaw=18.814316664067757, pitch=-44.4270040008057]
+RIGHT_ARC lift=14.6 safe=false hit=true miss=0.0 steps=71 end=State[x=1.8327529273777146, y=10.140059420048035, z=8.986854254699583, vx=-0.19739666367756326, vy=-0.212685597877227, vz=0.23859561019797504, yaw=34.57814335940425, pitch=-44.4270040008057]
+RIGHT_ARC lift=13.4 safe=false hit=true miss=0.0 steps=64 end=State[x=1.381964054051446, y=11.797709857208769, z=8.799873710575106, vx=-0.16622169857617985, vy=-0.13373153273511046, vz=0.27369942033661393, yaw=17.51124197569879, pitch=-44.4270040008057]
+Exception in thread "main" java.lang.AssertionError: No attack around an occluding hill shoulder
+RIGHT_ARC lift=14.6 safe=false hit=true miss=0.0 steps=71 end=State[x=1.2906894060252037, y=10.151927661839169, z=8.9025437379267, vx=-0.1381702844737811, vy=-0.2133633077552846, vz=0.27047826550218645, yaw=11.10706314812817, pitch=-44.4270040008057]
+	at dev.winefox.skyfarer.flight.SweepingAttackChecks.main(SweepingAttackChecks.java:36)
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifySweepingAttacks'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 7s
+5 actionable tasks: 2 executed, 3 up-to-date

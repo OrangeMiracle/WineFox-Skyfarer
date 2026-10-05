@@ -1,0 +1,55 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+flat-near attack=51 hits=1 landed=207 peak=14.71 radius=30.56 rockets=2
+flat-normal attack=63 hits=1 landed=216 peak=14.71 radius=30.56 rockets=2
+flat-behind-long-pulse attack=75 hits=1 landed=214 peak=14.71 radius=32.84 rockets=2
+home-continuous attack=63 hits=3 landed=364 peak=17.38 radius=60.17 rockets=5
+flat-short-pulse attack=15 hits=1 landed=213 peak=25.54 radius=57.43 rockets=3
+flat-longest-pulse attack=87 hits=1 landed=164 peak=14.71 radius=33.93 rockets=2
+flat-far attack=123 hits=1 landed=216 peak=45.49 radius=61.98 rockets=2
+follow-continuous attack=63 hits=3 landed=425 peak=14.71 radius=41.17 rockets=4
+slope-cycle attack=71 hits=1 landed=203 peak=14.71 radius=49.90 rockets=3
+small-target-cycle attack=63 hits=1 landed=217 peak=14.71 radius=31.07 rockets=2
+target-despawn attack=63 hits=0 landed=86 peak=14.71 radius=30.56 rockets=2
+task-cancel attack=63 hits=0 landed=93 peak=14.71 radius=30.56 rockets=2
+snow-layer-cycle attack=63 hits=1 landed=216 peak=14.83 radius=30.56 rockets=2
+mixed-partial-cycle attack=63 hits=1 landed=217 peak=15.21 radius=31.08 rockets=2
+slab-cycle attack=63 hits=1 landed=216 peak=15.21 radius=30.56 rockets=2
+ice-inertia-cycle attack=63 hits=1 landed=218 peak=14.73 radius=33.37 rockets=2
+radius-32-cycle attack=63 hits=1 landed=216 peak=14.71 radius=30.56 rockets=2
+surface-and-cave attack=63 hits=1 landed=216 peak=14.71 radius=30.56 rockets=2
+summit-cycle attack=73 hits=1 landed=194 peak=14.71 radius=55.24 rockets=2
+uphill-cycle attack=87 hits=1 landed=446 peak=33.86 radius=43.10 rockets=4
+upward-pillar attack=88 hits=1 landed=181 peak=24.86 radius=52.24 rockets=2
+Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifySweepingReplay
+Occluded hillside mirror=1 curved hit=54 continued exit=true landed=134
+Occluded hillside mirror=-1 curved hit=54 continued exit=true landed=137
+
+> Task :verifyCombatEntries
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+low-energy-summit hit=16 landed=122 upward=false maxSlowTicks=0 rockets=2
+upward-entry hit=18 landed=118 upward=true maxSlowTicks=0 rockets=2
+
+> Task :verifyDispatchReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+dispatch 180 blocks yaw=0 snow=false friendly=false creativeMultiplier=0 handoff=92 hit=122 landed=176 combat rockets=0
+dispatch 900 blocks yaw=180 snow=true friendly=false creativeMultiplier=0 handoff=611 hit=638 landed=656 combat rockets=0
+dispatch 256 blocks yaw=-90 snow=false friendly=false creativeMultiplier=0 handoff=161 hit=196 landed=227 combat rockets=0
+dispatch 180 blocks yaw=0 snow=false friendly=true creativeMultiplier=0 handoff=107 hit=144 landed=210 combat rockets=0
+dispatch 900 blocks yaw=0 snow=false friendly=false creativeMultiplier=2 handoff=315 hit=437 landed=471 combat rockets=1
+dispatch 900 blocks yaw=180 snow=false friendly=false creativeMultiplier=100 handoff=38 hit=138 landed=198 combat rockets=1
+dispatch 180 blocks yaw=90 snow=false friendly=true creativeMultiplier=2 handoff=68 hit=104 landed=163 combat rockets=0
+Dispatch full-cycle replay passed; transit consumes no inventory; combat and landing remain native controller decisions.
+
+BUILD SUCCESSFUL in 10s
+5 actionable tasks: 5 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

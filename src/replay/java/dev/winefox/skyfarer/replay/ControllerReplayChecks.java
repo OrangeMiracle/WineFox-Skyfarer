@@ -84,7 +84,7 @@ public final class ControllerReplayChecks {
                 for(var value:AirCombatState.values())if(event.contains(" -> "+value+";"))visited.add(value);
             }
             if(controller.spearAttackActive() && firstAttack<0)firstAttack=tick;
-            if(interrupted&&!interruptionSent&&state==AirCombatState.DIVE) {
+            if(interrupted&&!interruptionSent&&(state==AirCombatState.DIVE||state==AirCombatState.SPEAR_CHARGE)) {
                 if(name.equals("task-cancel"))maid.task=false;
                 else for(var e:world.entities)if(e.hostile)e.alive=false;
                 interruptionSent=true;

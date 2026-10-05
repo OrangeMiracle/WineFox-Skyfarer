@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 group = 'dev.winefox.skyfarer'
-version = '0.5.3'
+version = '0.5.4'
 base { archivesName = 'winefox_skyfarer-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
@@ -139,6 +139,19 @@ tasks.register('verifyCombatEntries', JavaExec) {
     mainClass = 'dev.winefox.skyfarer.replay.CombatEntryReplayChecks'
 }
 tasks.named('check') { dependsOn verifyCombatEntries }
+
+tasks.register('verifySweepingAttacks', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.SweepingAttackChecks'
+}
+tasks.named('check') { dependsOn verifySweepingAttacks }
+tasks.register('verifySweepingReplay', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.SweepingAttackReplayChecks'
+}
+tasks.named('check') { dependsOn verifySweepingReplay }
 dependencies {
     // Read-only API reference; neither bundled into this mod nor installed as a test client.
     compileOnly files('tools/ysm-reference.jar')

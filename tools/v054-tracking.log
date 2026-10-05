@@ -1,0 +1,39 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+flat-near attack=51 hits=1 landed=194 peak=14.71 radius=31.34 rockets=2
+flat-normal attack=63 hits=1 landed=233 peak=14.71 radius=34.13 rockets=2
+flat-behind-long-pulse attack=75 hits=1 landed=227 peak=14.71 radius=32.84 rockets=2
+home-continuous attack=63 hits=3 landed=422 peak=14.71 radius=58.86 rockets=4
+flat-short-pulse attack=15 hits=1 landed=200 peak=25.53 radius=44.31 rockets=2
+flat-longest-pulse attack=87 hits=1 landed=416 peak=14.71 radius=67.06 rockets=4
+flat-far attack=123 hits=1 landed=217 peak=45.49 radius=61.98 rockets=2
+follow-continuous attack=63 hits=3 landed=448 peak=14.71 radius=46.18 rockets=4
+slope-cycle attack=71 hits=1 landed=203 peak=14.71 radius=49.90 rockets=3
+small-target-cycle attack=63 hits=1 landed=233 peak=14.71 radius=33.26 rockets=2
+target-despawn attack=63 hits=0 landed=110 peak=14.71 radius=30.56 rockets=1
+task-cancel attack=63 hits=0 landed=93 peak=14.71 radius=30.56 rockets=2
+snow-layer-cycle attack=63 hits=1 landed=233 peak=14.83 radius=34.13 rockets=2
+mixed-partial-cycle attack=63 hits=1 landed=233 peak=15.21 radius=32.69 rockets=2
+slab-cycle attack=63 hits=1 landed=233 peak=15.21 radius=34.13 rockets=2
+ice-inertia-cycle attack=63 hits=1 landed=234 peak=14.73 radius=33.81 rockets=2
+radius-32-cycle attack=63 hits=1 landed=233 peak=14.71 radius=34.13 rockets=2
+surface-and-cave attack=63 hits=1 landed=233 peak=14.71 radius=34.13 rockets=2
+summit-cycle attack=73 hits=1 landed=194 peak=14.71 radius=55.24 rockets=2
+uphill-cycle attack=87 hits=1 landed=431 peak=33.86 radius=43.10 rockets=3
+upward-pillar attack=88 hits=1 landed=181 peak=24.86 radius=52.24 rockets=2
+Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.
+
+> Task :verifyCombatEntries
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+low-energy-summit hit=16 landed=122 upward=false maxSlowTicks=0 rockets=2
+upward-entry hit=18 landed=118 upward=true maxSlowTicks=0 rockets=2
+
+BUILD SUCCESSFUL in 9s
+3 actionable tasks: 3 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

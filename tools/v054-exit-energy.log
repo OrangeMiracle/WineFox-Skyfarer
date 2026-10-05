@@ -1,0 +1,37 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyControllerReplay FAILED
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+flat-near attack=51 hits=1 landed=207 peak=14.71 radius=30.56 rockets=2
+flat-normal attack=63 hits=1 landed=216 peak=14.71 radius=30.56 rockets=2
+flat-behind-long-pulse attack=75 hits=1 landed=214 peak=14.71 radius=32.84 rockets=2
+home-continuous attack=63 hits=3 landed=364 peak=17.38 radius=60.17 rockets=5
+flat-short-pulse attack=15 hits=1 landed=213 peak=25.54 radius=57.43 rockets=3
+flat-longest-pulse attack=87 hits=1 landed=164 peak=14.71 radius=33.93 rockets=2
+flat-far attack=123 hits=1 landed=216 peak=45.49 radius=61.98 rockets=2
+follow-continuous attack=63 hits=3 landed=425 peak=14.71 radius=41.17 rockets=4
+slope-cycle attack=71 hits=1 landed=203 peak=14.71 radius=49.90 rockets=3
+small-target-cycle attack=63 hits=1 landed=217 peak=14.71 radius=31.07 rockets=2
+target-despawn attack=63 hits=1 landed=-1 peak=14.71 radius=30.56 rockets=2
+Exception in thread "main" java.lang.AssertionError: target-despawn: incomplete lifecycle; hits=1 landing=-1 states=[GROUNDED, TARGET_SELECTED, TAKEOFF_PREP, TAKEOFF, CLIMB, APPROACH, REPOSITION, ATTACK_RUN, DIVE, SPEAR_CHARGE, ATTACK_EXIT, RETURN_TO_OWNER, LANDING]; trace=build\reports\controller-replay\target-despawn.tsv
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.run(ControllerReplayChecks.java:133)
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.main(ControllerReplayChecks.java:29)
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyControllerReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 7s
+2 actionable tasks: 2 executed

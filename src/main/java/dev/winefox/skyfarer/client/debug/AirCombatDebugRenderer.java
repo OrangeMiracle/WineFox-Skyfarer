@@ -45,6 +45,10 @@ public final class AirCombatDebugRenderer {
             Vec3 point = DebugSnapshot.vector(route.getCompound(i), "pos");
             RenderHelper.renderLine(pose, lines, previous.subtract(camera), point.subtract(camera), 0.15f, 0.4f, 1); previous = point;
         }
+        var curve=data.getList("attack_curve",Tag.TAG_COMPOUND);
+        for(int i=1;i<curve.size();i++)RenderHelper.renderLine(pose,lines,
+            DebugSnapshot.vector(curve.getCompound(i-1),"pos").subtract(camera),
+            DebugSnapshot.vector(curve.getCompound(i),"pos").subtract(camera),.15f,1f,.9f);
         var tube=data.getList("corridor",Tag.TAG_COMPOUND);Vec3[] last=null;
         for(int i=0;i<tube.size();i++) {
             var frame=tube.getCompound(i);Vec3 center=DebugSnapshot.vector(frame,"center");
@@ -97,7 +101,7 @@ public final class AirCombatDebugRenderer {
             "骑空士调试: " + data.getString("maid_name") + " [" + id + "]",
             "维度: "+data.getString("dimension")+" | "+(ClientDebugState.selection.ids().indexOf(ClientDebugState.selection.selected())+1)+" / "+ClientDebugState.selection.ids().size(),
             "状态: " + data.getString("state"),
-            "原因: " + data.getString("reason"),
+            "原因: " + data.getString("reason")+(data.getString("curve_style").isEmpty()?"":" | "+data.getString("curve_style")),
             "扫描: " + data.getString("scan"),
             "本轮锁定（红线）: " + (data.contains("target_name") ? data.getString("target_name") : "尚未进入攻击航程"),
             "候选: " + data.getString("preferred_name") + String.format(Locale.ROOT, " | 分数 %.1f", data.getDouble("score")),
@@ -105,7 +109,7 @@ public final class AirCombatDebugRenderer {
             String.format(Locale.ROOT, "Charge %s | 已用 %d / 前摇 %d ticks | 射程 %.2f", data.getBoolean("charging") ? "开启" : "关闭", data.getInt("charge_ticks"), data.getInt("charge_delay"), data.getDouble("spear_reach")),
             String.format(Locale.ROOT, "俯仰 %.1f° | 距目标 %.1f | 高于目标中心 %.1f", data.getDouble("pitch"), data.getDouble("target_distance"), data.getDouble("above_target")),
             String.format(Locale.ROOT, "转角 %.1f / %.0f° | 搜索 %.0f | 作战 %.0f", data.getDouble("angle"), data.getDouble("max_turn"), data.getDouble("search_range"), data.getDouble("combat_range")),
-            "蓝线: 引导航迹 | 绿方块: 攻击入口 | 方向键 ←/→: 切换女仆"
+            "蓝线: 引导航迹 | 青绿线: 拟合攻击曲线 | 绿方块: 攻击入口 | 方向键 ←/→: 切换女仆"
         };
         var graphics = event.getGuiGraphics();
         int width = Math.max(100, Math.min(420, graphics.guiWidth() - 16));
