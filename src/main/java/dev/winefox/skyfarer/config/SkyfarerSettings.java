@@ -6,6 +6,9 @@ import java.util.Map;
 /** Only this class reads the backing config. AI and commands share the live values. */
 public final class SkyfarerSettings {
     private SkyfarerSettings() {}
+    private static final java.util.concurrent.atomic.AtomicLong revision=new java.util.concurrent.atomic.AtomicLong();
+    public static long revision(){return revision.get();}
+    public static void reloaded(){revision.incrementAndGet();}
     public static double get(String name) {
         var p = SkyfarerConfig.PARAMETERS.get(name);
         if (p == null) throw new IllegalArgumentException("Unknown parameter: " + name);
@@ -24,6 +27,7 @@ public final class SkyfarerSettings {
         var proposed = snapshot(); proposed.put(name, value); validateRanges(proposed);
         if (!SkyfarerConfig.SPEC.isLoaded()) throw new IllegalArgumentException("Server configuration is not loaded");
         SkyfarerConfig.VALUES.get(name).set(value);
+        revision.incrementAndGet();
         SkyfarerConfig.SPEC.save();
     }
     private static void validateRanges(Map<String, Double> values) {
@@ -33,6 +37,7 @@ public final class SkyfarerSettings {
     public static void reset(String name) {
         if (!SkyfarerConfig.SPEC.isLoaded()) throw new IllegalArgumentException("Server configuration is not loaded");
         if (name.equals("all")) {
+            revision.incrementAndGet();
             SkyfarerConfig.PARAMETERS.forEach((key, p) -> SkyfarerConfig.VALUES.get(key).set(p.initial()));
             SkyfarerConfig.DEBUG_LOGGING.set(false);
             SkyfarerConfig.SPEC.save();

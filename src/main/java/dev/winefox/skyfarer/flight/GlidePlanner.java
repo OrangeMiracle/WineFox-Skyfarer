@@ -192,6 +192,10 @@ public final class GlidePlanner {
         return reviewPulse(start,request,corridor,duration,minimumSpeed,reserve).cost;
     }
     public static PulseReview reviewPulse(FlightPrediction.State start,Request request,Corridor corridor,int duration,double minimumSpeed,double reserve) {
+        return reviewPulse(start,request,corridor,duration,minimumSpeed,reserve,null);
+    }
+    public static PulseReview reviewPulse(FlightPrediction.State start,Request request,Corridor corridor,int duration,double minimumSpeed,double reserve,
+        java.util.Map<Integer,Plan> approvedPlans) {
         double cost=0;
         for (int ticks=RocketProfile.minimumTicks(duration);ticks<=RocketProfile.maximumTicks(duration);ticks++) {
             var candidate=request.withPulse(ticks);
@@ -201,6 +205,7 @@ public final class GlidePlanner {
             if (!future.safe()) return new PulseReview(Double.POSITIVE_INFINITY,"pulse_"+ticks+"_"+future.reason);
             // Reject a pulse which carries the maid past contact before the native windup/aim is ready.
             if(request.exit!=null && request.aim!=null && future.passed() && future.miss()>.04) return new PulseReview(Double.POSITIVE_INFINITY,"pulse_"+ticks+"_miss_"+future.miss);
+            if(approvedPlans!=null)approvedPlans.put(ticks,plan);
             cost+=Math.pow(Math.max(0,reserve-future.reserve()),2)*200+Math.max(0,future.reserve()-reserve)*2;
         }
         return new PulseReview(cost/12+RocketProfile.expectedTicks(duration)*0.02,"safe_contact_and_exit");
@@ -264,7 +269,7 @@ public final class GlidePlanner {
         if(r.aim!=null && !passed) goal=Math.max(goal,Math.max(r.height,r.exit==null?r.height:r.exit.y));
         return new Forecast(true,energy(s,goal,r.gravity)-0.5*minimumSpeed*minimumSpeed,passed,bestMiss);
     }
-    static double feedbackPitch(FlightPrediction.State s,double goal,double goalVelocity,double gravity,boolean boost) {
+    public static double feedbackPitch(FlightPrediction.State s,double goal,double goalVelocity,double gravity,boolean boost) {
         if (boost) {
             double vertical=Math.clamp(goalVelocity+(goal-s.y())*.22-(s.vy()-goalVelocity)*.6,-.8,.8);
             return -Math.toDegrees(Math.atan2(vertical,1.7));

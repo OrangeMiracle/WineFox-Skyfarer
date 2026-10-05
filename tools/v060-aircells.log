@@ -1,0 +1,43 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :compileControllerReplay
+
+> Task :verifyCombatEntries
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+low-energy-summit hit=300 landed=379 upward=false maxSlowTicks=4 rockets=1
+Exception in thread "main" java.lang.AssertionError: upward-entry hit=-1 landed=-1 upward=true slowTicks=51
+	at dev.winefox.skyfarer.replay.CombatEntryReplayChecks.run(CombatEntryReplayChecks.java:44)
+	at dev.winefox.skyfarer.replay.CombatEntryReplayChecks.main(CombatEntryReplayChecks.java:13)
+
+> Task :verifyCombatEntries FAILED
+
+> Task :verifyDispatchReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: unbounded transit ascent
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.require(DispatchReplayChecks.java:76)
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.run(DispatchReplayChecks.java:68)
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.run(DispatchReplayChecks.java:25)
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.run(DispatchReplayChecks.java:22)
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.main(DispatchReplayChecks.java:16)
+
+> Task :verifyDispatchReplay FAILED
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyControllerReplay
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+flat-near attack=103 hits=1 landed=-1 peak=23.01 radius=35.87 rockets=1
+
+Exception in thread "main" java.lang.AssertionError: flat-near: body corridor collision during RETURN_TO_OWNER; trace=build\reports\controller-replay\flat-near.tsv
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.run(ControllerReplayChecks.java:133)
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.main(ControllerReplayChecks.java:19)
+> Task :verifyControllerReplay FAILED
+
+> Task :verifySweepingReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir

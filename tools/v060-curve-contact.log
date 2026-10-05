@@ -1,0 +1,21 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyAsyncSweep
+Snapshot curve=RIGHT_ARC contact=54
+ideal=RIGHT_ARC
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+tick 0 pending gen=2 cells=0 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=0
+ideal=none
+tick 1 pending gen=2 cells=100 requested=118 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=37
+ideal=none
+tick 2 pending gen=2 cells=200 requested=29 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=45
+ideal=none
+tick 3 ready=true gen=2 cells=229 requested=0 jobs=0 cache=1 queue=0 cache=1 stale=0 failed=0 captureMs=0 workerMs=50
+review=false hit=true contact=66 last=State[x=1.728767039573652, y=9.828084054243483, z=8.923510056764693, vx=-0.08908401757414021, vy=-0.22289174094981437, vz=0.2831474703826349, yaw=13.456533433237915, pitch=-44.4270040008057]
+
+BUILD SUCCESSFUL in 5s
+2 actionable tasks: 2 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

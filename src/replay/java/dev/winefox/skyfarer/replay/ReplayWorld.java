@@ -10,6 +10,7 @@ public class ReplayWorld {
  public final List<FlightCorridor.Box> boxes=new ArrayList<>();public long time;public int rocketJitter=5;public double loadedRadius=128;
  public ReplayWorld(){boxes.add(new FlightCorridor.Box(-256,-20,-256,256,0,256));}
  public long getGameTime(){return time;}public boolean hasChunkAt(BlockPos p){return Math.abs(p.x())<loadedRadius&&Math.abs(p.z())<loadedRadius;}
+ public void advance(long tick){time=tick;dev.winefox.skyfarer.async.PlannerSession.serverTick();try{Thread.sleep(Long.getLong("wfs.replayTickMillis",50L));}catch(InterruptedException e){Thread.currentThread().interrupt();throw new RuntimeException(e);}}
  public int getMaxBuildHeight(){return 320;}public DimensionType dimensionType(){return new DimensionType();}public static class DimensionType{public boolean hasCeiling(){return false;}}
  public boolean addFreshEntity(FireworkRocketEntity e){rockets.add(e);return true;}
  public <T extends LivingEntity> List<T> getEntitiesOfClass(Class<T> type,AABB area){return getEntitiesOfClass(type,area,e->true);}

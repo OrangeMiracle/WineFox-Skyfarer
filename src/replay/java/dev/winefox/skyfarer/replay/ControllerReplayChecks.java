@@ -40,6 +40,7 @@ public final class ControllerReplayChecks {
         System.out.println("Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.");
     }
     private static void run(String name,double targetZ,float yaw,int duration,int jitter,boolean home,int enemies) throws Exception {
+        String filter=System.getProperty("wfs.replayCase","");if(!filter.isEmpty()&&!filter.equals(name))return;
         SkyfarerSettings.reset("all"); SkyfarerSettings.setDebugLogging(true);
         var world=new ReplayWorld();world.rocketJitter=jitter;ReplayWorld.events.clear();
         if(name.equals("radius-32-cycle"))SkyfarerSettings.set("slope_sample_radius",32);
@@ -65,7 +66,7 @@ public final class ControllerReplayChecks {
         var trace=new ArrayList<String>();trace.add("tick\tstate\tx\ty\tz\tvx\tvy\tvz\tpitch\tfuel\thits\treason");
         var visited=EnumSet.noneOf(AirCombatState.class);int hits=0,firstAttack=-1,landTick=-1,lastHit=0,eventIndex=0,landingFuel=-1;double maxHeight=0,maxRadius=0;String failure="";
         for(int tick=0;tick<1200;tick++) {
-            world.time=tick+1;
+            world.advance(tick+1);
             // External surface inertia just before native jumping (idle fixture ticks are stationary).
             if(name.equals("ice-inertia-cycle") && controller.state()==AirCombatState.TAKEOFF_PREP && maid.ground)
                 maid.velocity=new Vec3(.18,0,-.08);
@@ -143,7 +144,7 @@ public final class ControllerReplayChecks {
         if(TargetEvaluator.scan(maid,cave,cave.id,Vec3.ZERO).selection().target()!=null)
             throw new AssertionError("hidden cave target retained by previous/preferred priority");
         var controller=new AirCombatController(maid);
-        for(int tick=0;tick<120;tick++){world.time=tick;controller.tick();if(controller.controlsAir()||maid.inventory.consumed!=0)throw new AssertionError("cave-only world launched maid");}
+        for(int tick=0;tick<120;tick++){world.advance(tick);controller.tick();if(controller.controlsAir()||maid.inventory.consumed!=0)throw new AssertionError("cave-only world launched maid");}
         var surface=new LivingEntity(world,new Vec3(0,0,12));
         world.boxes.add(new FlightCorridor.Box(-1,0,10,1,1.35,11));
         if(!TargetEvaluator.visible(maid,surface))throw new AssertionError("visible upper body must remain selectable above partial cover");

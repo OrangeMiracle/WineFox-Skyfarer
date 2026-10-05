@@ -23,6 +23,8 @@ import java.util.UUID;
 
 public final class AirCombatController {
     private final EntityMaid maid;
+    private final dev.winefox.skyfarer.async.AsyncPlanning planning;
+    private boolean planningPending;
     private final HeadingController heading = new HeadingController();
     private final FireworkManager fireworks = new FireworkManager();
     private final ScanCadence scanCadence = new ScanCadence(), logCadence = new ScanCadence();
@@ -65,6 +67,8 @@ public final class AirCombatController {
     private String returnReason="";
     private SurfaceLaunchPlanner.Plan surfaceLaunch;
     private int launchControlTicks;
+    private int preparedDuration=-1;
+    private FlightPrediction.State preparedLaunchStart;
     private boolean previousWantToSwim;
     private String waterReturnReason="";
     private double exitDistanceLimit,exitTravelled;
@@ -84,8 +88,10 @@ public final class AirCombatController {
     private long nextSweepPlan;
     private int sweepContactTicks;
     private double previousYaw,sweepTurn;
+    private boolean sweepPending;
+    private int entryWaitTicks;
 
-    public AirCombatController(EntityMaid maid) { this.maid = maid; lastPosition = maid.position();previousYaw=maid.getYRot(); }
+    public AirCombatController(EntityMaid maid) { this.maid = maid;planning=new dev.winefox.skyfarer.async.AsyncPlanning(maid);lastPosition = maid.position();previousYaw=maid.getYRot(); }
     public AirCombatState state() { return state; }
     public UUID previousTarget(){return previous;}
     public void acceptCommand(LivingEntity target) {
@@ -134,7 +140,43 @@ public final class AirCombatController {
         if (maid.isLeashed()) return "LEASHED";
         return "";
     }
+    private static String planningPhase(AirCombatState state){return switch(state){case APPROACH,REPOSITION->"ENTRY";case ATTACK_RUN,DIVE,SPEAR_CHARGE->"ATTACK";case TAKEOFF_PREP,TAKEOFF->"LAUNCH";default->state.name();};}
+    private void planningContext(){
+        var target=TargetEvaluator.attackable(maid,runTarget)?runTarget:TargetEvaluator.attackable(maid,preferred)?preferred:null;
+        planning.begin(maid.level().getGameTime(),planningPhase(state),target==null?null:target.getUUID(),SkyfarerSettings.revision());
+    }
     public void tick() {
+        planningContext();
+        planningPending=false;
+        try {tickFlight();}
+        catch(dev.winefox.skyfarer.async.PlannerSession.Pending wait){
+            planningPending=true;
+            if(state==AirCombatState.TAKEOFF_PREP)stateTicks=Math.max(0,stateTicks-1);
+            if(state==AirCombatState.ATTACK_EXIT&&maid.isFallFlying()){
+                // Do not retain the nose-down attack command while the exit job is pending.
+                var s=predictionState();double goal=laneExit==null?s.y()+4:Math.max(s.y()+2,laneExit.y);
+                double pitch=GlidePlanner.feedbackPitch(s,goal,0,gravity(),fireworks.active());
+                heading.steerAngles(maid,maid.getYRot(),pitch,SkyfarerSettings.turnRate(),SkyfarerSettings.get("recovery_pitch_rate"));
+            }
+        }
+        validateImmediateMotion();
+    }
+    /** Constant-size live guard; no candidate tree, terrain fit or full rocket rollout on the server. */
+    private void validateImmediateMotion(){
+        if(!managed||!maid.isFallFlying()||maid.onGround()||state==AirCombatState.LANDING)return;
+        var s=predictionState();var live=new CorridorProbe(maid,maid.getBbWidth(),maid.getBbHeight(),maid.getEyeHeight(),state==AirCombatState.WATER_ESCAPE);
+        for(double pitch:new double[]{maid.getXRot(),-35,-65,-88}){
+            var next=SurfaceLaunchPlanner.step(s,maid.getYRot(),pitch,gravity(),fireworks.active(),maid.isInWaterOrBubble());
+            if(live.clear(s,next,.02,.01)){
+                if(pitch!=maid.getXRot())heading.steerAngles(maid,maid.getYRot(),pitch,180,90);
+                return;
+            }
+        }
+        // Last resort is a bounded local reversal. Unknown terrain is never certified as air.
+        var reverse=SurfaceLaunchPlanner.step(s,maid.getYRot()+180,-20,gravity(),fireworks.active(),maid.isInWaterOrBubble());
+        if(live.clear(s,reverse,.02,.01))heading.steerAngles(maid,maid.getYRot()+180,-20,180,90);
+    }
+    private void tickFlight() {
         sweepTurn=FlightPrediction.turn(previousYaw,maid.getYRot(),180)-previousYaw;previousYaw=maid.getYRot();
         heading.beginTick(maid);
         corridor = new CorridorProbe(maid); tickPrediction = null; flightPlan = null; flightRequest = null;
@@ -252,12 +294,18 @@ public final class AirCombatController {
     private void launchFlight() {
         if(surfaceLaunch==null) { diagnostic="NO_LAUNCH_PLAN"; release(); return; }
         if(!maid.onGround() && ElytraFlightController.startGliding(maid)) {
-            // Recheck the actual jump, including residual ice momentum and snow-layer height.
             var start=predictionStart();
-            surfaceLaunch=selectSurfaceLaunch(start,surfaceLaunch.yaw(),Math.max(surfaceLaunch.height(),start.y()+3),corridor,SurfaceLaunchPlanner.DRY);
+            boolean prepared=preparedLaunchStart!=null&&preparedDuration>=0
+                &&Math.hypot(start.x()-preparedLaunchStart.x(),start.z()-preparedLaunchStart.z())<.75
+                &&Math.abs(start.y()-preparedLaunchStart.y())<.65
+                &&Math.abs(start.vy()-preparedLaunchStart.vy())<.3;
+            if(!prepared)surfaceLaunch=selectSurfaceLaunch(start,surfaceLaunch.yaw(),Math.max(surfaceLaunch.height(),start.y()+3),corridor,SurfaceLaunchPlanner.DRY);
             if(surfaceLaunch!=null) {
                 heading.steerAngles(maid,surfaceLaunch.yaw(),surfaceLaunch.pitch(),180,90);
-                if(fireworks.boost(maid,surfacePulseCost(start,surfaceLaunch,corridor,SurfaceLaunchPlanner.DRY))) {
+                var next=SurfaceLaunchPlanner.step(start,surfaceLaunch.yaw(),surfaceLaunch.pitch(),gravity(),true,false);
+                if(corridor.clear(start,next,.04,.01)&&fireworks.boost(maid,prepared
+                    ?duration->duration==preparedDuration?surfaceLaunch.cost():Double.POSITIVE_INFINITY
+                    :surfacePulseCost(start,surfaceLaunch,corridor,SurfaceLaunchPlanner.DRY))) {
                     launchControlTicks=SurfaceLaunchPlanner.DEPARTURE_TICKS-1;
                     transition(AirCombatState.CLIMB,"SURFACE_LAUNCH_ROCKET");
                 }
@@ -276,15 +324,15 @@ public final class AirCombatController {
             var data=stack.get(net.minecraft.core.component.DataComponents.FIREWORKS);
             int duration=data==null?0:data.flightDuration();
             if(!seen.add(duration)) continue;
-            var plan=SurfaceLaunchPlanner.choose(start,yaw,height,gravity(),duration,space,water);
-            if(plan!=null && (best==null || plan.cost()<best.cost())) best=plan;
+            var plan=planning.launch(start,yaw,height,gravity(),duration,space,water);
+            if(plan!=null && (best==null || plan.cost()<best.cost())) {best=plan;preparedDuration=duration;preparedLaunchStart=start;}
         }
         return best;
     }
     private java.util.function.IntToDoubleFunction surfacePulseCost(FlightPrediction.State start,SurfaceLaunchPlanner.Plan plan,
                                                                   CorridorProbe space,SurfaceLaunchPlanner.Water water) {
         // Inventory selection must validate the chosen attitude, not another candidate heading.
-        return duration -> SurfaceLaunchPlanner.pulseCost(start,plan,gravity(),duration,space,water);
+        return duration -> planning.launchPulse(start,plan,gravity(),duration,space,water);
     }
     private void launchDeparture() {
         var start=predictionStart();
@@ -345,7 +393,7 @@ public final class AirCombatController {
         SurfaceLaunchPlanner.Water water=this::predictedWater;
         if(surfaceLaunch==null) {
             surfaceLaunch=fireworks.active()
-                ?SurfaceLaunchPlanner.chooseRemaining(start,maid.getYRot(),height,gravity(),fireworks.remainingBoostTicks(),corridor,water)
+                ?planning.launchRemaining(start,maid.getYRot(),height,gravity(),fireworks.remainingBoostTicks(),corridor,water)
                 :selectSurfaceLaunch(start,maid.getYRot(),height,corridor,water);
             launchControlTicks=SurfaceLaunchPlanner.DEPARTURE_TICKS;
         }
@@ -433,13 +481,13 @@ public final class AirCombatController {
     private void flyCompactTurn() {
         var start=predictionStart(); var space=navigationSpace();
         double rate=Math.max(5,SkyfarerSettings.turnRate());
-        var plan=CompactTurnPlanner.choose(start,compactGoal,fireworks.remainingBoostTicks(),gravity(),rate,space);
+        var plan=planning.compact(start,compactGoal,fireworks.remainingBoostTicks(),gravity(),rate,space);
         double speed=Math.hypot(start.vx(),start.vz());
         // A short climb normally needs no new thrust. Only an actual low-energy descent can request it.
         if(state!=AirCombatState.LANDING && !fireworks.active() && speed<.75 && start.vy()<-.03
             && Double.isFinite(clearance) && clearance<8 && start.y()<compactGoal.y()+2) {
-            if(fireworks.boost(maid,duration->CompactTurnPlanner.pulseCost(start,compactGoal,duration,gravity(),rate,space))) {
-                plan=CompactTurnPlanner.choose(start,compactGoal,fireworks.remainingBoostTicks(),gravity(),rate,space);
+            if(fireworks.boost(maid,duration->planning.compactPulse(start,compactGoal,duration,gravity(),rate,space))) {
+                plan=planning.compact(start,compactGoal,fireworks.remainingBoostTicks(),gravity(),rate,space);
                 diagnostic="COMPACT_CLIMB_PULSE";
             }
         }
@@ -447,7 +495,7 @@ public final class AirCombatController {
         if(plan==null) {
             var destination=new Vec3(compactGoal.x(),compactGoal.y(),compactGoal.z());
             flightRequest=request(destination,destination.y,false,0,0,null,true);
-            flightPlan=GlidePlanner.choose(start,flightRequest,space); applyPlan();
+            flightPlan=planning.glide(start,flightRequest,space); applyPlan();
         } else {
             var c=plan.command();
             flightPlan=new GlidePlanner.Plan(c.yaw(),c.pitch(),c.yawRate(),c.pitchRate(),GlidePlanner.Mode.RECOVERY,true,plan.cost(),0,32,0);
@@ -464,7 +512,7 @@ public final class AirCombatController {
     private GlidePlanner.Corridor navigationSpace(CorridorProbe probe) {
         Vec3 center=anchor();
         double radius=Math.max(TargetEvaluator.hardRange(maid)+12,maid.position().subtract(center).horizontalDistance()+6);
-        return (a,b,side,vertical)->Math.hypot(b.x()-center.x,b.z()-center.z)<=radius && probe.clear(a,b,side,vertical);
+        return new dev.winefox.skyfarer.async.AsyncPlanning.BoundedCorridor(new dev.winefox.skyfarer.async.CollisionSnapshot.Bounds(center.x,center.z,radius),probe);
     }
     /** Moving arc waypoint; actual velocity turns only through vanilla flight physics. */
     private Vec3 arcPoint() {
@@ -481,6 +529,13 @@ public final class AirCombatController {
         if (!TargetEvaluator.valid(maid, preferred, true, anchor())) { scan(); startApproach(); return; }
         if (setupTicks > SkyfarerSettings.ticks("attack_timeout_ticks") * 4) { retryAnotherTarget("ALIGNMENT_RESELECT"); return; }
         if(trySweepingEntry()) { attack(); return; }
+        if(sweepPending&&++entryWaitTicks<=8){
+            // Keep momentum while the initial candidate set is being evaluated. Starting a
+            // competing compact turn here can destroy the very arc the worker is evaluating.
+            Vec3 continuation=new Vec3(preferred.getX(),maid.getEyeY(),preferred.getZ());
+            guide("AWAIT_ATTACK_CANDIDATES",continuation,maid.getEyeY(),false,0,0,Double.NaN);manageEnergy();return;
+        }
+        if(!sweepPending)entryWaitTicks=0;
         if (state == AirCombatState.REPOSITION) {
             compactTurn(); return;
         }
@@ -549,34 +604,56 @@ public final class AirCombatController {
     }
     private double sweepRate(){return Math.max(SkyfarerSettings.attackTurnRate(),SkyfarerSettings.turnRate());}
     private boolean trySweepingEntry() {
+        sweepPending=false;
         if(maid.level().getGameTime()<nextSweepPlan)return false;
-        nextSweepPlan=maid.level().getGameTime()+12;
         double distance=maid.distanceTo(preferred);
         if(distance<6||distance>64||!maid.isFallFlying())return false;
         var aim=sweepAim(preferred);var start=predictionStart();
         // Speculative candidates have their own bounded shape cache, so exhausting that budget
         // cannot starve this tick's actual movement/emergency collision checks.
         var planningSpace=navigationSpace(new CorridorProbe(maid));
-        var choice=SweepingAttackPlanner.choose(start,new SweepingAttackPlanner.Point(preferred.getX(),attackHeight(preferred),preferred.getZ()),
+        var choice=planning.sweep(start,new SweepingAttackPlanner.Point(preferred.getX(),attackHeight(preferred),preferred.getZ()),
             aim,fireworks.remainingBoostTicks(),gravity(),sweepRate(),Math.max(.2,SpearCompat.minimumDamageSpeed(maid.getMainHandItem())),
             SkyfarerSettings.attackExitDistance(),planningSpace,sweepContact(preferred),sweepTurn);
+        nextSweepPlan=maid.level().getGameTime()+(planning.lastPending()?1:12);
+        sweepPending=planning.lastPending();
+        if(SkyfarerSettings.debugLogging()&&(choice!=null||maid.level().getGameTime()%12==0))
+            WineFoxSkyfarer.LOGGER.info("[WFS debug] sweep pending={} selected={} {}",planning.lastPending(),choice!=null,planning.detail());
         if(choice==null)return false;
+        var durations=new java.util.ArrayList<Integer>();var inventory=maid.getAvailableInv(false);
+        if(!fireworks.active()&&fireworks.cooldown(maid)==0)for(int slot=0;slot<inventory.getSlots();slot++){
+            var stack=inventory.getStackInSlot(slot);if(!stack.is(net.minecraft.world.item.Items.FIREWORK_ROCKET))continue;
+            var data=stack.get(net.minecraft.core.component.DataComponents.FIREWORKS);int duration=data==null?0:data.flightDuration();if(!durations.contains(duration))durations.add(duration);
+        }
+        var current=planning.rejoin(start,choice.path(),aim,fireworks.remainingBoostTicks(),gravity(),sweepRate(),
+            Math.max(.2,SpearCompat.minimumDamageSpeed(maid.getMainHandItem())),planningSpace,durations);
+        if(planning.lastPending()){sweepPending=true;nextSweepPlan=maid.level().getGameTime()+1;return false;}
+        if(current==null)return false;
+        choice=current.selection();
+        if(SkyfarerSettings.debugLogging())WineFoxSkyfarer.LOGGER.info("[WFS debug] curve certificate now={} start={} predictedStart={} contact={} rocket={} funded={}",maid.level().getGameTime(),start,
+            choice.prediction().trace().getFirst().state(),choice.prediction().trace().get(Math.min(choice.prediction().contactTick(),choice.prediction().trace().size()-1)).state(),fireworks.remainingBoostTicks(),current.duration());
         if(choice.prediction().contactTick()>SkyfarerSettings.ticks("attack_timeout_ticks")-5)return false;
         // Existing vertical/slope profiles compete on actual predicted contact and clearance,
         // not merely on whether a geometric straight line happens to be open.
         Vec3 offset=preferred.position().subtract(maid.position());
-        if(HeadingController.horizontalAngle(forward(),offset)<25 && planAttackLane(preferred,HeadingController.horizontal(offset))){
+        boolean straightReady=false;
+        if(HeadingController.horizontalAngle(forward(),offset)<25){
+            try{straightReady=planAttackLane(preferred,HeadingController.horizontal(offset));}
+            catch(dev.winefox.skyfarer.async.PlannerSession.Pending pending){/* A certified curve need not wait for a competing route. */}
+        }
+        if(straightReady){
             double along=offset.horizontalDistance();
             var old=request(TargetEvaluator.aimPoint(preferred),attackHeight(preferred)+runHeightOffset,true,along,runSlope,aim,false);
             if(laneExit!=null)old=old.withExit(new GlidePlanner.Exit(laneExit.x,laneExit.y,laneExit.z));
-            var plan=GlidePlanner.choose(start,old,navigationSpace());
+            var plan=planning.glide(start,old,navigationSpace());
             if(GlidePlanner.ordinary(plan)){
-                var prediction=GlidePlanner.forecast(start,old,plan,navigationSpace(),.3);
+                var prediction=planning.forecast(start,old,plan,navigationSpace(),.3);
                 double oldCost=(along/Math.max(.35,approachSpeed())+16)*.35+Math.max(0,-prediction.reserve())*12;
-                for(var p:GlidePlanner.trace(start,old,plan,corridor))if(!corridor.clear(p.state(),p.state(),.5,.4))oldCost+=.8;
+                oldCost+=planning.clearanceCost();
                 if(prediction.safe()&&prediction.miss()<=.015&&oldCost<=choice.prediction().cost())return false;
             }
         }
+        if(current.duration()>=0&&!fireworks.boost(maid,d->d==current.duration()?0:Double.POSITIVE_INFINITY))return false;
         sweepPath=choice.path();sweepTrace=choice.prediction().trace();sweepContactTicks=choice.prediction().contactTick();
         compactGoal=null;compactPlan=null;endCharge();runTarget=preferred;runOrigin=TargetEvaluator.aimPoint(preferred);runTicks=0;
         runFlare=-3;laneExit=new Vec3(sweepPath.exit.d().x(),sweepPath.exit.d().y(),sweepPath.exit.d().z());
@@ -597,24 +674,16 @@ public final class AirCombatController {
         if(!followSweep(false)){
             sweepPath=null;sweepTrace=List.of();beginBreakaway("CURVE_NO_SAFE_CONTINUATION");return;
         }
-        var tangent=sweepPath.entry.d().subtract(sweepPath.entry.c()).unit();
-        var passed=SweepingAttackPlanner.point(predictionStart()).subtract(sweepPath.entry.d());
-        if(passed.x()*tangent.x()+passed.z()*tangent.z()>SpearCompat.mobReach(maid.getMainHandItem())+2
+        if(sweepPath.passedContact(SweepingAttackPlanner.point(predictionStart()),SpearCompat.mobReach(maid.getMainHandItem())+2)
             || maid.isUsingItem()&&maid.getTicksUsingItem()>SpearCompat.chargeWindow(maid.getUseItem()))beginBreakaway("CURVE_PASSED_TARGET");
     }
     private boolean followSweep(boolean exiting) {
         var aim=exiting?null:sweepAim(runTarget);var contact=exiting?(SweepingAttackPlanner.Contact)(s,a,t)->true:sweepContact(runTarget);
         var start=predictionStart();double minimum=Math.max(.2,SpearCompat.minimumDamageSpeed(maid.getMainHandItem()));
-        var prediction=SweepingAttackPlanner.simulate(start,sweepPath,aim,fireworks.remainingBoostTicks(),gravity(),sweepRate(),minimum,exiting,navigationSpace(),contact,exiting?24:80);
+        var prediction=planning.follow(start,sweepPath,aim,fireworks.remainingBoostTicks(),gravity(),sweepRate(),minimum,exiting,navigationSpace(),contact,exiting?24:80);
         if(!fireworks.active()&&(!prediction.safe()||!prediction.hit()||Math.hypot(start.vx(),start.vz())<(exiting?.65:.5))){
-            if(fireworks.boost(maid,duration->{
-                double cost=0;
-                for(int ticks=RocketProfile.minimumTicks(duration);ticks<=RocketProfile.maximumTicks(duration);ticks++){
-                    var boosted=SweepingAttackPlanner.simulate(start,sweepPath,aim,ticks,gravity(),sweepRate(),minimum,exiting,navigationSpace(),contact,exiting?24:100);
-                    if(!boosted.safe()||!boosted.hit())return Double.POSITIVE_INFINITY;cost+=boosted.cost();
-                }
-                return cost/12+RocketProfile.expectedTicks(duration)*.02;
-            }))prediction=SweepingAttackPlanner.simulate(start,sweepPath,aim,fireworks.remainingBoostTicks(),gravity(),sweepRate(),minimum,exiting,navigationSpace(),contact,exiting?24:100);
+            if(fireworks.boost(maid,duration->planning.sweepPulse(start,sweepPath,aim,duration,gravity(),sweepRate(),minimum,exiting,navigationSpace())))
+                prediction=planning.follow(start,sweepPath,aim,fireworks.remainingBoostTicks(),gravity(),sweepRate(),minimum,exiting,navigationSpace(),contact,exiting?24:100);
         }
         sweepTrace=prediction.trace();
         if(!prediction.safe())return false;
@@ -687,8 +756,8 @@ public final class AirCombatController {
             var end=sweepPath.exit.d();waypoint=new Vec3(end.x(),end.y(),end.z());exitStyle="CONTINUOUS_"+sweepPath.style;
             transition(AirCombatState.ATTACK_EXIT,reason+":"+exitStyle);attackExit();return;
         }
-        selectExit();
-        transition(AirCombatState.ATTACK_EXIT, reason + ":" + exitStyle);
+        recoveryOrigin=null;
+        transition(AirCombatState.ATTACK_EXIT, reason + ":SELECT_EXIT");
         attackExit();
     }
     private FlightPrediction.Aim chainAim(LivingEntity target) {
@@ -702,7 +771,7 @@ public final class AirCombatController {
         if(chainCenter==null || !TargetEvaluator.valid(maid,target,true,anchor()) || !TargetEvaluator.visible(maid,target) || passHistory.alreadyHit(target.getUUID())
             || target.position().distanceTo(chainCenter)>SkyfarerSettings.get("secondary_target_radius")) return null;
         double height=Math.clamp(from.y(),attackHeight(target),attackHeight(target)+Math.min(1.5,SkyfarerSettings.get("spear_vertical_expansion")));
-        return ChainAttackPlanner.choose(from,chainAim(target),height,rocket,gravity(),
+        return planning.chain(from,chainAim(target),height,rocket,gravity(),
             Math.max(.3,SpearCompat.minimumDamageSpeed(maid.getMainHandItem())+.05),remaining,Math.max(0,18-chainTravel),navigationSpace());
     }
     private LivingEntity selectChain(FlightPrediction.State from,int remaining,int rocket) {
@@ -724,7 +793,7 @@ public final class AirCombatController {
         if(radius<=0 || maid.level().getEntitiesOfClass(LivingEntity.class,new net.minecraft.world.phys.AABB(chainCenter,chainCenter).inflate(radius),
             target->target!=runTarget && TargetEvaluator.valid(maid,target,true,anchor()) && !passHistory.alreadyHit(target.getUUID())
                 && target.position().distanceTo(chainCenter)<=radius).isEmpty()) return;
-        var contact=ChainAttackPlanner.primaryContact(predictionStart(),flightRequest,corridor);
+        var contact=planning.primaryContact(predictionStart(),flightRequest,corridor);
         if(contact!=null) chainCandidate=selectChain(contact,Math.min(40,SkyfarerSettings.ticks("post_attack_charge_ticks")),fireworks.remainingBoostTicks());
     }
     private boolean tryBeginChain() {
@@ -759,91 +828,32 @@ public final class AirCombatController {
         diagnostic="CHAIN_TRACK_"+(chainHits+2);
     }
     private void breakaway() {
-        selectExit(); transition(AirCombatState.ATTACK_EXIT, "SELECT_ATTACK_EXIT"); attackExit();
+        recoveryOrigin=null;transition(AirCombatState.ATTACK_EXIT, "SELECT_ATTACK_EXIT");attackExit();
     }
     /** Entry -> contact -> exit, using actual block shapes, never block density or a height map. */
     private boolean planAttackLane(LivingEntity target, Vec3 direction) {
-        double side=SkyfarerSettings.get("corridor_side_margin"), vertical=SkyfarerSettings.get("corridor_vertical_margin");
-        double base=attackHeight(target), distance=maid.position().distanceTo(target.position());
-        double x=target.getX(),z=target.getZ();
-        var slopes=sampleSlope(target);
-        if(flatTerrain(slopes) && curvedDive(target,direction)) return true;
-        AttackLinePlanner.Line bestLine=null; double bestGx=0,bestGz=0;
-        for(int fit=0;fit<2;fit++) {
-            double gx=fit==0?slopes.nearX():slopes.wideX(),gz=fit==0?slopes.nearZ():slopes.wideZ();
-            if(fit==1 && Math.hypot(gx-slopes.nearX(),gz-slopes.nearZ())<.025) continue;
-            double gradient=Math.clamp(gx*direction.x+gz*direction.z,-1.5,1.5);
-            if(Math.abs(gradient)<=.06 && maid.getEyeY()>=base-.2) continue;
-            double minimum=AttackPolicy.minimumEntry(approachSpeed(),
-                SpearCompat.delayTicks(maid.getMainHandItem()),SpearCompat.mobReach(maid.getMainHandItem()));
-            var line=AttackLinePlanner.choose(predictionStart(),x,base,z,direction.x,direction.z,gradient,-gx*direction.z+gz*direction.x,minimum,
-                SkyfarerSettings.attackExitDistance(),SkyfarerSettings.get("spear_vertical_expansion"),
-                SkyfarerEquipment.fireworks(maid)||fireworks.active(),
-                (ax,ay,az,bx,by,bz)->corridor.segment(new Vec3(ax,ay,az),new Vec3(bx,by,bz),side,vertical));
-            if(line!=null && (bestLine==null || line.cost()<bestLine.cost())) { bestLine=line; bestGx=gx; bestGz=gz; }
-        }
-        if(bestLine!=null) {
-            var line=bestLine;
-            runSlope=-line.gradient(); runFlare=-1; runHeightOffset=line.height()-base;
-            laneGradientX=bestGx; laneGradientZ=bestGz;
-            slopeEntry=new Vec3(line.entryX(),line.entryY(),line.entryZ());
-            debugEntry=slopeEntry;debugEntryDirection=new Vec3(target.getX(),line.height(),target.getZ()).subtract(slopeEntry).normalize();
-            laneExit=new Vec3(line.exitX(),line.exitY(),line.exitZ());
-            laneStatus="slope="+line.gradient()+", samples="+slopes.samples()+", routeCost="+line.cost()+", continuous contact/exit"; return true;
-        }
-        runFlare=SkyfarerSettings.get("level_run_distance"); slopeEntry=null;
-        for (double extra : new double[]{0,0.5,1,1.5,2}) {
-            if (extra > SkyfarerSettings.get("spear_vertical_expansion")) break;
-            Vec3 contact=new Vec3(target.getX(),base+extra,target.getZ());
-            Vec3 entry=contact.subtract(direction.scale(Math.min(SkyfarerSettings.get("level_run_distance"),distance*0.7)));
-            if (!corridor.segment(maid.getEyePosition(),entry,side,vertical)
-                || !corridor.segment(entry,contact,side,vertical)) continue;
-            for (double turn : new double[]{0,-35,35,-65,65})
-                for (double rise : new double[]{0,3,6}) for (double delay : new double[]{0,3,6}) {
-                Vec3 intermediate=contact.add(direction.scale(delay));
-                double angle=Math.toRadians(turn);
-                Vec3 outgoing=new Vec3(direction.x*Math.cos(angle)-direction.z*Math.sin(angle),0,
-                    direction.x*Math.sin(angle)+direction.z*Math.cos(angle));
-                Vec3 exit=intermediate.add(outgoing.scale(Math.max(0,SkyfarerSettings.attackExitDistance()-delay))).add(0,rise,0);
-                exit=capExit(contact,exit,SkyfarerSettings.attackExitDistance());
-                if (corridor.lane(contact,intermediate,exit,side,vertical)) {
-                    runHeightOffset=extra; laneExit=exit;
-                    debugEntry=maid.getEyePosition();debugEntryDirection=entry.subtract(debugEntry).normalize();
-                    laneStatus="clear entry/contact/exit; offset="+extra+", rise="+rise+", turn="+turn; return true;
-                }
-            }
-        }
-        laneStatus="blocked entry/contact/exit"; return false;
+        double base=attackHeight(target);
+        var input=new AttackLanePlanner.Input(predictionStart(),target.getX(),base,target.getZ(),direction.x,direction.z,
+            sampleSlope(target),approachSpeed(),gravity(),AttackPolicy.minimumEntry(approachSpeed(),SpearCompat.delayTicks(maid.getMainHandItem()),SpearCompat.mobReach(maid.getMainHandItem())),
+            SkyfarerSettings.attackExitDistance(),SkyfarerSettings.get("spear_vertical_expansion"),SkyfarerSettings.get("level_run_distance"),
+            SkyfarerSettings.get("corridor_side_margin"),SkyfarerSettings.get("corridor_vertical_margin"),SkyfarerEquipment.fireworks(maid)||fireworks.active());
+        var lane=planning.lane(input);
+        if(lane==null){laneStatus="blocked entry/contact/exit";return false;}
+        runSlope=lane.slope();runFlare=lane.flare();runHeightOffset=lane.offset();laneGradientX=lane.gradientX();laneGradientZ=lane.gradientZ();
+        debugEntry=new Vec3(lane.entry().x(),lane.entry().y(),lane.entry().z());
+        debugEntryDirection=new Vec3(lane.direction().x(),lane.direction().y(),lane.direction().z()).normalize();
+        slopeEntry=runFlare==-1?debugEntry:null;
+        laneExit=new Vec3(lane.exit().x(),lane.exit().y(),lane.exit().z());laneStatus=lane.description();return true;
     }
     private static boolean flatTerrain(SlopeSampler.Estimate slopes) {
         return slopes.samples()>=12 && Math.hypot(slopes.nearX(),slopes.nearZ())<.16 && Math.hypot(slopes.wideX(),slopes.wideZ())<.16;
-    }
-    private boolean curvedDive(LivingEntity target,Vec3 direction) {
-        double base=attackHeight(target),distance=target.position().subtract(maid.position()).horizontalDistance();
-        double rise=maid.getEyeY()-base;
-        if(rise<3 || distance<DiveProfile.minimumDistance(rise,approachSpeed(),gravity()) || rise/distance>1.2) return false;
-        double slope=DiveProfile.slope(rise,distance);
-        Vec3 last=maid.getEyePosition();
-        double side=SkyfarerSettings.get("corridor_side_margin"),vertical=SkyfarerSettings.get("corridor_vertical_margin");
-        for(double d=Math.max(0,distance-1);;d=Math.max(0,d-1)) {
-            Vec3 point=new Vec3(target.getX()-direction.x*d,FlightPrediction.pathHeight(d,base,slope,-2),target.getZ()-direction.z*d);
-            if(!corridor.segment(last,point,side,vertical)) return false;
-            last=point; if(d==0) break;
-        }
-        Vec3 exit=last.add(direction.scale(SkyfarerSettings.attackExitDistance()*.65)).add(0,4,0);
-        if(!corridor.segment(last,exit,side,vertical)) return false;
-        runFlare=-2; runSlope=slope; runHeightOffset=0; slopeEntry=null; laneExit=exit;
-        debugEntry=maid.getEyePosition();double nextDistance=Math.max(0,distance-1);
-        debugEntryDirection=new Vec3(target.getX()-direction.x*nextDistance,FlightPrediction.pathHeight(nextDistance,base,slope,-2),target.getZ()-direction.z*nextDistance).subtract(debugEntry).normalize();
-        laneGradientX=0; laneGradientZ=0;
-        laneStatus="curved dive; rise="+rise+", distance="+distance; return true;
     }
     private SlopeSampler.Estimate sampleSlope(LivingEntity target) {
         long now=maid.level().getGameTime();
         double radius=SkyfarerSettings.get("slope_sample_radius"),step=SkyfarerSettings.get("slope_sample_step");
         if(sampledSlope==null || !target.getUUID().equals(sampledTarget) || now-sampledAt>=5
             || target.position().distanceToSqr(sampledPosition)>.0625 || radius!=sampledRadius || step!=sampledStep) {
-            sampledSlope=SlopeSampler.sample(target.getX(),target.getY(),target.getZ(),radius,step,corridor::supportSample);
+            sampledSlope=planning.slope(target.getX(),target.getY(),target.getZ(),radius,step,corridor::supportSample);
             sampledAt=now; sampledTarget=target.getUUID(); sampledPosition=target.position(); sampledRadius=radius; sampledStep=step;
         }
         return sampledSlope;
@@ -863,7 +873,7 @@ public final class AirCombatController {
         if(runFlare==-2 || state==AirCombatState.CHAIN_ATTACK) {
             Vec3 climb=capExit(origin,origin.add(forward.scale(Math.min(5,length))).add(0,4,0),length);
             var planned=request(climb,climb.y,false,0,0,null,true);
-            if(corridor.segment(origin,climb,.04,.04) && GlidePlanner.ordinary(GlidePlanner.choose(predictionStart(),planned,corridor))) {
+            if(corridor.segment(origin,climb,.04,.04) && GlidePlanner.ordinary(planning.glide(predictionStart(),planned,corridor))) {
                 waypoint=climb; exitStyle="POST_DIVE_CLIMB"; recoveryOrigin=origin; return;
             }
         }
@@ -871,12 +881,12 @@ public final class AirCombatController {
         if(runFlare==-1 && shortLane!=null && HeadingController.horizontalAngle(forward,shortLane.subtract(origin))<135 && origin.distanceTo(shortLane)>3
             && corridor.segment(origin,shortLane,.04,.04)) {
             var planned=request(shortLane,shortLane.y,false,0,0,null,true);
-            if(GlidePlanner.ordinary(GlidePlanner.choose(predictionStart(),planned,corridor))) {
+            if(GlidePlanner.ordinary(planning.glide(predictionStart(),planned,corridor))) {
                 waypoint=shortLane; exitStyle="SLOPE_CORRIDOR_EXIT"; recoveryOrigin=origin; return;
             }
         }
         boolean target=TargetEvaluator.attackable(maid,preferred);
-        var choice=AttackExitPlanner.choose(predictionStart(),template,recoveryY,length,pierce,
+        var choice=planning.exit(predictionStart(),template,recoveryY,length,pierce,
             target?preferred.getX():Double.NaN,target?preferred.getZ():Double.NaN,corridor,
             (x,y,z)->corridor.segment(origin,new Vec3(x,y,z),template.sideMargin(),template.verticalMargin()));
         if (choice!=null) { selected=new Vec3(choice.x(),choice.y(),choice.z()); style=choice.style().name(); }
@@ -911,6 +921,7 @@ public final class AirCombatController {
         }
     }
     private void terrainSafety() {
+        if(flightPlan!=null&&!flightPlan.safe()&&flightPlan.mode()==GlidePlanner.Mode.GLIDE&&planning.waiting())return;
         if (flightPlan==null || GlidePlanner.ordinary(flightPlan)) return;
         endCharge();
         if (!returning()) {
@@ -945,7 +956,7 @@ public final class AirCombatController {
         if(attack && laneExit!=null) flightRequest=flightRequest.withExit(runFlare==-1
             ?new GlidePlanner.Exit(laneExit.x,laneExit.y,laneExit.z,laneGradientX,laneGradientZ)
             :new GlidePlanner.Exit(laneExit.x,laneExit.y,laneExit.z));
-        flightPlan=GlidePlanner.choose(predictionStart(),flightRequest,corridor);
+        flightPlan=planning.glide(predictionStart(),flightRequest,corridor);
         applyPlan();
         Vec3 guidance=maid.getEyePosition().add(heading.desired().scale(12));
         waypoint = new Vec3(point.x, levelHeight, point.z);
@@ -1049,7 +1060,20 @@ public final class AirCombatController {
             minimum=Math.max(SkyfarerSettings.get("attack_minimum_boost_speed"),SpearCompat.minimumDamageSpeed(maid.getMainHandItem())+.05);
             reserve=SkyfarerSettings.get("attack_energy_reserve");
         }
-        var coast=GlidePlanner.forecast(predictionStart(),flightRequest,flightPlan,corridor,minimum);
+        var coast=planning.forecast(predictionStart(),flightRequest,flightPlan,corridor,minimum);
+        if(Double.isNaN(coast.reserve())){
+            // Warm energy predictions while coast guidance is pending, not after it arrives.
+            if(!fireworks.active()){
+                var inventory=maid.getAvailableInv(false);var seen=new java.util.HashSet<Integer>();
+                for(int slot=0;slot<inventory.getSlots();slot++){
+                    var stack=inventory.getStackInSlot(slot);
+                    if(!stack.is(net.minecraft.world.item.Items.FIREWORK_ROCKET))continue;
+                    var data=stack.get(net.minecraft.core.component.DataComponents.FIREWORKS);int duration=data==null?0:data.flightDuration();
+                    if(seen.add(duration))planning.reviewPulse(predictionStart(),flightRequest,navigationSpace(),duration,minimum,reserve);
+                }
+            }
+            return;
+        }
         energyReserve=coast.reserve();
         double closing=maid.getDeltaMovement().dot(new Vec3(-Math.sin(Math.toRadians(flightRequest.yaw())),0,Math.cos(Math.toRadians(flightRequest.yaw()))));
         boolean earlyStrike=precisionAttack&&flightRequest.distance()>SpearCompat.mobReach(maid.getMainHandItem())+4
@@ -1077,7 +1101,7 @@ public final class AirCombatController {
         // The whole pulse must stay in the bounded, entity-ticking navigation corridor.
         var fundedRequests=new java.util.HashMap<Integer,GlidePlanner.Request>();
         boolean boosted=aligned && fireworks.boost(maid,duration -> {
-            var review=GlidePlanner.reviewPulse(predictionStart(),original,navigationSpace(),duration,requiredSpeed,requiredReserve);
+            var review=planning.reviewPulse(predictionStart(),original,navigationSpace(),duration,requiredSpeed,requiredReserve);
             pulseReview=review.reason();
             if(!Double.isFinite(review.cost())&&earlyStrike&&original.aim()!=null&&original.exit()!=null){
                 // Preserve contact and fund a different post-hit exit instead of abandoning a
@@ -1087,7 +1111,7 @@ public final class AirCombatController {
                     var aim=original.aim();var exit=new GlidePlanner.Exit(aim.x()-Math.sin(angle)*length,original.height()+(turn==0?6:4),aim.z()+Math.cos(angle)*length,0,0);
                     if(!corridor.segment(new Vec3(aim.x(),original.height(),aim.z()),new Vec3(exit.x(),exit.y(),exit.z()),.15,.12))continue;
                     var alternative=original.withExit(exit);
-                    var checked=GlidePlanner.reviewPulse(predictionStart(),alternative,navigationSpace(),duration,requiredSpeed,requiredReserve);
+                    var checked=planning.reviewPulse(predictionStart(),alternative,navigationSpace(),duration,requiredSpeed,requiredReserve);
                     if(Double.isFinite(checked.cost())){fundedRequests.put(duration,alternative);pulseReview="replanned_exit";return checked.cost()+1;}
                 }
             }
@@ -1098,7 +1122,7 @@ public final class AirCombatController {
             var funded=fundedRequests.get(fireworks.selectedDuration());
             if(funded!=null){flightRequest=funded;var exit=funded.exit();laneExit=new Vec3(exit.x(),exit.y(),exit.z());laneGradientX=laneGradientZ=0;laneStatus+="; energy-funded exit";}
             flightRequest=flightRequest.withPulse(fireworks.remainingBoostTicks());
-            flightPlan=GlidePlanner.choose(predictionStart(),flightRequest,corridor); applyPlan();
+            flightPlan=planning.glide(predictionStart(),flightRequest,corridor); applyPlan();
             if (!route.waypoints().isEmpty()) {
                 var points=new java.util.ArrayList<>(route.waypoints());
                 points.set(0,new AirRoute.Waypoint(points.getFirst().name(),maid.getEyePosition().add(heading.desired().scale(12))));
@@ -1111,7 +1135,7 @@ public final class AirCombatController {
             // the battle boundary. Recover toward a fixed local goal instead of silently stalling.
             var goal=new CompactTurnPlanner.Goal(preferred.getX(),attackHeight(preferred)+6,preferred.getZ(),
                 maid.getX(),maid.getZ(),Math.max(32,preferred.position().subtract(maid.position()).horizontalDistance()+16));
-            if(fireworks.boost(maid,duration->CompactTurnPlanner.pulseCost(predictionStart(),goal,duration,gravity(),Math.max(5,SkyfarerSettings.turnRate()),navigationSpace()))) {
+            if(fireworks.boost(maid,duration->planning.compactPulse(predictionStart(),goal,duration,gravity(),Math.max(5,SkyfarerSettings.turnRate()),navigationSpace()))) {
                 endCharge(); runTarget=null; compactGoal=goal;
                 transition(AirCombatState.REPOSITION,"LOW_ENERGY_RECOVERY_TURN");
                 flyCompactTurn();
@@ -1129,10 +1153,13 @@ public final class AirCombatController {
         if (state == next) return;
         boolean idleScan = state == AirCombatState.GROUNDED && next == AirCombatState.TARGET_ACQUIRE || state == AirCombatState.TARGET_ACQUIRE && next == AirCombatState.GROUNDED;
         if (SkyfarerSettings.debugLogging() && !idleScan) WineFoxSkyfarer.LOGGER.info("[WFS debug] maid={} {} -> {}; reason={}; run={}", maid.getUUID(), state, next, reason, runTarget == null ? "none" : runTarget.getUUID());
+        boolean changeContext=!planningPhase(state).equals(planningPhase(next));
         state = next; stateTicks = 0;
+        if(changeContext&&managed&&next!=AirCombatState.GROUNDED)planningContext();
         if (next == AirCombatState.TAKEOFF_PREP) { managed = true; airborneTicks = 0; pendingReturn = ""; }
     }
     public void release() {
+        planning.close();
         sweepPath=null;sweepTrace=List.of();
         compactGoal=null; chainCandidate=null; chainTarget=null; chainCenter=null; sampledSlope=null;
         if(state==AirCombatState.WATER_ESCAPE) maid.getSwimManager().setWantToSwim(previousWantToSwim);
@@ -1155,6 +1182,7 @@ public final class AirCombatController {
         WineFoxSkyfarer.LOGGER.info("[WFS debug] maid={} state={} reason={} scan=[{}] pos={} velocity={} ground={} glide={} clearance={} preferred={} run={} using={} chargeTicks={} spearReach={}",
             maid.getUUID(), state, diagnostic, lastScan, maid.position(), movement, maid.onGround(), maid.isFallFlying(), clearance,
             preferred == null ? "none" : preferred.getUUID(), runTarget == null ? "none" : runTarget.getUUID(), maid.isUsingItem(), maid.getTicksUsingItem(), SpearCompat.mobReach(maid.getMainHandItem()));
+        WineFoxSkyfarer.LOGGER.info("[WFS debug] async {}",planning.detail());
         if (flightPlan!=null) WineFoxSkyfarer.LOGGER.info("[WFS debug] maid={} planner={} safe={} clearTicks={} energyReserve={} rocketTicks={} exit={} corridor=[{}] pitch={}",
             maid.getUUID(),flightPlan.mode(),flightPlan.safe(),flightPlan.clearTicks(),energyReserve,fireworks.remainingBoostTicks(),exitStyle,laneStatus,flightPlan.pitch());
         if(flightRequest!=null)WineFoxSkyfarer.LOGGER.info("[WFS debug] maid={} energyDecision={} pulseReview={} cooldown={} contactDistance={} contactHeight={} signedSlope={}",maid.getUUID(),energyDecision,pulseReview,fireworks.cooldown(maid),flightRequest.distance(),flightRequest.height(),flightRequest.slope());
@@ -1179,10 +1207,9 @@ public final class AirCombatController {
                 data.put("attack_curve",points);data.putString("curve_style",sweepPath.style);
                 DebugSnapshot.corridor(data,maid,sweepTrace);
             }
-            else if(surfaceLaunch!=null&&(launchControlTicks>0||state==AirCombatState.WATER_ESCAPE))DebugSnapshot.corridor(data,maid,SurfaceLaunchPlanner.trace(predictionStart(),surfaceLaunch,SurfaceLaunchPlanner.DEPARTURE_TICKS-launchControlTicks,gravity(),fireworks.remainingBoostTicks(),corridor,state==AirCombatState.WATER_ESCAPE?this::predictedWater:SurfaceLaunchPlanner.DRY));
-            else if(compactGoal!=null&&compactPlan!=null)DebugSnapshot.corridor(data,maid,CompactTurnPlanner.trace(predictionStart(),compactGoal,compactPlan,fireworks.remainingBoostTicks(),gravity(),Math.max(5,SkyfarerSettings.turnRate()),corridor));
-            else if(flightPlan!=null&&flightRequest!=null)DebugSnapshot.corridor(data,maid,GlidePlanner.trace(predictionStart(),flightRequest,flightPlan,corridor));
+            else DebugSnapshot.corridor(data,maid,planning.trace());
         }
+        data.putString("planner_status",(planningPending||planning.waiting()?"waiting":"ready")+" "+planning.detail());
         data.putString("maid_name", maid.getName().getString()); data.putString("reason", diagnostic); data.putString("scan", lastScan);
         data.putDouble("clearance", clearance); data.putBoolean("charging", maid.isUsingItem() && SpearCompat.isChargeWeapon(maid.getUseItem()));
         data.putInt("charge_ticks", maid.getTicksUsingItem()); data.putInt("charge_delay", SpearCompat.delayTicks(maid.getMainHandItem()));

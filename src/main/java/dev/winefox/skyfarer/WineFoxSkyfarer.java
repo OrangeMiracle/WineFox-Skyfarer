@@ -38,6 +38,9 @@ public final class WineFoxSkyfarer {
         bus.addListener(dev.winefox.skyfarer.network.SkyfarerNetwork::register);
         NeoForge.EVENT_BUS.addListener(dev.winefox.skyfarer.runtime.DebugWatchManager::tick);
         NeoForge.EVENT_BUS.addListener(dev.winefox.skyfarer.runtime.SkyfarerRuntime::tick);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Pre event)->dev.winefox.skyfarer.async.PlannerSession.serverTick());
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppingEvent event)->dev.winefox.skyfarer.async.PlannerSession.stop());
+        bus.addListener((net.neoforged.fml.event.config.ModConfigEvent.Reloading event)->dev.winefox.skyfarer.config.SkyfarerSettings.reloaded());
         NeoForge.EVENT_BUS.addListener(dev.winefox.skyfarer.runtime.SkyfarerRuntime::leave);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) -> dev.winefox.skyfarer.runtime.SkyfarerRuntime.clear());
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) -> dev.winefox.skyfarer.runtime.DebugWatchManager.logout(event.getEntity().getUUID()));

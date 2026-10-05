@@ -1,0 +1,66 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyAsyncSweep FAILED
+Snapshot curve=RIGHT_ARC contact=54
+tick 0 pending gen=2 cells=0 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=0
+tick 1 pending gen=2 cells=100 requested=118 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=57
+tick 2 pending gen=2 cells=200 requested=18 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=72
+tick 3 pending gen=2 cells=223 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=78
+tick 4 pending gen=2 cells=225 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=84
+tick 5 pending gen=2 cells=227 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=91
+tick 6 pending gen=2 cells=236 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=97
+tick 7 pending gen=2 cells=242 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=103
+tick 8 ready=false gen=2 cells=242 requested=0 jobs=0 cache=1 queue=0 cache=1 stale=0 failed=0 captureMs=0 workerMs=106
+tick 9 ready=false gen=2 cells=242 requested=0 jobs=0 cache=1 queue=0 cache=2 stale=0 failed=0 captureMs=0 workerMs=106
+tick 10 ready=false gen=2 cells=242 requested=0 jobs=0 cache=1 queue=0 cache=3 stale=0 failed=0 captureMs=0 workerMs=106
+tick 11 pending gen=2 cells=242 requested=0 jobs=1 cache=1 queue=0 cache=3 stale=0 failed=0 captureMs=0 workerMs=106
+Exception in thread "main" java.lang.AssertionError: Cold moving-entity sweep never ready
+	at dev.winefox.skyfarer.async.AsyncSweepChecks.main(AsyncSweepChecks.java:30)
+
+> Task :verifySweepingReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: hill mirror=1 hit=-1 landed=-1 curve=false exit=false Body collision at 200 state=REPOSITION
+	at dev.winefox.skyfarer.replay.SweepingAttackReplayChecks.run(SweepingAttackReplayChecks.java:50)
+	at dev.winefox.skyfarer.replay.SweepingAttackReplayChecks.main(SweepingAttackReplayChecks.java:14)
+
+> Task :verifySweepingReplay FAILED
+
+> Task :verifyCombatEntries
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+low-energy-summit hit=19 landed=127 upward=false maxSlowTicks=1 rockets=2
+upward-entry hit=23 landed=114 upward=true maxSlowTicks=0 rockets=2
+
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyAsyncSweep'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifySweepingReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+4 actionable tasks: 4 executed
+BUILD FAILED in 31s

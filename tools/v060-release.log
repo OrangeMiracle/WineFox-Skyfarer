@@ -1,0 +1,152 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :jarJar NO-SOURCE
+> Task :jar
+> Task :assemble
+> Task :compileTestJava NO-SOURCE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :test NO-SOURCE
+> Task :compileControllerReplay UP-TO-DATE
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyAsyncPlanning
+Async boundary checks passed: immutable DTOs, world-border keys, strict unknown cells, main-only capture, identical math, generation/target/config/dimension invalidation, cancellation, bounded queues and restart.
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyAsyncSweep
+Snapshot curve=RIGHT_ARC contact=54
+tick 0 pending gen=2 cells=0 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=0
+tick 1 pending gen=2 cells=100 requested=118 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=48
+tick 2 pending gen=2 cells=200 requested=29 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=56
+tick 3 ready=true gen=2 cells=229 requested=0 jobs=0 cache=1 queue=0 cache=1 stale=0 failed=0 captureMs=0 workerMs=61
+review=false hit=true contact=66 last=State[x=1.728767039573652, y=9.828084054243483, z=8.923510056764693, vx=-0.08908401757414021, vy=-0.22289174094981437, vz=0.2831474703826349, yaw=13.456533433237915, pitch=-44.4270040008057]
+
+> Task :compileVerificationJava UP-TO-DATE
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses UP-TO-DATE
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyAttackPolicy
+Attack cycle, maneuver boundary, entry opportunity and repeated recovery checks passed.
+
+> Task :verifyCombatEntries
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+low-energy-summit hit=19 landed=115 upward=false maxSlowTicks=1 rockets=2
+upward-entry hit=23 landed=110 upward=true maxSlowTicks=0 rockets=2
+
+> Task :verifyCombatRecovery
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Short exits, charge-tail deduplication/failure settlement, dense slope fits passed; no game launched.
+
+> Task :verifyCommandDispatch
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Command queue, ownership/range policy, handoff, route priority, bounded tickets, debug forecast and actual spyglass/Home bytecode checks passed.
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+flat-near attack=94 hits=1 landed=135 peak=18.79 radius=65.27 rockets=2
+flat-normal attack=82 hits=1 landed=208 peak=18.36 radius=47.05 rockets=3
+flat-behind-long-pulse attack=92 hits=1 landed=136 peak=19.15 radius=51.11 rockets=2
+home-continuous attack=77 hits=3 landed=375 peak=18.36 radius=45.47 rockets=6
+flat-short-pulse attack=160 hits=1 landed=287 peak=31.99 radius=51.69 rockets=3
+flat-longest-pulse attack=91 hits=1 landed=155 peak=19.15 radius=34.14 rockets=2
+flat-far attack=97 hits=1 landed=191 peak=20.44 radius=59.70 rockets=3
+follow-continuous attack=86 hits=3 landed=300 peak=18.36 radius=41.20 rockets=5
+slope-cycle attack=87 hits=1 landed=195 peak=18.79 radius=49.11 rockets=3
+small-target-cycle attack=84 hits=1 landed=182 peak=18.36 radius=40.59 rockets=3
+target-despawn attack=82 hits=0 landed=123 peak=18.36 radius=40.34 rockets=2
+task-cancel attack=82 hits=0 landed=107 peak=18.36 radius=40.34 rockets=2
+snow-layer-cycle attack=82 hits=1 landed=208 peak=18.49 radius=46.36 rockets=3
+mixed-partial-cycle attack=85 hits=1 landed=185 peak=18.86 radius=40.47 rockets=3
+slab-cycle attack=83 hits=1 landed=209 peak=18.86 radius=45.84 rockets=3
+ice-inertia-cycle attack=115 hits=1 landed=191 peak=22.45 radius=60.71 rockets=3
+radius-32-cycle attack=82 hits=1 landed=208 peak=18.36 radius=47.05 rockets=3
+surface-and-cave attack=82 hits=1 landed=208 peak=18.36 radius=47.05 rockets=3
+summit-cycle attack=90 hits=1 landed=209 peak=18.36 radius=48.10 rockets=3
+uphill-cycle attack=158 hits=1 landed=257 peak=25.23 radius=32.22 rockets=3
+upward-pillar attack=92 hits=1 landed=188 peak=23.09 radius=60.28 rockets=2
+Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.
+
+> Task :verifyDebugTools
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Debug tools: multi-binding, wraparound, unloaded snapshot retention, reload, unbind, logout, exact TLM/teleport APIs and common-side isolation passed.
+
+> Task :verifyDispatchReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+dispatch 180 blocks yaw=0 snow=false friendly=false creativeMultiplier=0 handoff=97 hit=130 landed=160 combat rockets=0
+dispatch 900 blocks yaw=180 snow=true friendly=false creativeMultiplier=0 handoff=622 hit=648 landed=661 combat rockets=0
+dispatch 256 blocks yaw=-90 snow=false friendly=false creativeMultiplier=0 handoff=152 hit=181 landed=214 combat rockets=0
+dispatch 180 blocks yaw=0 snow=false friendly=true creativeMultiplier=0 handoff=109 hit=136 landed=148 combat rockets=1
+dispatch 900 blocks yaw=0 snow=false friendly=false creativeMultiplier=2 handoff=317 hit=397 landed=431 combat rockets=1
+dispatch 900 blocks yaw=180 snow=false friendly=false creativeMultiplier=100 handoff=41 hit=121 landed=154 combat rockets=1
+dispatch 180 blocks yaw=90 snow=false friendly=true creativeMultiplier=2 handoff=71 hit=107 landed=156 combat rockets=0
+Dispatch full-cycle replay passed; transit consumes no inventory; combat and landing remain native controller decisions.
+
+> Task :verifyFlightMath
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Charge timing checks passed; Minecraft was not launched.
+
+> Task :verifyFlightPrediction
+162 powered/unpowered flight scenarios and rocket selection passed; Minecraft was not launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyGlideCorridor
+144 new-planner attack/charge replays passed.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+48 closed-loop corridor replays and swept-body/energy checks passed; Minecraft was not launched.
+
+> Task :verifyMaidCombat
+Small-target vertical tolerance, horizontal/range limits, pass deduplication, target switching, withdrawal timing and primary-safe multi-pierce checks passed. Minecraft was not launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyPlannerLoad
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Synthetic 24-owner / 100-tick scheduler load (not MC TPS): ready=1997; main p50=0.443 ms, p95=2.035 ms, max=28.024 ms; worker CPU=998.610 ms; captured block reads=2138400; every owner served; queue <=64, per-owner jobs <=24 and cells <=768; shutdown clean.
+
+> Task :verifyScanCadence
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Scan cadence checks passed; Minecraft was not launched.
+
+> Task :verifySorties
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Bounded kinetic-to-height turns, curved dive contacts, lateral chain contact/recovery and blocked-chain rejection passed; no game launched.
+
+> Task :verifySpearIntercept
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+144 native-sized spear intercept scenarios passed; Minecraft was not launched.
+
+> Task :verifySurfaceLaunch
+60 ice/snow/water departures across every rocket lifetime, low-roof side launch and sealed-water fallback passed; no game launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifySweepingAttacks
+Continuous cubic attack, C1 contact/exit, occluded approach and final contact/body rejection passed.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifySweepingReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Occluded hillside mirror=1 curved hit=53 continued exit=true landed=136
+Occluded hillside mirror=-1 curved hit=53 continued exit=true landed=134
+
+> Task :verifyTerrainCombat
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+36 steep/slow attack replays with finite pulses and planned exits passed.
+36 sloped attack replays, low-roof launch, target layers and airborne reengagement checks passed; no game launched.
+
+> Task :verifyYsmCompatibility
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+5 exact optional YSM 2.6.5 hooks and upstream missing elytra state verified without loading a game.
+
+> Task :check
+> Task :build
+
+BUILD SUCCESSFUL in 6m 9s
+28 actionable tasks: 23 executed, 5 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

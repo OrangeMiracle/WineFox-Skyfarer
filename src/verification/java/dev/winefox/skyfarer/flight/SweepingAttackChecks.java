@@ -13,6 +13,10 @@ public final class SweepingAttackChecks {
         return true;
     }
     public static void main(String[] args){
+        var entry=new SweepingAttackPlanner.Cubic(new SweepingAttackPlanner.Point(-10,5,0),new SweepingAttackPlanner.Point(-10,5,20),new SweepingAttackPlanner.Point(4,5,0),new SweepingAttackPlanner.Point(0,5,0));
+        var loop=new SweepingAttackPlanner.Path(entry,new SweepingAttackPlanner.Cubic(entry.d(),new SweepingAttackPlanner.Point(-4,5,0),new SweepingAttackPlanner.Point(-6,6,0),new SweepingAttackPlanner.Point(-8,8,0)),"LEFT_SWEEP",1.5);
+        if(loop.passedContact(entry.a(),4.25))throw new AssertionError("Turning approach aborted before contact because entry crosses tangent plane");
+        if(!loop.passedContact(new SweepingAttackPlanner.Point(-4.5,5,0),4.25))throw new AssertionError("Actual pass beyond curve contact not detected");
         var floor=new FlightCorridor.Box(-96,-10,-96,96,0,96);
         var hill=new FlightCorridor.Box(-40,0,-40,0,28,40);
         var shoulder=new FlightCorridor.Box(-10,0,-16,8,24,-8);

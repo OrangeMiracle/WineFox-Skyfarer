@@ -35,7 +35,7 @@ public final class DispatchReplayChecks {
         var transit=new TransitFlight();var controller=new AirCombatController(maid);
         int handoff=-1,hit=-1,landed=-1;boolean exit=false;
         for(int tick=0;tick<2200;tick++) {
-            world.time=tick;
+            world.advance(tick);
             if(handoff<0&&maid.distanceTo(target)<=DispatchPolicy.handoffRange(creativeSpeed>0)) {
                 transit.handoff(maid);handoff=tick;controller.acceptCommand(target);
                 require(maid.velocity.length()<=1.7001,"creative speed leaked into combat");
@@ -65,7 +65,7 @@ public final class DispatchReplayChecks {
             }
             else maid.ground=false;
             maid.pos=next;for(var r:world.rockets)if(r.alive&&++r.life>r.lifetime)r.discard();
-            if(handoff<0)require(maid.getY()<(creativeSpeed>0?215:35),"unbounded transit ascent");
+            if(handoff<0)require(maid.getY()<(creativeSpeed>0?215:35),"unbounded transit ascent tick="+tick+" pos="+maid.pos+" pitch="+maid.pitch+" v="+maid.velocity+" details="+transit.diagnostics());
             if(hit>=0&&maid.ground&&controller.state()==AirCombatState.GROUNDED){landed=tick;break;}
         }
         transit.close();exit|=ReplayWorld.events.stream().anyMatch(s->s.contains(" -> ATTACK_EXIT;"));

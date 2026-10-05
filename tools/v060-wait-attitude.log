@@ -1,0 +1,39 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifySweepingReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Occluded hillside mirror=1 curved hit=53 continued exit=true landed=136
+Occluded hillside mirror=-1 curved hit=53 continued exit=true landed=134
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+flat-near attack=35 hits=1 landed=173 peak=20.18 radius=48.80 rockets=2
+flat-normal attack=82 hits=1 landed=210 peak=20.18 radius=68.00 rockets=2
+flat-behind-long-pulse attack=78 hits=1 landed=239 peak=20.18 radius=55.52 rockets=3
+home-continuous attack=77 hits=3 landed=400 peak=20.89 radius=59.48 rockets=6
+flat-short-pulse attack=159 hits=1 landed=272 peak=31.92 radius=47.61 rockets=3
+flat-longest-pulse attack=66 hits=1 landed=164 peak=20.18 radius=54.91 rockets=2
+flat-far attack=95 hits=1 landed=193 peak=20.44 radius=59.72 rockets=3
+follow-continuous attack=127 hits=3 landed=451 peak=20.18 radius=55.83 rockets=6
+slope-cycle attack=87 hits=1 landed=162 peak=20.18 radius=61.22 rockets=2
+small-target-cycle attack=82 hits=1 landed=209 peak=20.18 radius=68.00 rockets=2
+target-despawn attack=82 hits=0 landed=156 peak=20.18 radius=68.00 rockets=2
+task-cancel attack=82 hits=0 landed=145 peak=20.18 radius=68.00 rockets=2
+snow-layer-cycle attack=82 hits=1 landed=210 peak=20.30 radius=68.00 rockets=2
+mixed-partial-cycle attack=82 hits=1 landed=202 peak=20.68 radius=67.89 rockets=2
+slab-cycle attack=84 hits=1 landed=207 peak=20.68 radius=67.85 rockets=2
+ice-inertia-cycle attack=38 hits=1 landed=156 peak=20.20 radius=74.62 rockets=2
+radius-32-cycle attack=82 hits=1 landed=210 peak=20.18 radius=68.00 rockets=2
+surface-and-cave attack=82 hits=1 landed=210 peak=20.18 radius=68.00 rockets=2
+summit-cycle attack=149 hits=1 landed=224 peak=20.61 radius=56.76 rockets=3
+uphill-cycle attack=79 hits=1 landed=194 peak=26.44 radius=51.78 rockets=2
+upward-pillar attack=79 hits=1 landed=179 peak=23.51 radius=58.00 rockets=2
+Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.
+
+BUILD SUCCESSFUL in 4m 19s
+3 actionable tasks: 3 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

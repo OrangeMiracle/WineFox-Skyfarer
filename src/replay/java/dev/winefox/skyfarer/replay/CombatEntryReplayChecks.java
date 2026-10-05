@@ -20,7 +20,7 @@ public final class CombatEntryReplayChecks {
         var controller=new AirCombatController(maid);controller.acceptCommand(target);
         int hit=-1,landed=-1,slow=0,maxSlow=0;boolean upward=false;
         for(int tick=0;tick<800;tick++){
-            world.time=tick;controller.tick();
+            world.advance(tick);controller.tick();
             var v=maid.velocity;var state=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.yaw,maid.pitch);
             boolean powered=world.rockets.stream().anyMatch(r->r.alive);
             if(controller.spearAttackActive()&&target.alive){

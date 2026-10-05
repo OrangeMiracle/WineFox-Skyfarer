@@ -1,0 +1,88 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifySweepingReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: hill mirror=1 hit=-1 landed=-1 curve=false exit=false Body collision at 197 state=ATTACK_EXIT
+	at dev.winefox.skyfarer.replay.SweepingAttackReplayChecks.run(SweepingAttackReplayChecks.java:50)
+	at dev.winefox.skyfarer.replay.SweepingAttackReplayChecks.main(SweepingAttackReplayChecks.java:14)
+
+> Task :verifySweepingReplay FAILED
+
+> Task :verifyCombatEntries
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+low-energy-summit hit=181 landed=249 upward=false maxSlowTicks=4 rockets=3
+upward-entry hit=27 landed=114 upward=true maxSlowTicks=0 rockets=2
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+flat-near attack=103 hits=1 landed=174 peak=19.15 radius=66.13 rockets=2
+flat-normal attack=92 hits=1 landed=198 peak=19.15 radius=44.47 rockets=3
+flat-behind-long-pulse attack=95 hits=1 landed=213 peak=19.15 radius=50.58 rockets=2
+home-continuous attack=75 hits=0 landed=-1 peak=19.15 radius=48.27 rockets=1
+Exception in thread "main" java.lang.AssertionError: home-continuous: body corridor collision during ATTACK_EXIT; trace=build\reports\controller-replay\home-continuous.tsv
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.run(ControllerReplayChecks.java:133)
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.main(ControllerReplayChecks.java:22)
+
+> Task :verifyControllerReplay FAILED
+
+> Task :verifyDispatchReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+dispatch 180 blocks yaw=0 snow=false friendly=false creativeMultiplier=0 handoff=93 hit=261 landed=313 combat rockets=2
+dispatch 900 blocks yaw=180 snow=true friendly=false creativeMultiplier=0 handoff=617 hit=645 landed=815 combat rockets=1
+dispatch 256 blocks yaw=-90 snow=false friendly=false creativeMultiplier=0 handoff=154 hit=268 landed=344 combat rockets=1
+dispatch 180 blocks yaw=0 snow=false friendly=true creativeMultiplier=0 handoff=102 hit=137 landed=143 combat rockets=0
+dispatch 900 blocks yaw=0 snow=false friendly=false creativeMultiplier=2 handoff=321 hit=492 landed=585 combat rockets=2
+Exception in thread "main" java.lang.AssertionError: unplanned ground contact in ATTACK_EXIT
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.require(DispatchReplayChecks.java:76)
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.run(DispatchReplayChecks.java:63)
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.main(DispatchReplayChecks.java:17)
+
+
+FAILURE: Build completed with 3 failures.
+> Task :verifyDispatchReplay FAILED
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifySweepingReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyControllerReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+3: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyDispatchReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+BUILD FAILED in 3m 43s
+5 actionable tasks: 5 executed

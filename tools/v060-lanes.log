@@ -1,0 +1,35 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyCombatEntries
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+low-energy-summit hit=52 landed=99 upward=false maxSlowTicks=0 rockets=0
+upward-entry hit=288 landed=468 upward=true maxSlowTicks=5 rockets=2
+
+> Task :verifyDispatchReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: transit abandoned open route at tick 36 pos=(0.0,8.502476383609544,2.715489420850231)
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.require(DispatchReplayChecks.java:76)
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.run(DispatchReplayChecks.java:45)
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.run(DispatchReplayChecks.java:25)
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.run(DispatchReplayChecks.java:22)
+	at dev.winefox.skyfarer.command.DispatchReplayChecks.main(DispatchReplayChecks.java:16)
+
+> Task :verifyDispatchReplay FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyDispatchReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 38s
+3 actionable tasks: 3 executed

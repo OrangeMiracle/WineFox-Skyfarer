@@ -1,0 +1,49 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyAsyncSweep FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Snapshot curve=RIGHT_ARC contact=54
+ideal=RIGHT_ARC
+tick 0 pending gen=2 cells=0 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=0
+ideal=none
+tick 1 pending gen=2 cells=100 requested=118 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=48
+ideal=none
+tick 2 pending gen=2 cells=200 requested=18 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=55
+ideal=none
+tick 3 pending gen=2 cells=223 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=59
+ideal=none
+tick 4 pending gen=2 cells=225 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=65
+ideal=none
+tick 5 pending gen=2 cells=227 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=71
+ideal=none
+tick 6 pending gen=2 cells=236 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=76
+ideal=none
+tick 7 pending gen=2 cells=242 requested=0 jobs=1 cache=0 queue=1 cache=0 stale=0 failed=0 captureMs=0 workerMs=82
+ideal=none
+tick 8 ready=false gen=2 cells=242 requested=0 jobs=0 cache=1 queue=0 cache=1 stale=0 failed=0 captureMs=0 workerMs=85
+ideal=none
+tick 9 ready=false gen=2 cells=242 requested=0 jobs=0 cache=1 queue=0 cache=2 stale=0 failed=0 captureMs=0 workerMs=85
+ideal=none
+tick 10 ready=false gen=2 cells=242 requested=0 jobs=0 cache=1 queue=0 cache=3 stale=0 failed=0 captureMs=0 workerMs=85
+ideal=none
+tick 11 pending gen=2 cells=242 requested=0 jobs=1 cache=1 queue=0 cache=3 stale=0 failed=0 captureMs=0 workerMs=85
+Exception in thread "main" java.lang.AssertionError: Cold moving-entity sweep never ready
+	at dev.winefox.skyfarer.async.AsyncSweepChecks.main(AsyncSweepChecks.java:31)
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyAsyncSweep'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 6s
+2 actionable tasks: 2 executed

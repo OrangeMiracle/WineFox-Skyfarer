@@ -1,0 +1,25 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyCombatEntries FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: low-energy-summit hit=305 landed=387 upward=false slowTicks=41
+	at dev.winefox.skyfarer.replay.CombatEntryReplayChecks.run(CombatEntryReplayChecks.java:44)
+	at dev.winefox.skyfarer.replay.CombatEntryReplayChecks.main(CombatEntryReplayChecks.java:13)
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyCombatEntries'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 8s
+2 actionable tasks: 2 executed

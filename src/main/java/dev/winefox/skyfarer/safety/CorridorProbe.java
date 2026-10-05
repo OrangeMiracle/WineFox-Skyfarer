@@ -50,7 +50,17 @@ public final class CorridorProbe implements GlidePlanner.Corridor {
                 for(int cz=(int)Math.floor(minZ/16);cz<=(int)Math.floor(maxZ/16);cz++)
                     if(!server.isPositionEntityTicking(new BlockPos(cx*16,(int)to.y,cz*16))) return false;
         }
-        // Repeated candidate trajectories query cached 4^3 spatial cells, not hundreds of air blocks.
+        // Immediate main-thread guard: read only the swept body and protruding-shape halo.
+        if(from.distanceToSqr(to)<=16){
+            for(int x=(int)Math.floor(minX)-1;x<=Math.floor(maxX)+1;x++)
+                for(int y=(int)Math.floor(minY)-1;y<=Math.floor(maxY)+1;y++)
+                    for(int z=(int)Math.floor(minZ)-1;z<=Math.floor(maxZ)+1;z++){
+                        var shapes=blockShapes(new BlockPos(x,y,z));if(shapes==null)return false;
+                        for(var box:shapes)if(FlightCorridor.intersects(box,from.x,from.y,from.z,to.x,to.y,to.z,width*.5,height,eye,side,vertical))return false;
+                    }
+            return true;
+        }
+        // Long actual creative-transit steps retain tiled sweep validation.
         for (int x=cell(minX); x<=cell(maxX); x++)
             for (int z=cell(minZ); z<=cell(maxZ); z++)
                 for (int y=cell(minY); y<=cell(maxY); y++) {

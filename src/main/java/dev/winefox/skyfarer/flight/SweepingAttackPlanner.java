@@ -14,7 +14,7 @@ public final class SweepingAttackPlanner {
         public Point unit(){return scale(1/Math.max(.0001,length()));}
     }
     public record Cubic(Point a,Point b,Point c,Point d) {
-        public Point at(double t){double u=1-t;return a.scale(u*u*u).add(b.scale(3*u*u*t)).add(c.scale(3*u*t*t)).add(d.scale(t*t*t));}
+        public Point at(double t){double u=1-t,aa=u*u*u,bb=3*u*u*t,cc=3*u*t*t,dd=t*t*t;return new Point(a.x*aa+b.x*bb+c.x*cc+d.x*dd,a.y*aa+b.y*bb+c.y*cc+d.y*dd,a.z*aa+b.z*bb+c.z*cc+d.z*dd);}
     }
     public static final class Path {
         public final Cubic entry,exit;
@@ -36,13 +36,20 @@ public final class SweepingAttackPlanner {
         public List<Point> points(){return points;}
         public double length(){return lengths[lengths.length-1];}
         public double remaining(Point p,boolean exiting){return lengths[contactIndex]-nearest(p,exiting);}
+        /** A turning entry may start beyond the final tangent plane without having reached contact. */
+        public boolean passedContact(Point p,double margin){
+            if(remaining(p,false)>margin)return false;
+            var tangent=entry.d.subtract(entry.c).unit();var offset=p.subtract(entry.d);
+            return offset.x*tangent.x+offset.z*tangent.z>margin;
+        }
         private double nearest(Point p,boolean exiting){
             double best=Double.POSITIVE_INFINITY,along=exiting?lengths[contactIndex]:0;
             int lo=exiting?contactIndex:0,hi=exiting?points.size()-1:contactIndex;
             for(int i=lo;i<hi;i++){
-                var a=points.get(i);var d=points.get(i+1).subtract(a);var v=p.subtract(a);
-                double t=Math.clamp((v.x*d.x+v.y*d.y+v.z*d.z)/Math.max(.00001,d.length()*d.length()),0,1);
-                double distance=p.subtract(a.add(d.scale(t))).length();
+                var a=points.get(i);var b=points.get(i+1);
+                double dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,vx=p.x-a.x,vy=p.y-a.y,vz=p.z-a.z;
+                double t=Math.clamp((vx*dx+vy*dy+vz*dz)/Math.max(.00001,dx*dx+dy*dy+dz*dz),0,1);
+                double ex=vx-dx*t,ey=vy-dy*t,ez=vz-dz*t,distance=ex*ex+ey*ey+ez*ez;
                 if(distance<best){best=distance;along=lengths[i]+t*(lengths[i+1]-lengths[i]);}
             }
             return along;
@@ -60,6 +67,16 @@ public final class SweepingAttackPlanner {
     public record Command(double yaw,double pitch,double yawRate,double pitchRate){}
     public record Rollout(boolean safe,boolean hit,int contactTick,double cost,double miss,Command first,List<GlidePlanner.TracePoint> trace){}
     public record Selection(Path path,Rollout prediction){}
+    /** Re-certify a stable entry after asynchronous latency; keep C1 and adjust only recovery headroom. */
+    public static Selection rejoin(FlightPrediction.State start,Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,double minimum,GlidePlanner.Corridor space,Contact contact){
+        for(double rise:new double[]{0,1,2,4,6}){
+            var lift=new Point(0,rise,0);
+            var candidate=rise==0?path:new Path(path.entry,new Cubic(path.exit.a,path.exit.b,path.exit.c.add(lift),path.exit.d.add(lift)),path.style,path.simplicity+rise*.1);
+            var prediction=simulate(start,candidate,aim,rocket,gravity,rate,minimum,false,space,contact,120);
+            if(prediction.safe&&prediction.hit)return new Selection(candidate,prediction);
+        }
+        return null;
+    }
     public static Point point(FlightPrediction.State s){return new Point(s.x(),s.y(),s.z());}
     private static FlightPrediction.State state(Point p){return new FlightPrediction.State(p.x,p.y,p.z,0,0,0,0,0);}
     public static List<Path> candidates(FlightPrediction.State start,Point target,double exitLength){
@@ -96,8 +113,12 @@ public final class SweepingAttackPlanner {
     }
     public static Rollout simulate(FlightPrediction.State start,Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,
         double minSpeed,boolean exiting,GlidePlanner.Corridor space,Contact contact,int budget){
+        return simulate(start,path,aim,rocket,gravity,rate,minSpeed,exiting,space,contact,budget,true);
+    }
+    private static Rollout simulate(FlightPrediction.State start,Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,
+        double minSpeed,boolean exiting,GlidePlanner.Corridor space,Contact contact,int budget,boolean recordTrace){
         var s=start;boolean hit=exiting;int hitTick=exiting?0:-1;double miss=Double.POSITIVE_INFINITY,cost=path.simplicity;Command first=null;
-        var trace=new ArrayList<GlidePlanner.TracePoint>();trace.add(new GlidePlanner.TracePoint(s,.15,.12));
+        var trace=new ArrayList<GlidePlanner.TracePoint>();if(recordTrace)trace.add(new GlidePlanner.TracePoint(s,.15,.12));
         int horizon=Math.min(160,Math.max(budget,rocket+16));
         for(int tick=0;tick<horizon;tick++){
             var moving=aim==null?null:aim.after(tick);
@@ -111,7 +132,7 @@ public final class SweepingAttackPlanner {
             if(!space.clear(s,next,.15,.12))return new Rollout(false,hit,hitTick,Double.POSITIVE_INFINITY,miss,first,List.copyOf(trace));
             boolean roomy=space.clear(s,next,.5,.4);
             cost+=.35+(roomy?0:.8)+.018*Math.pow(FlightPrediction.turn(s.yaw(),c.yaw,c.yawRate)-s.yaw(),2);
-            s=next;trace.add(new GlidePlanner.TracePoint(s,.15,.12));
+            s=next;if(recordTrace)trace.add(new GlidePlanner.TracePoint(s,.15,.12));
             if(hit&&tick>=Math.max(rocket+12,hitTick+16))return new Rollout(true,true,hitTick,cost,miss,first,List.copyOf(trace));
         }
         return new Rollout(true,hit,hitTick,cost+(hit?0:100+Math.min(100,miss)*10),miss,first,List.copyOf(trace));
@@ -125,11 +146,14 @@ public final class SweepingAttackPlanner {
         Selection best=null;
         for(var path:candidates(start,target,exitLength)){
             if(!path.clear(space,.15,.12))continue;
-            var result=simulate(start,path,aim,rocket,gravity,rate,minimumSpeed,false,space,contact,120);
+            var result=simulate(start,path,aim,rocket,gravity,rate,minimumSpeed,false,space,contact,120,false);
             double turn=FlightPrediction.turn(start.yaw(),result.first.yaw,rate)-start.yaw();
             if(turn*currentTurn<-.1)result=new Rollout(result.safe,result.hit,result.contactTick,result.cost+Math.min(3,Math.abs(currentTurn))*.6,result.miss,result.first,result.trace);
             if(result.safe&&result.hit&&(best==null||result.cost<best.prediction.cost))best=new Selection(path,result);
         }
-        return best;
+        if(best==null)return null;
+        var traced=simulate(start,best.path,aim,rocket,gravity,rate,minimumSpeed,false,space,contact,120);
+        var p=best.prediction;
+        return new Selection(best.path,new Rollout(p.safe,p.hit,p.contactTick,p.cost,p.miss,p.first,traced.trace));
     }
 }

@@ -25,7 +25,7 @@ public final class SweepingAttackReplayChecks {
         int hit=-1,landed=-1;boolean curve=false,exit=false;String failure="";
         var trace=new java.util.ArrayList<String>();
         for(int tick=0;tick<800;tick++){
-            world.time=tick;controller.tick();
+            world.advance(tick);controller.tick();
             var debug=controller.debugSnapshot();curve|=!debug.getString("curve_style").isEmpty();
             exit|=debug.getString("reason").contains("CONTINUOUS_")&&controller.state()==AirCombatState.ATTACK_EXIT;
             var v=maid.velocity;var s=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.yaw,maid.pitch);
