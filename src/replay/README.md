@@ -1,5 +1,7 @@
 # 生产控制器离线回放
 
+当前维护入口与全部任务、异步执行及证据边界统一见 [docs/VALIDATION.md](../../docs/VALIDATION.md)。修改回放时同步更新该文档；下面保留本目录的实现说明。
+
 运行 `tools/build.ps1 -Stage controller-replay -Tasks @('verifyControllerReplay')`，或执行完整 `build`。
 
 `compileControllerReplay` 直接编译 `src/main/java` 中的 AirCombatController、全部 AI 决策、飞行规划器、HeadingController、FireworkManager、配置与 DebugSnapshot。测试不拷贝控制器实现、不替换状态转换、不直接赋值控制器私有状态，也不启动 Minecraft。
@@ -10,6 +12,6 @@
 
 逐 tick TSV 和状态日志位于 `build/reports/controller-replay/`。验证夹具、这些报告和 Minecraft/TLM/Spears 的模拟 API 均不属于 main source set，不进入交付 Jar。真实 NeoForge/TLM/Spears API 兼容性仍由 `compileJava` 验证；游戏行为由用户实测确认。
 
-`verifyDispatchReplay` 额外直接运行生产 `TransitFlight`，覆盖 180/256/900 格赶路、反向起飞、雪层，以及 48 格处向生产 `AirCombatController` 交接、命中、离场和降落。验证赶路不消耗库存、免费推进在交接时结束、没有非计划触地。夹具保留原版烟花物品默认 Flight 1，生产赶路代码必须显式设置 Flight 0 才与短脉冲预测一致。此回放的世界预先提供加载地形；NeoForge 异步区块加载、玩家网络输入和显示仍需实机确认。
+`verifyDispatchReplay` 额外直接运行生产 `TransitFlight`，覆盖 180/256/900 格赶路、反向起飞、雪层和创造高速赶路，随后向生产 `AirCombatController` 交接、命中、离场和降落。普通赶路以 48 格为交接范围，创造高速为三维距离 32 格；创造倍率包含 2 与 100。验证赶路不消耗库存、免费推进在交接时结束、没有非计划触地。夹具保留原版烟花物品默认 Flight 1，生产普通赶路代码必须显式设置 Flight 0 才与短脉冲预测一致。此回放的世界预先提供加载地形；NeoForge 异步区块加载、玩家网络输入和显示仍需实机确认。
 
 0.5.1 增加友好标记目标的完整远程攻击场景，以及未标记/已标记/取消标记的友好过滤切换。`verifyCommandDispatch` 检查创造驻留的四条件真值表、真实依赖中的 Home 回收入口和传送 API、24/240 ticks 实际预测采样、10 倍下的安全起飞与近处硬碰撞拒绝。Home Mixin 的游戏实际注入、区块卸载时序和传送事件链仍需实机验证，离线场景不宣称覆盖完整 Minecraft 生命周期。

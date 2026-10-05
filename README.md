@@ -55,6 +55,8 @@
 
 ## 编译与安装
 
+维护者与新 Codex 会话请先阅读 [工程总索引](docs/PROJECT_INDEX.md)；飞控、异步规划、配置调试与验证说明统一维护在 `docs/`。修改实现时须同步更新相关工程文档。
+
 ```powershell
 .\gradlew.bat build
 ```
@@ -185,7 +187,7 @@
 | safety | `max_airborne_ticks`（2400） | ticks | 一次空战任务允许连续飞行的最长时间；到时结束空战并返航。 |
 | safety | `launch_retry_ticks`（60） | ticks | 起飞失败或结束后，等待多久再允许重新尝试起飞。 |
 
-所有 AI 设置通过 `SkyfarerSettings` 读取。实际进场窗口根据前摇/速度/可用转向时间计算；`max_turn_angle` 是外层限制，攻击入场和俯冲另有对齐要求。`combat_range` / `hard_combat_range` 分别是相对本轮活动中心的新目标/续追范围，不直接裁剪女仆的转弯航线。Home 模式用相同配置范围，以 Home 为中心。
+所有 AI 设置通过 `SkyfarerSettings` 读取。实际进场窗口根据前摇/速度/可用转向时间计算；`max_turn_angle` 是外层限制，攻击入场和俯冲另有对齐要求。`combat_range` / `hard_combat_range` 分别是相对本轮活动中心的新目标/续追范围的基础配置，不直接裁剪女仆的转弯航线。Home 模式以工作中心为中心，保护半径为工作范围加 16 格；实际 combat 范围不小于保护半径，hard 范围不小于实际 combat 范围加 16 格。
 
 ## 已知限制
 
