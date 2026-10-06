@@ -39,6 +39,14 @@ public final class PlannerExecutor {
                         for(int i=1;i<trace.size();i++)proof.clear(trace.get(i-1).state(),trace.get(i).state(),.15,.12);
                         preferred=proof.missing();
                     }
+                    else if(speculative instanceof dev.winefox.skyfarer.flight.EmergencyAvoidancePlanner.Plan
+                         || speculative instanceof dev.winefox.skyfarer.flight.LaunchAttackPlanner.Plan){
+                        var trace=speculative instanceof dev.winefox.skyfarer.flight.EmergencyAvoidancePlanner.Plan e?e.trace()
+                            :((dev.winefox.skyfarer.flight.LaunchAttackPlanner.Plan)speculative).selection().prediction().trace();
+                        var proof=snapshot.space(cancellation);
+                        for(int i=1;i<trace.size();i++)proof.clear(trace.get(i-1).state(),trace.get(i).state(),.15,.12);
+                        preferred=proof.missing();
+                    }
                     var union=new java.util.LinkedHashSet<>(missing);union.addAll(discovery.missing());missing=Set.copyOf(union);
                 }
                 if(!cancellation.get())outcome=new Outcome<>(value,missing,preferred,null);
@@ -56,7 +64,7 @@ public final class PlannerExecutor {
         }
         var ticket=new Ticket<T>(task,snapshot,horizon);
         var dto=((PlanningTask)task).unbound();
-        boolean geometry=dto instanceof PlanningTask.Slope||dto instanceof PlanningTask.Lane||dto instanceof PlanningTask.Sweep s&&s.path()==null;
+        boolean geometry=dto instanceof PlanningTask.Slope||dto instanceof PlanningTask.Lane||dto instanceof PlanningTask.LaunchAttack||dto instanceof PlanningTask.Sweep s&&s.path()==null;
         try{(geometry?geometryPool:pool).execute(ticket);submitted.increment();return ticket;}catch(RejectedExecutionException full){rejected.increment();return null;}
     }
     private static ThreadPoolExecutor create(int threads){

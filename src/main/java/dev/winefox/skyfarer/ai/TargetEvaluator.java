@@ -44,6 +44,17 @@ public final class TargetEvaluator {
     public static ScanResult scan(EntityMaid maid, LivingEntity preferred, UUID previous, Vec3 anchor) {
         return scan(maid, preferred, previous, anchor, Set.of());
     }
+    /** Same strategic layers as scan; route quality is decided by the launch simulator. */
+    public static java.util.List<LivingEntity> launchTargets(EntityMaid maid,LivingEntity preferred,UUID previous,Vec3 anchor){
+        Set<LivingEntity> candidates=new LinkedHashSet<>(maid.level().getEntitiesOfClass(LivingEntity.class,maid.getBoundingBox().inflate(40)));
+        candidates.addAll(CommandAccess.targets.apply(maid));if(preferred!=null)candidates.add(preferred);
+        var legal=candidates.stream().filter(t->valid(maid,t,true,anchor)&&visible(maid,t)).toList();
+        var layer=legal.stream().map(t->rank(maid,t,previous,anchor)).max(TargetPriority.Rank::compareTo).orElse(null);
+        if(layer==null)return java.util.List.of();
+        return legal.stream().filter(t->rank(maid,t,previous,anchor).sameLayer(layer))
+            .filter(t->t.getY()+t.getBbHeight()*.5>maid.getY()+1.82&&maid.distanceTo(t)<=40)
+            .sorted(java.util.Comparator.comparingDouble(t->maid.distanceTo(t))).limit(4).toList();
+    }
     public static ScanResult scan(EntityMaid maid, LivingEntity preferred, UUID previous, Vec3 anchor, Set<UUID> avoided) {
         LivingEntity best = null; double bestScore = -Double.MAX_VALUE;
         TargetPriority.Rank bestRank=null;

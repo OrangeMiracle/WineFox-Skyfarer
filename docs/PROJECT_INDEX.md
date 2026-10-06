@@ -1,6 +1,6 @@
 # WineFox: Skyfarer 工程总索引
 
-这是**项目总索引、当前项目事实总览和新开发会话的第一阅读入口**，面向维护者与后续 Codex。玩家安装与使用介绍保留在 [README](../README.md)。本文按 2026-10-05 的源码核对；构建版本为 **0.6.1.1**。
+这是**项目总索引、当前项目事实总览和新开发会话的第一阅读入口**，面向维护者与后续 Codex。玩家安装与使用介绍保留在 [README](../README.md)。本文按 2026-10-05 的源码核对；构建版本为 **0.6.2.1**。
 
 ## 先读：长期维护规则
 
@@ -35,15 +35,17 @@
 | Java / 构建 | Java 21；Gradle Wrapper；ModDev 插件 2.0.148；[build.gradle](../build.gradle)、[gradle.properties](../gradle.properties) |
 | 必需依赖 | `libs/touhoulittlemaid-1.5.3-neoforge+mc1.21.1.jar`、`libs/spear-backport-neoforge-1.8.0-1.21.1.jar` |
 | 可选兼容 | YSM；`tools/ysm-reference.jar` 只用于编译参考；兼容检查针对其 2.6.5 接口，不是必需依赖 |
-| 构建版本 | `build.gradle` 的 `version='0.6.1.1'`，Jar Manifest 的 `Implementation-Version` 来自它；[neoforge.mods.toml](../src/main/resources/META-INF/neoforge.mods.toml) 同步为 0.6.1.1。修正了此前 0.6.0/0.5.4 不一致；发版仍须核对实际 Jar |
+| 构建版本 | `build.gradle` 的 `version='0.6.2.1'`，Jar Manifest 的 `Implementation-Version` 来自它；[neoforge.mods.toml](../src/main/resources/META-INF/neoforge.mods.toml) 同步为 0.6.2.1。修正了此前 0.6.0/0.5.4 不一致；发版仍须核对实际 Jar |
 | 运行依赖范围 | 元数据限定 MC `[1.21.1]`、NeoForge `[21.1.250,21.2)`、TLM `[1.5.3,1.6)`、Spears `[1.8.0,1.9)`，均为 BOTH；范围声明不等于每个版本均已实测 |
 | 许可证 | [LGPL-3.0-only](../LICENSE) |
 
 核心玩法是让东方女仆使用鞘翅、烟花和 Spears 长矛执行自主空战，并通过遥控器、指挥镜和调试工具管理她们。目标是能持续进攻、合理选择路线并安全离场；不是靠普通战斗直接写速度或瞬移来伪造命中。
 
-当前 0.6.1.1 从用户确认的本地 `606f79d` 恢复 0.6.1 架构，移除 0.6.2/0.6.3 Funnel。新增有界 ±50/60/70° 曲线/坡线候选，继续使用 VanillaElytra、AttackCertificate/Rejoin 和全路线能量/离场认证。两种指挥镜服务端 pick 排除全部 EntityMaid；`RemoteWakeScheduler` 负责可重试的公平分批发现及 generation 释放。此次只执行编译和指定范围的检查；历史 0.6.1 全量通过记录不能冒充当前全量结果。
+0.6.1.1 从用户确认的本地 `606f79d` 恢复 0.6.1 架构，移除 0.6.2/0.6.3 Funnel。新增有界 ±50/60/70° 曲线/坡线候选，继续使用 VanillaElytra、AttackCertificate/Rejoin 和全路线能量/离场认证。两种指挥镜服务端 pick 排除全部 EntityMaid；`RemoteWakeScheduler` 负责可重试的公平分批发现及 generation 释放。此次只执行编译和指定范围的检查；历史 0.6.1 全量通过记录不能冒充当前全量结果。
 
 装备准入以 [SkyfarerEquipment](../src/main/java/dev/winefox/skyfarer/compat/tlm/SkyfarerEquipment.java) 为准：主手是可蓄力的长矛、胸甲槽是可飞行的原版鞘翅、可用背包里存在烟花。TLM 的 `isEnable`、遥控改工作模式和起飞前检查都要尊重这些条件。
+
+当前 0.6.2.1 基于本地 `deaebca`，新增按真实动量和转向余量提前避障、完整认证的最后手段 EMERGENCY_BOOST_TURN、保留高空滑翔的任务生命周期、Launch Attack 与更快的陡角收平；修复真实崩溃栈中的 TransitFlight debug 首 tick 空指针。完整实现与证据边界见 [0.6.2.1 稳定性说明](STABILITY_LAUNCH_0621.md)。
 
 ## 2. 当前已存在的功能
 

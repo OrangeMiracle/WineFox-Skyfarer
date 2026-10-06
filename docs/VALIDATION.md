@@ -1,12 +1,27 @@
 # 验证、离线回放与构建
 
-核对日期：2026-10-05。实现版本 0.6.1.1，基于用户明确指定的本地 606f79d（0.6.1）。本轮只做下述针对性验证，未执行 build/check 或全量 verify，未启动 Minecraft。
+核对日期：2026-10-05。实现版本 0.6.2.1，基于本地 deaebca（0.6.1.1）。本轮只做编译、指定回放与最小复现，未执行 build/check 或全量 verify，未启动 Minecraft。
 
-本轮证据：`tools/baseline-vertical-final.log` 的陡角回放验证约 61.14° 俯冲和 −51.91° 转弯上升接触、完整离场、12 种上升剩余烟花寿命，以及身体/射线拒绝；低能量/上升进场与左右遮挡山腰共 4 个真实控制器生命周期完成命中和落地。`tools/baseline-delivery.log` 记录编译、标记排除、远程 wake 生命周期与打包。中间失败日志不是交付证据。
+0.6.1.1 历史证据（本轮没有重跑该范围）：`tools/baseline-vertical-final.log` 的陡角回放验证约 61.14° 俯冲和 −51.91° 转弯上升接触、完整离场、12 种上升剩余烟花寿命，以及身体/射线拒绝；低能量/上升进场与左右遮挡山腰共 4 个真实控制器生命周期完成命中和落地。`tools/baseline-delivery.log` 记录编译、标记排除、远程 wake 生命周期与打包。中间失败日志不是交付证据。
 
-`verifyRemoteWake` 使用生产 `RemoteWakeScheduler`、`DispatchPolicy.discover` 和实际 registry NBT 保存/加载：覆盖两只卸载 Home 同时合法、13 个候选分批调度、任务结束后再次唤醒两只、旧/未知角色记录重建、首批失败不饿死后批、同 generation 重试、全服 8 个上限、ticket 创建/资格失败、generation 变更和关服释放。外部区块异步加载、接单与 Home 返回由有界夹具模拟；不声称验证了真实 NeoForge 读盘时序或 TLM 实机传送。
+0.6.1.1 的 `verifyRemoteWake` 使用生产 `RemoteWakeScheduler`、`DispatchPolicy.discover` 和实际 registry NBT 保存/加载：覆盖两只卸载 Home 同时合法、13 个候选分批调度、任务结束后再次唤醒两只、旧/未知角色记录重建、首批失败不饿死后批、同 generation 重试、全服 8 个上限、ticket 创建/资格失败、generation 变更和关服释放。外部区块异步加载、接单与 Home 返回由有界夹具模拟；不声称验证了真实 NeoForge 读盘时序或 TLM 实机传送。
 
 本文属于工程实现的一部分。修改验证入口、夹具、场景或发布方式时必须更新本文及 [项目索引](PROJECT_INDEX.md)。飞控语义见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)，并发保证见 [ASYNC_PLANNING.md](ASYNC_PLANNING.md)。历史构建与问题修复原因仍记入 [buildHistory.md](../buildHistory.md)，不以本文代替 changelog。
+
+## 0.6.2.1 本轮限定验证
+
+| 任务 | 覆盖 |
+| --- | --- |
+| `verifyStabilityLaunch` | 高速侧向惯性 TTC/余量、纯滑翔无解的烟花救援、顶棚危险拒绝、active rocket、全段寿命约束；6/10/14 格上升目标；真实 Minecraft 清旗方法签名 |
+| `verifyEmergencyReplay` | 冷快照真实控制器：14 格墙第 0 tick 预警、第 3 tick 点一枚烟花，完整 43 ticks 逃逸不撞墙；20 格墙仅滑翔，不消耗烟花；危险跨 APPROACH→ATTACK_EXIT 保留 |
+| `verifyHandoffStability` | 生产 TransitFlight tick 前/close 后 debug 最小崩溃复现；80 格高空交接、任务释放、外部清旗恢复、卸载及新控制器接管 |
+| `verifyLaunchAttackReplay` | 山脚到山腰：已锁 A，选同层更适合 B，起飞阶段完成接触和 Exit；显式标记优先、友方排除、无解普通起飞 |
+| `verifyVerticalAttacks` | 61.14° 下刺、−51.91° 转弯上刺、完整离场、碰撞/射线拒绝 |
+| `verifyCombatEntries` | 两个受飞控改动影响的低能量/上升进场至落地回放 |
+
+证据：`tools/v0621-acceptance.log`、`tools/v0621-launch-direct.log`、最终 `tools/v0621-delivery.log`。回放事件在 `build/reports/controller-replay/`。初轮紧急回放暴露冷快照未优先采集已知危险通道，修复后保持碰撞与消耗断言通过；初轮 Launch 回放还暴露恒定俯仰误判，现要求直接起飞接触且完整完成 Exit，不能把后续普通攻击的命中算作 Launch 成功。
+
+真实崩溃栈、实现细节和外部夹具边界见 [稳定性说明](STABILITY_LAUNCH_0621.md)。以上是离线生产控制器/数学验证，不是实际游戏 damage、TLM 日程、读盘时序或多 Mod 场景实测；远程 wake 的 0.6.1.1 历史记录不能冒充本轮全量调度测试。
 
 ## 1. 工作约束与入口
 
@@ -17,7 +32,7 @@
 在仓库根目录用 PowerShell：
 
 ```powershell
-# 完整发布检查：build → check → 所有 26 项 verify 任务
+# 完整发布检查：build → check → 所有 30 项 verify 任务
 & .\tools\build.ps1 -Stage maintenance-release -Tasks @('build', '--continue')
 
 # 有针对性的并发、几何和生命周期检查
@@ -34,7 +49,7 @@
 
 [tools/build.ps1](../tools/build.ps1) 只有 `-Stage` 与 `-Tasks` 两个参数，没有 `-ExtraArgs`。它在已安装路径存在时设置 JDK 21.0.10；为本机 Windows 的 AF_UNIX 限制设置 `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir`，让 JDK 回退 TCP；调用根目录 wrapper，日志写入 `tools/<Stage>.log`，显示尾部 65 行并保留 Gradle 返回码。移植到其他机器需核对本地 JDK/该环境专用设置，不把此路径当作项目必装目录。
 
-`build` 同时构建 Jar 和检查；仅 `assemble` 或 `jar` 成功不代表回归通过。`test` 目前是 `NO-SOURCE`，真正检查是 26 个 `JavaExec` 任务，它们的 `main()` 抛 `AssertionError` 判失败，不依赖 Java `-ea`。需要强制复跑时按 Gradle 方式传 `--rerun-tasks`；不要同时启动多个构建去争用相同的 `build/classes/controllerReplay` 和报告文件。
+`build` 同时构建 Jar 和检查；仅 `assemble` 或 `jar` 成功不代表回归通过。`test` 目前是 `NO-SOURCE`，真正检查是 30 个 `JavaExec` 任务，它们的 `main()` 抛 `AssertionError` 判失败，不依赖 Java `-ea`。需要强制复跑时按 Gradle 方式传 `--rerun-tasks`；不要同时启动多个构建去争用相同的 `build/classes/controllerReplay` 和报告文件。
 
 ## 2. 三类证据必须区分
 
@@ -46,7 +61,7 @@
 
 数值片段测试不能代替生命周期回放。过去有“单段算法测试通过，但连续状态机一直盘旋”的回归；新增/修改状态时应有真实控制器从地面或明确外部起始状态开始的场景，不直接篡改 controller 私有状态来凑通过。
 
-## 3. 当前全部 26 项 Gradle 验证任务
+## 3. 既有 26 项 Gradle 验证任务（新增 4 项见页首）
 
 注册和 `check` 依赖以 [build.gradle](../build.gradle) 为准。表内类名可在 [verification 源码](../src/verification/java/dev/winefox/skyfarer) 或 [replay 源码](../src/replay/java/dev/winefox/skyfarer) 下按包找到。
 
@@ -137,7 +152,7 @@
 
 ## 7. 当前构建证据与已知缺口
 
-历史 **0.6.1** 的完整构建见 [tools/v061-acceptance.log](../tools/v061-acceptance.log)：**BUILD SUCCESSFUL in 8m 28s**。当时已有的 **24 项 verify 任务均执行并通过**，未使用场景筛选；包含 21 个 Controller、7 个 Dispatch、2 个特殊进场、2 个镜像曲线场景，以及 18,000 步物理差分和完整攻击包络检查。连续上坡与孤立高处上升入口在同一完整构建中通过。API、并发/队列、配置冻结、Level/物理变化和陈旧结果检查亦通过。**此历史记录不代表 0.6.1.1 全量重跑，当前限定范围见页首。**
+历史 **0.6.1** 的完整构建见 [tools/v061-acceptance.log](../tools/v061-acceptance.log)：**BUILD SUCCESSFUL in 8m 28s**。当时已有的 **24 项 verify 任务均执行并通过**，未使用场景筛选；包含 21 个 Controller、7 个 Dispatch、2 个特殊进场、2 个镜像曲线场景，以及 18,000 步物理差分和完整攻击包络检查。连续上坡与孤立高处上升入口在同一完整构建中通过。API、并发/队列、配置冻结、Level/物理变化和陈旧结果检查亦通过。**此历史记录不代表 0.6.2.1 全量重跑，当前限定范围见页首。**
 
 最终 Jar 大小、SHA-256 与逐项证据记录在 [buildHistory](../buildHistory.md)。`tools/physics-*.log`、`v061-release`、`v061-verified`、`v061-final`、`v061-complete`、`v061-validation` 是中间验证记录，其中存在失败；名字包含 final/release 并不代表交付成功。此前 0.6.0 的独立记录保留在 [tools/v060-release.log](../tools/v060-release.log)，不与本轮结果混用。
 

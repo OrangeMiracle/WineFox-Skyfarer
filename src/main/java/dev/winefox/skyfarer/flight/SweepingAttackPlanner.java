@@ -144,7 +144,7 @@ public final class SweepingAttackPlanner {
                 pitch=-Math.toDegrees(Math.atan2(center-s.y(),Math.max(.05,Math.hypot(aim.x()-s.x(),aim.z()-s.z()))));
             }
         }
-        return new Command(yaw,Math.clamp(pitch,-75,75),rate,exiting&&path.style.startsWith("VERTICAL_")?9:6);
+        return new Command(yaw,Math.clamp(pitch,-75,75),rate,exiting&&path.style.startsWith("VERTICAL_")?14:6);
     }
     public static Rollout simulate(FlightPrediction.State start,Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,
         double minSpeed,boolean exiting,GlidePlanner.Corridor space,Contact contact,int budget){

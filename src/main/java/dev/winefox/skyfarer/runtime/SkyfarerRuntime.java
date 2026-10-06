@@ -13,7 +13,11 @@ public final class SkyfarerRuntime {
     private static final Map<UUID, AirCombatController> CONTROLLERS = new HashMap<>();
     public static boolean isSkyfarer(EntityMaid maid) { return maid.getTask().getUid().equals(SkyfarerTask.ID); }
     public static AirCombatController get(EntityMaid maid) { return CONTROLLERS.get(maid.getUUID()); }
-    public static AirCombatController ensure(EntityMaid maid){return CONTROLLERS.computeIfAbsent(maid.getUUID(),id->new AirCombatController(maid));}
+    public static AirCombatController ensure(EntityMaid maid){
+        var old=CONTROLLERS.get(maid.getUUID());
+        if(old!=null&&!old.owns(maid)){old.dispose("ENTITY_INSTANCE_REPLACED",true);CONTROLLERS.remove(maid.getUUID());}
+        return CONTROLLERS.computeIfAbsent(maid.getUUID(),id->new AirCombatController(maid));
+    }
     public static boolean isAirControlActive(EntityMaid maid) { var controller = get(maid); return dev.winefox.skyfarer.command.CommandManager.inTransit(maid) || controller != null && controller.controlsAir(); }
     public static boolean isWaterEscapeActive(EntityMaid maid) {
         var controller=get(maid);
@@ -21,14 +25,14 @@ public final class SkyfarerRuntime {
     }
     public static void workTick(EntityMaid maid) {
         if(dev.winefox.skyfarer.command.CommandManager.inTransit(maid)||dev.winefox.skyfarer.command.CommandManager.recalling(maid))return;
-        if (!maid.level().isClientSide && isSkyfarer(maid)) CONTROLLERS.computeIfAbsent(maid.getUUID(), id -> new AirCombatController(maid)).acquire();
+        if (!maid.level().isClientSide && isSkyfarer(maid)) ensure(maid).acquire();
     }
     public static void tick(EntityTickEvent.Pre event) {
         if (!(event.getEntity() instanceof EntityMaid maid) || maid.level().isClientSide) return;
         if(maid.tickCount%20==0)dev.winefox.skyfarer.command.CommandManager.observe(maid);
         if(dev.winefox.skyfarer.command.CommandManager.beforeMaidTick(maid))return;
         var controller = isSkyfarer(maid)
-            ? CONTROLLERS.computeIfAbsent(maid.getUUID(), id -> new AirCombatController(maid))
+            ? ensure(maid)
             : get(maid);
         if (controller == null) return;
         controller.tick();
@@ -36,10 +40,12 @@ public final class SkyfarerRuntime {
     }
     public static void leave(EntityLeaveLevelEvent event) {
         if (event.getEntity() instanceof EntityMaid maid && !maid.level().isClientSide) {
+            var existing=CONTROLLERS.get(maid.getUUID());
+            if(existing!=null&&!existing.owns(maid))return;
             dev.winefox.skyfarer.command.CommandManager.leave(maid);
-            var controller = CONTROLLERS.remove(maid.getUUID()); if (controller != null) controller.release();
+            var controller = CONTROLLERS.get(maid.getUUID()); if (controller != null&&controller.owns(maid)){CONTROLLERS.remove(maid.getUUID());controller.dispose("ENTITY_LEAVE",true);}
         }
     }
-    public static void onSafetyTeleport(EntityMaid maid) { var controller = get(maid); if (controller != null) controller.release(); }
-    public static void clear() { CONTROLLERS.clear(); }
+    public static void onSafetyTeleport(EntityMaid maid) { var controller = get(maid); if (controller != null) controller.release("SAFETY_TELEPORT"); }
+    public static void clear() { for(var controller:CONTROLLERS.values())controller.dispose("SERVER_STOP",true);CONTROLLERS.clear(); }
 }

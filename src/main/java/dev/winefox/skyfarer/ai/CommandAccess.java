@@ -10,6 +10,7 @@ import java.util.function.Function;
 public final class CommandAccess {
     public static Function<EntityMaid,List<LivingEntity>> targets = maid -> List.of();
     public static Function<EntityMaid,Vec3> anchor = maid -> null;
+    public static Function<EntityMaid,String> context = maid -> "none";
     // Independent of the candidate list: attackability queries must not recurse through targets().
     public static java.util.function.BiPredicate<EntityMaid,LivingEntity> designated = (maid,target)->false;
     public static boolean marked(EntityMaid maid,LivingEntity target) {

@@ -24,6 +24,13 @@ public final class AsyncPlanning {
     public boolean lastPending(){return lastPending;}
     public void close(){session.close();}
     public void invalidate(){session.invalidate();}
+    public EmergencyAvoidancePlanner.Plan emergency(FlightPrediction.State s,int active,List<Integer> durations,double gravity){
+        var candidate=(EmergencyAvoidancePlanner.Plan)optional(new PlanningTask.Emergency(s,active,durations,gravity),null);
+        return session.recertifyEmergency(s,candidate,active,gravity);
+    }
+    public LaunchAttackPlanner.Plan launchAttack(FlightPrediction.State s,List<LaunchAttackPlanner.Target> targets,List<Integer> durations,double gravity,double rate,double minimum,double exit){
+        return (LaunchAttackPlanner.Plan)call(new PlanningTask.LaunchAttack(s,targets,durations,gravity,rate,minimum,exit));
+    }
     public int pending(){return session.pendingCount();}
     public int cells(){return session.cellCount();}
     public String detail(){return session.detail();}
@@ -82,6 +89,9 @@ public final class AsyncPlanning {
     }
     public PlanningTask.RejoinResult rejoin(FlightPrediction.State s,SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,double minimum,GlidePlanner.Corridor space,List<Integer> durations){
         return (PlanningTask.RejoinResult)optional(bounded(new PlanningTask.Rejoin(s,path,aim,rocket,gravity,rate,minimum,durations),space),null);
+    }
+    public PlanningTask.RejoinResult launchRejoin(FlightPrediction.State s,SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,double minimum,GlidePlanner.Corridor space,List<Integer> durations){
+        return (PlanningTask.RejoinResult)optional(bounded(new PlanningTask.Rejoin(s,path,aim,rocket,gravity,rate,minimum,durations,true),space),null);
     }
     public SweepingAttackPlanner.Rollout follow(FlightPrediction.State s,SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,double minimum,boolean exiting,GlidePlanner.Corridor ignored,SweepingAttackPlanner.Contact contact,int budget){
         var result=(SweepingAttackPlanner.Rollout)optional(bounded(new PlanningTask.Sweep(s,null,aim,rocket,gravity,rate,minimum,0,0,path,exiting,budget),ignored),

@@ -1,8 +1,8 @@
 # 异步规划与线程边界
 
-核对日期：2026-10-05。实现版本：0.6.1.1，沿用 0.6.1 异步架构，没有 Funnel。本文描述当前源码；物理快照依据见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)，构建证据见 [验证文档](VALIDATION.md#7-当前构建证据与已知缺口)。
+核对日期：2026-10-05。实现版本：0.6.2.1，沿用 0.6.1 异步架构，没有 Funnel。本文描述当前源码；物理快照依据见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)，构建证据见 [验证文档](VALIDATION.md#7-当前构建证据与已知缺口)。
 
-本次仅扩展现有 Lane/Sweep 内部候选和控制参数：Sweep 每动力条件最多 216 条，坡面采样步长上限 .4；任务类型、全服队列、每会话上限、快照预算和严格 AttackCertificate/Rejoin 验收保持。`RemoteWakeScheduler` 属于服务端指挥发现生命周期，与后台飞控 Worker 队列分开，仍在主线程申请/释放有界 chunk ticket。
+0.6.2.1 新增 Emergency 与 LaunchAttack 数值任务、起飞 Rejoin 的 launchBody 维度标志。每个控制器另持一个只使用一个请求 slot 的紧急 mailbox，固定 phase 防止攻击阶段切换取消已发现危险；共享原有线程池、全服队列/采集预算和每 session 上限。最后手段执行前，用已捕获的不可变 cells 重验当前滑翔替代与所选烟花姿态，缺数据拒绝；这是有界执行认证，不是队列满时同步搜索。详情见 [稳定性说明](STABILITY_LAUNCH_0621.md)。
 
 本文是工程实现的一部分。修改调度、快照、任务类型、缓存、线程边界或结果应用规则时，必须同步更新本文及 [项目索引](PROJECT_INDEX.md)。源码是最终权威，发现文档冲突须修正文档。飞行行为与状态转换见 [飞控总览](FLIGHT_CONTROL_OVERVIEW.md)，配置/调试入口见 [配置与调试参考](CONFIG_DEBUG_REFERENCE.md)。
 
@@ -37,7 +37,7 @@
 
 | 代码入口 | 职责、输入与输出 | 所属线程与生命周期 |
 | --- | --- | --- |
-| [AsyncPlanning](../src/main/java/dev/winefox/skyfarer/async/AsyncPlanning.java) | Controller 的适配层；从实体控制代码接收数值状态，构造 sealed `PlanningTask`，给出结果或安全等待用的局部控制 | 主线程；空战控制器持有一份，赶路控制器按需创建一份；释放时关闭 session |
+| [AsyncPlanning](../src/main/java/dev/winefox/skyfarer/async/AsyncPlanning.java) | Controller 的适配层；从实体控制代码接收数值状态，构造 sealed `PlanningTask`，给出结果或安全等待用的局部控制 | 主线程；空战控制器持有常规和紧急两份（紧急仅一个请求 slot），赶路控制器按需创建一份；释放时关闭 session |
 | [MaidTerrainSource](../src/main/java/dev/winefox/skyfarer/async/MaidTerrainSource.java) | 唯一异步快照世界适配器；将真实碰撞形状/水体转换成数值盒并捕获身体尺寸、世界边界 | 仅创建它的主线程；持有 `EntityMaid`，绝不能交给 Worker |
 | [CollisionSnapshot](../src/main/java/dev/winefox/skyfarer/async/CollisionSnapshot.java) | 不可变 cell map、数值身体尺寸、世界边界、水面逃逸标志；创建任务私有 `Space` 查询游标 | 快照可安全跨线程；`Space` 的缺失集合/探索标志只由单个计算使用 |
 | [PlanningTask](../src/main/java/dev/winefox/skyfarer/async/PlanningTask.java) | 封闭的 DTO 任务集合；封装纯数学输入，调用 `flight` 规划器并返回数值结果 | 在主线程构造、Worker 执行；不允许携带任意调用方 callback |
@@ -62,6 +62,8 @@
 | `Chain` | 主攻击接触预测或次要目标二段追击 | 数值接触状态 / 追击计划；实体筛选和实际目标引用仍在主线程 |
 | `Sweep` | 无 path 时生成连续转弯候选；有 path 时回放当前曲线跟踪 | `Selection` 或 `Rollout`；命中段射线查询数值碰撞盒。`ignition` 冻结拟点火条件，Worker 内追加首 tick 等待；候选仍需 Rejoin 的完整寿命认证 |
 | `SweepPulse` | 将一枚火箭所有 12 种随机寿命在一个任务中评估 | 任一寿命不安全/不能命中则不可行，否则按平均成本及推进时长评分；避免每种寿命分别排队造成饥饿 |
+| `Emergency` | 六个滑翔候选优先，最多三种库存 duration 的全寿命逃逸；已有火箭不叠加 | 提案必须经当前状态和已有 snapshot cells 重验 |
+| `LaunchAttack` | 同战略层最多四个目标，每目标 27 条起飞攻击曲线、全寿命与 Strike→Exit | UUID/姿态/Path 提案，地面预热及离地 Rejoin 最终决定 |
 | `Rejoin` | 用当前运动状态重新验证候选曲线接入；可选择增加出口净空和经验证的库存火箭 | `RejoinResult`；`duration=-1` 表示不新增火箭；此后仍由主线程实际点火 |
 | `Bounded` | 给上述任务加数值水平导航范围 | 不含 live 世界 callback |
 
@@ -73,7 +75,7 @@
 
 - 总线程数为 `max(2, min(4, availableProcessors - 2))`。其中 1 个专门负责几何候选，余下 1–3 个处理控制预测；线程名 `WFS-Planner-N`，daemon，空闲 30 秒允许退出。池是惰性建立，不是每 tick 建线程。
 - 几何池接收 `Slope`、`Lane` 和没有 path 的 `Sweep`；其余任务进入控制池。两个池分别 `ArrayBlockingQueue(32)`，排队总上限 64；这不含正在执行的 2–4 个任务。
-- 拒绝策略是 `AbortPolicy`。submit 捕获队列满异常并返回 null、累计 `rejected`；主线程走等待/回退，**不能改为 `CallerRunsPolicy` 或同步重算**。
+- 拒绝策略是 `AbortPolicy`。submit 捕获队列满异常并返回 null、累计 `rejected`；主线程走等待/回退，**不能改为 `CallerRunsPolicy` 或同步重算整套搜索**。
 - 单 session 最多 24 个 pending slot。兼容的在途任务在 6 ticks 内继续复用；不兼容或太旧时取消并替换。没有为每次查询创建 Future。
 - `Ticket.cancel()` 设置 AtomicBoolean，移除仍排队的任务。运行中的计算在 `Space.get()` 查询碰撞 cell 时检查取消和中断并协作退出；不是任意 Java 指令处强制终止。
 - Worker 将完成结果写入 volatile outcome。取消结果不应用；计算的 RuntimeException 作为 failure 返回，由主线程丢弃并限频记录 `[WFS] Async planner failed; result discarded: ...`。相同错误至多每 200 个采集 epoch 重复报告，错误内容改变可立即报告。
@@ -179,7 +181,8 @@
 3. yaw/pitch、pose、使用物品、火箭实体生成/移除、实际伤害及命中回调。
 4. `validateImmediateMotion()` 的真实下一步身体扫掠；试当前俯仰、-35/-65/-88°，必要时有限的 180°反转。LANDING 不使用这套飞行防线，避免阻止计划触地。
 5. 当前地面净空、着陆射线/落点、安全传送以及实际 Spears 接触射线。
-6. `TransitFlight` 中创造高速赶路的 `CreativeTransitPlanner.choose` 和当前实际移动长段扫掠。这条特殊赶路分支还会在主线程调整速度，普通战斗滑翔不这样做。100 倍速的长段世界查询仍可能昂贵。
+6. 紧急 TTC 的最多 32 步实时扫掠、Worker 已选逃逸提案在不可变 cells 上的有界当前状态重验；不等待后台或即时读取全路线世界方块。
+7. `TransitFlight` 中创造高速赶路的 `CreativeTransitPlanner.choose` 和当前实际移动长段扫掠。这条特殊赶路分支还会在主线程调整速度，普通战斗滑翔不这样做。100 倍速的长段世界查询仍可能昂贵。
 7. 结果收取、排序、缓存冻结、网络 debug 打包等管理开销。
 
 安全含义是“远期重计算移出主线程，并在执行点再次验证”，不是“主线程不再碰撞查询”或“得到快照方案就保证以后绝不碰撞”。快照采用时间刷新，尚无方块变更事件驱动的精确失效；动态地形/实体体积变化、极慢机器的结果延迟、实际高倍预测内存压力仍需实机观测。

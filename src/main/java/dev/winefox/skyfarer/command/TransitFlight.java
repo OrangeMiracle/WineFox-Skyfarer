@@ -24,12 +24,14 @@ final class TransitFlight {
     private boolean descending;private double cruiseY=Double.NaN;private CreativeTransitPlanner.Motion fastMotion;
     private int blockedFastTicks;
     private dev.winefox.skyfarer.async.AsyncPlanning planning;
+    private EntityMaid controlled;
     boolean waterEscape(){return swimmer!=null;}
     String diagnostics(){return "launch="+launch+" departure="+departure+" plan="+cached+" rocket="+remaining()+" jobs="+(planning==null?0:planning.pending());}
     boolean tick(EntityMaid maid,Vec3 target) {
         return tick(maid,target,false);
     }
     boolean tick(EntityMaid maid,Vec3 target,boolean creative) {
+        controlled=maid;
         if(planning==null)planning=new dev.winefox.skyfarer.async.AsyncPlanning(maid);
         planning.begin(maid.level().getGameTime(),"transit:"+creative+":"+maid.isInWaterOrBubble(),
             net.minecraft.core.BlockPos.containing(target),dev.winefox.skyfarer.config.SkyfarerSettings.revision());
@@ -117,7 +119,9 @@ final class TransitFlight {
         return true;
     }
     void handoff(EntityMaid maid){
+        audit(maid,"TRANSIT_TO_COMBAT");
         close();var v=maid.getDeltaMovement();if(v.length()>1.7)maid.setDeltaMovement(v.normalize().scale(1.7));
+        if(!maid.onGround()&&!maid.isFallFlying())ElytraFlightController.startGliding(maid);
     }
     private boolean wet(EntityMaid maid,FlightPrediction.State state){var pos=net.minecraft.core.BlockPos.containing(state.x(),state.y()-.35,state.z());return maid.level().hasChunkAt(pos)&&maid.level().getFluidState(pos).is(net.minecraft.tags.FluidTags.WATER);}
     private boolean escapeWater(EntityMaid maid,double yaw,double gravity) {
@@ -138,8 +142,9 @@ final class TransitFlight {
         heading.steerAngles(maid,launch.yaw(),pitch,180,90);return true;
     }
     void debug(net.minecraft.nbt.CompoundTag data,EntityMaid maid) {
-        var v=maid.getDeltaMovement();var start=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot(),planning.physics(),ignitionDelay(maid));
-        var space=new CorridorProbe(maid,maid.getBbWidth(),.6,.4,waterEscape());double gravity=planning.physics().gravity();
+        // A command can be assigned in ServerTick.Post before the first entity tick.
+        // Debug is an observer: it must neither dereference an absent planner nor create one.
+        if(planning==null){data.putString("reason","TRANSIT_WAITING_FIRST_TICK");return;}
         if(fastMotion!=null){
             var path=new java.util.ArrayList<GlidePlanner.TracePoint>();var to=fastMotion.next();int count=Math.max(1,(int)Math.ceil(new Vec3(to.x(),to.y(),to.z()).distanceTo(maid.getEyePosition())/2));
             for(int i=0;i<=count;i++){var p=maid.getEyePosition().lerp(new Vec3(to.x(),to.y(),to.z()),i/(double)count);path.add(new GlidePlanner.TracePoint(new FlightPrediction.State(p.x,p.y,p.z,0,0,0,to.yaw(),to.pitch()),.15,.12));}
@@ -158,5 +163,9 @@ final class TransitFlight {
     private int ignitionDelay(EntityMaid maid){return remaining()>0&&boostedAt==maid.level().getGameTime()?1:0;}
     private int remaining(){if(rocket==null||!rocket.isAlive())return 0;var life=(FireworkLifetimeAccessor)rocket;return Math.max(0,life.wfs$lifetime()-life.wfs$life()+1);}
     private void restoreSwimming(){if(swimmer!=null){swimmer.getSwimManager().setWantToSwim(previousSwimming);swimmer=null;launch=null;departure=0;waterTicks=0;cached=null;}}
-    void close(){if(planning!=null)planning.close();if(rocket!=null)rocket.discard();rocket=null;restoreSwimming();}
+    private void audit(EntityMaid maid,String reason){
+        if(dev.winefox.skyfarer.config.SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] FLIGHT_LIFECYCLE maid={} action={} state=TRANSIT glide={} velocity={} altitude={} rocket={} order={}",
+            maid.getUUID(),reason,maid.isFallFlying(),maid.getDeltaMovement(),maid.getY(),remaining(),dev.winefox.skyfarer.ai.CommandAccess.context.apply(maid));
+    }
+    void close(){if(controlled!=null)audit(controlled,"TRANSIT_CLOSE");controlled=null;if(planning!=null)planning.close();planning=null;cached=null;fastMotion=null;if(rocket!=null)rocket.discard();rocket=null;restoreSwimming();launch=null;lastRequest=null;ticks=departure=waterTicks=blockedFastTicks=0;descending=false;cruiseY=Double.NaN;boostedAt=Long.MIN_VALUE;}
 }

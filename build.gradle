@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 group = 'dev.winefox.skyfarer'
-version = '0.6.1.1'
+version = '0.6.2.1'
 base { archivesName = 'winefox_skyfarer-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
@@ -153,6 +153,28 @@ tasks.register('verifyVerticalAttacks', JavaExec) {
     mainClass = 'dev.winefox.skyfarer.flight.VerticalAttackChecks'
 }
 tasks.named('check') { dependsOn verifyVerticalAttacks }
+
+tasks.register('verifyStabilityLaunch', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.StabilityLaunchChecks'
+}
+tasks.register('verifyHandoffStability', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.command.HandoffStabilityChecks'
+}
+tasks.register('verifyLaunchAttackReplay', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.LaunchAttackReplayChecks'
+}
+tasks.register('verifyEmergencyReplay', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.EmergencyReplayChecks'
+}
+tasks.named('check') { dependsOn verifyStabilityLaunch, verifyHandoffStability, verifyLaunchAttackReplay, verifyEmergencyReplay }
 
 tasks.register('verifyDebugTools', JavaExec) {
     dependsOn verificationClasses

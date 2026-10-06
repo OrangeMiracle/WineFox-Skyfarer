@@ -1,8 +1,10 @@
 # 配置、指挥、调试与兼容接口
 
-核对版本：**0.6.1.1，2026-10-05**，飞控基于 0.6.1。本文面向维护者，描述当前源码事实；源码变化时必须同步维护。总入口见 [PROJECT_INDEX.md](PROJECT_INDEX.md)，飞控细节见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)。本文中的 tick 是游戏逻辑 tick，20 TPS 时 20 ticks = 1 秒；格/tick 不是格/秒。
+核对版本：**0.6.2.1，2026-10-05**，飞控基于 0.6.1。本文面向维护者，描述当前源码事实；源码变化时必须同步维护。总入口见 [PROJECT_INDEX.md](PROJECT_INDEX.md)，飞控细节见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)。本文中的 tick 是游戏逻辑 tick，20 TPS 时 20 ticks = 1 秒；格/tick 不是格/秒。
 
 0.6.1 未新增可调物理伪属性：gravity/缓降从实体冻结，滑翔阻力使用 1.21.1 常量。`energy_reserve` / `attack_energy_reserve` 是路线最差预测储备的补能门槛，不是轨迹可达性开关。HUD `energyReserve` 在普通攻击证书/曲线回放返回后显示最差 reserve；`ATTACK_PHYSICS_VETO:<reason>` 表示完整物理认证拒绝，需结合 `contact_missed`、`exit_incomplete`、`sweep_<tick>` 与异步等待判断。详细每步 envelope 目前是 Worker 结果 DTO，未新增网络包或 HUD 曲线。
+
+0.6.2.1 没有新增可调数值键。`EMERGENCY_DETECTED` 输出 TTC、margin、速度与航向差；`EMERGENCY_WAIT` 输出临撞等待原因与紧急队列；`EMERGENCY_CERTIFIED` 区分滑翔/烟花和认证时域。`FLIGHT_LIFECYCLE` / `FALL_FLYING_CLEAR` 记录释放/清旗来源、状态、速度、高度及目标/订单。`TRANSIT_WAITING_FIRST_TICK` 是安全的未初始化调试快照。详情见 [稳定性与崩溃分析](STABILITY_LAUNCH_0621.md)。
 
 ## 1. 配置的入口与生效方式
 
@@ -184,9 +186,9 @@ effectiveHard   = max(Settings.hardCombatRange(), effectiveCombat + 16)
 - 初始创造起飞在地面最多等 100 ticks 让票据覆盖区域成为 entity-ticking；已在空中时不通过冻结实体等待。
 - 注册时的恢复回调删除旧实体/方块票据；命令会话不跨重启恢复。取消、离开、退出与关服负责释放窗口。
 
-Home 保留由 [CommandHomeRecallMixin](../src/main/java/dev/winefox/skyfarer/mixin/CommandHomeRecallMixin.java) 在 TLM `SchedulePos.tick` 入口实现。仅当 Home 女仆持有创造订单，且同一玩家会话中**至少有一个同时满足“创造标记仍在、目标存活、目标实体及其区块已加载”**的目标时，才暂停此日程 tick。不是三个条件的逻辑 OR，也不是永久禁用 TLM 安全回收。
+Home 保留由 [CommandHomeRecallMixin](../src/main/java/dev/winefox/skyfarer/mixin/CommandHomeRecallMixin.java) 在 TLM `SchedulePos.tick` 入口实现。托管空中滑翔时暂停日程，以免任务结束后的 Home 回收切断高空控制；地面时仅当 Home 女仆持有创造订单，且同一玩家会话中**至少有一个同时满足“创造标记仍在、目标存活、目标实体及其区块已加载”**的目标时，才暂停此日程 tick。不是三个条件的逻辑 OR，也不是永久禁用 TLM 安全回收。
 
-有效创造目标全失效时 cancel 会为离开工作范围的 Home 女仆建立 RECALL：保留当前位置块 + Home 3×3，最多 200 ticks；每 10 ticks（或到期）最多调用 10 次 TLM `TeleportHelper.teleportToRestrictCenter`。成功或到期后释放票据。到期仍失败不保证已经回家，日志 `COMMAND_HOME_RETURN success=false` 是明确排查入口。TLM 普通 `teleportToOwner` 没有被取消；成功会释放本模组控制，避免瞬移后沿用旧轨迹。被外部送走且创造订单仍有效的女仆可重新构建 TransitFlight。
+有效创造目标全失效时 cancel 会为离开工作范围的 Home 女仆建立 RECALL：保留当前位置块 + Home 3×3，最多 200 ticks；仅在地面每 10 ticks（或到期）最多调用 10 次 TLM `TeleportHelper.teleportToRestrictCenter`。托管空中滑翔时暂缓 TLM Home 日程，控制器继续安全返航，不直接释放滑翔。成功或到期后释放票据；到期仍在空中也释放临时票据。到期仍失败不保证已经回家，日志 `COMMAND_HOME_RETURN success=false` 是明确排查入口。TLM 普通 `teleportToOwner` 没有被取消；成功会重置本模组旧路线，合法空中位置继续安全恢复，地面才释放控制。被外部送走且创造订单仍有效的女仆可重新构建 TransitFlight。
 
 ## 5. Debug 模式、HUD 与远程调试面板
 
@@ -264,7 +266,8 @@ HUD 当前字段包含名称/UUID 前缀/维度/选中序号、状态、原因/�
 | MobAirControlMixin | 只对正在空控的 EntityMaid 跳过 PathNavigation / MoveControl / LookControl tick，避免重写飞控姿态。 |
 | TlmAirControlMixin | FALL_FLYING 女仆尺寸高 0.6、眼高 0.4；空控禁用 ground Brain 请求并清理移动记忆；TLM 安全 teleportToOwner 成功后释放控制，**不取消其安全传送**。 |
 | MaidFlightPoseMixin | 空中受控滑翔时保留 FALL_FLYING，水中只在 water escape 活跃时保留。 |
-| CommandHomeRecallMixin | 仅有效创造订单暂缓 Home 日程，见 §4.3。 |
+| CommandHomeRecallMixin | 有效创造订单或托管空中滑翔暂缓 Home 日程，见 §4.3。 |
+| FlightFlagAuditMixin | debuglog 开启时观察 setSharedFlag(7,false) 的调用栈与现场，不取消原版清旗。 |
 | SpearFriendlyFireMixin | 对骑空士攻击者使用 TargetEvaluator.attackable 过滤，普通友军保护/指挥友好目标规则统一。 |
 | SpearMovementMixin | Spears 使用上一完成 tick 的 measuredMovement×20；不伪造攻击速度/伤害。 |
 | MaidSpearChargeMixin | 保留同一 use session 的离场 Charge；合并竖向容差命中；调用原生 pierce 后核验实际血量/吸收减少或死亡，才记录命中。 |

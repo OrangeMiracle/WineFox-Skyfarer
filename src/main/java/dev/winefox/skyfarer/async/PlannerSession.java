@@ -138,7 +138,9 @@ public final class PlannerSession {
         return value!=null;
     }
     public Object query(PlanningTask task){
-        check();lastQueryEpoch=captureEpoch;pump();
+        check();lastQueryEpoch=captureEpoch;
+        if(task.unbound() instanceof PlanningTask.Emergency e)seedEmergency(e);
+        pump();
         var unbound=task.unbound();
         if(unbound instanceof PlanningTask.Glide||unbound instanceof PlanningTask.Launch||unbound instanceof PlanningTask.Compact)urgent=task.start();
         for(var cached:cache){
@@ -152,6 +154,8 @@ public final class PlannerSession {
             if((unbound instanceof PlanningTask.Rejoin||unbound instanceof PlanningTask.AttackCertificate)&&!contactStateCompatible(a,b,now-cached.tick))continue;
             if(!Objects.equals(a.physics(),b.physics()==null?null:b.physics().after(now-cached.tick)))continue;
             if(a.rocketDelay()!=Math.max(0,b.rocketDelay()-(now-cached.tick)))continue;
+            // Emergency results are proposals only; recertifyEmergency checks the current state in full.
+            if(unbound instanceof PlanningTask.Emergency){cacheHits++;if(!pending.containsKey(task.slot()))enqueue(task);return cached.value;}
             double distance=Math.sqrt(Math.pow(a.x()-b.x(),2)+Math.pow(a.y()-b.y(),2)+Math.pow(a.z()-b.z(),2));
             if(!terrain&&(distance>(geometry?16:4)||Math.abs(FlightPrediction.turn(a.yaw(),b.yaw(),180)-a.yaw())>(geometry?90:24)
                 ||!geometry&&Math.abs(a.vx()-b.vx())+Math.abs(a.vy()-b.vy())+Math.abs(a.vz()-b.vz())>1.2))continue;
@@ -167,6 +171,33 @@ public final class PlannerSession {
             &&Math.abs(a.pitch()-b.pitch())<=8
             &&Math.abs(a.vx()-b.vx())+Math.abs(a.vy()-b.vy())+Math.abs(a.vz()-b.vz())<=.35;
     }
+    /** Seed the already threatened momentum corridor first. Otherwise a cold discovery pass
+     * can spend its whole reaction window learning that the wall seen by the live guard exists. */
+    private void seedEmergency(PlanningTask.Emergency e){
+        urgent=e.start();var s=e.start();
+        for(int tick=0;tick<32;tick++){
+            for(double x:new double[]{s.x()-.55,s.x()+.55})for(double y:new double[]{s.y()-.55,s.y()+.35})for(double z:new double[]{s.z()-.55,s.z()+.55}){
+                long key=CollisionSnapshot.key((int)Math.floor(x/4),(int)Math.floor(y/4),(int)Math.floor(z/4));
+                var cell=cells.get(key);if(cell==null||now-cell.tick>=20)request(key,0);
+            }
+            s=FlightPrediction.step(s,e.start().yaw(),e.start().pitch(),45,20,20,e.gravity(),RocketProfile.active(tick,e.active(),e.start()));
+        }
+    }
+    /** A last-resort ignition cannot rely on a worker's old velocity. Recheck only its selected
+     * attitude against the immutable, already captured cells; no world queries/candidate search here. */
+    public EmergencyAvoidancePlanner.Plan recertifyEmergency(FlightPrediction.State start,EmergencyAvoidancePlanner.Plan candidate,int active,double gravity){
+        check();if(candidate==null)return null;
+        var map=new HashMap<Long,CollisionSnapshot.Cell>();
+        cells.forEach((k,v)->{if(now-v.tick<=20)map.put(k,v.cell);});
+        var space=source.snapshot(Map.copyOf(map),false,false).space(new java.util.concurrent.atomic.AtomicBoolean());
+        if(candidate.duration()>=0){
+            var glide=EmergencyAvoidancePlanner.choose(start,active,List.of(),gravity,space);
+            if(glide!=null)return glide;
+        }
+        var result=EmergencyAvoidancePlanner.certify(start,candidate.yaw(),candidate.pitch(),candidate.duration(),active,gravity,space);
+        for(long key:space.missing())request(key,0);
+        return result;
+    }
     private void enqueue(PlanningTask task){
         if(task.unbound() instanceof PlanningTask.Sweep sweep&&sweep.path()==null){
             var seed=seeds.get(task.slot());
@@ -180,7 +211,7 @@ public final class PlannerSession {
         if(cells.values().removeIf(c->now-c.tick>80))dirty=true;
         if(dirty){var map=new HashMap<Long,CollisionSnapshot.Cell>();cells.forEach((k,v)->map.put(k,v.cell));frozen=Map.copyOf(map);dirty=false;}
         var unbound=task.unbound();boolean wet=unbound instanceof PlanningTask.Launch l&&l.wet();
-        var snapshot=source.snapshot(frozen,wet,unbound instanceof PlanningTask.Launch);
+        var snapshot=source.snapshot(frozen,wet,unbound instanceof PlanningTask.Launch||unbound instanceof PlanningTask.LaunchAttack||unbound instanceof PlanningTask.Rejoin r&&r.launchBody());
         if(pending.size()>=24)return;
         var ticket=PlannerExecutor.submit(task,snapshot,horizon);
         if(ticket!=null)pending.put(task.slot(),new Work(task,ticket,now,generation));

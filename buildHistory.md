@@ -2,7 +2,20 @@
 
 ## 当前交付状态
 
-当前交付为 **0.6.1.1**，基于用户明确指定的本地 0.6.1 提交。仅编译与针对性验证，不包含 Funnel；未启动 Minecraft。
+当前交付为 **0.6.2.1**，基于本地 0.6.1.1（deaebca）。仅编译与针对性验证，不包含 Funnel；未启动 Minecraft。
+
+### 0.6.2.1 提前避障、高空交接与 Launch Attack（2026-10-05）
+
+- **本地基线**：当前 HEAD 为 `deaebca`（dev to 0.6.1.1），开始时工作区干净、无 stash。阅读当前 docs 并核对生产调用链；没有 fetch/pull、覆盖远程内容或再次回滚。保留 0.6.1 系物理、坡线/曲线、AttackCertificate/Rejoin 和完整 Strike→Exit 架构。
+- **提前避障**：真实速度向量与期望航向偏差决定 6–32 ticks 动力学预警时域；危险保持 12 ticks，独立紧急 mailbox 不随 ATTACK/EXIT/REPOSITION 切换失效。六个大角度出口先验证滑翔，无解才尝试最多三种库存烟花 duration；`EMERGENCY_BOOST_TURN` 验证全部随机寿命、启动延迟、活动火箭、身体扫掠和至少 36 ticks/燃尽后 20 ticks 的完整逃逸。执行前用当前状态与已捕获不可变 cells 复核，不凭陈旧速度点火；候选搜索仍在共享 Worker，采集/队列上限保留。陡角曲线离场俯仰上限提高至 14°/tick，预测和执行一致。
+- **高空生命周期**：合法空中 release 转安全返航；Transit/Combat 移交保留 FALL_FLYING，卸载/替换使用显式 dispose。相同 UUID 的新实体不能复用旧实体控制器，重载合法滑翔可重新接管；托管时外部清旗会记录并尝试合法恢复。Home 空中继续恢复、暂缓日程，地面才尝试回收传送，原 200 ticks 票据上限与释放保留。新增 FLIGHT_LIFECYCLE 和 FALL_FLYING_CLEAR 调用栈及 state/velocity/altitude/target/order；不覆盖原版资格判定。
+- **真实崩溃**：用户指定实例最新 `crash-2026-10-05_22.59.23-server.txt`，并交叉读取 latest/debug.log。属于本 Mod：ServerTick.Post 的 DebugWatchManager 在新赶路订单首个实体 tick 前调用 TransitFlight.debug，planning 尚空。修复为只写 TRANSIT_WAITING_FIRST_TICK，不初始化/重复预测；close 清除旧规划与状态。栈不属于 Worker；审核后 Worker 仍只持有不可变数值任务/快照，不持有 Entity/Level/Source。详细证据见 [STABILITY_LAUNCH_0621](docs/STABILITY_LAUNCH_0621.md)。
+- **Launch Attack**：地面转向后跳起，复用 SweepingAttackPlanner 的 30/50/70° 上升候选、原生 Spears 前摇/接触、可选真实库存烟花和完整离场认证。最多四个合法同战略层目标，每目标 27 条曲线；标记/保护区/上一目标/敌对层优先，不让普通顺手目标越级。起跳前预热滑翔体积 Rejoin，离地后重验当前状态与目标；待定/无解有界回退普通起飞。目标的地面残留重力速度不当成实际下落，候选不沿用旧锁定实体的 motion。
+- **回放中修正的问题**：首轮 Launch 的恒定姿态 TTC 错把动态曲线的安全爬升判成撞山，改为按同一曲线控制律预测。测试要求起飞阶段直接接触并完成 Exit，不把后续普通攻击计作成功。紧急冷快照首轮错过救援窗口，现优先采集已由 live guard 发现危险的动量通道，仍受原全服预算约束。中间失败日志保留，不作为交付证据。
+- **限定验证**：[v0621-acceptance](tools/v0621-acceptance.log) 中编译及 verifyStabilityLaunch、verifyHandoffStability、verifyEmergencyReplay、verifyLaunchAttackReplay、verifyVerticalAttacks 全部通过；[v0621-launch-direct](tools/v0621-launch-direct.log) 的两个 verifyCombatEntries 进场至落地通过。最终 [v0621-delivery](tools/v0621-delivery.log) 再次编译、跑受后续改动影响的交接/Launch/紧急回放并打包成功（57s）。未运行 build/check 或全量 verify，未启动 Minecraft。
+- **具体证据**：冷快照 14 格墙第 0 tick 发现 TTC=7/margin=31，第 3 tick 点一枚 Flight 0，完整 43 ticks 逃逸无身体碰撞；20 格墙仅滑翔、消耗 0。顶棚使烟花恶化时拒绝，活动火箭不叠加。80 格高空交接/释放/清旗恢复/重载不丢合法滑翔，tick 前和 close 后 debug 复现不崩溃。山脚锁定 A 后选择同层山腰 B，起飞直接接触、完成 Exit，显式标记优先和友方排除通过；无解普通 CLIMB 回退通过。竖向下刺/转弯上刺仍约 61.14°/−51.91°，contact tick 17/13。
+- **边界**：离线回放使用生产控制器/调度/数学与外部实体世界夹具，Spears 接触由其参数/时序条件模拟；没有把它当成实际游戏 damage、真实 TLM Home 日程、NeoForge 读盘或第三方 Mod 实测。实际 Minecraft 清旗 hook 签名另做字节码核对。未重跑 0.6.1.1 全套 remote wake、全量性能或所有游戏场景；最新坠落的所有外部清旗来源仍须新日志实机确认。
+- **交付**：[winefox_skyfarer-1.21.1-0.6.2.1.jar](build/libs/winefox_skyfarer-1.21.1-0.6.2.1.jar)，478,713 bytes，SHA-256：`B982D96AF9A516BEEA8F7F8F84D180ABA953BE93F266134B3CF1598A2C2C95C2`。252 个条目；Manifest/Mod 元数据统一 0.6.2.1，包含 FlightFlagAuditMixin，无 Funnel、验证/回放夹具或模拟 Minecraft/TLM 类。README、相关 docs、验证入口和本记录同步；客户端与服务端请同时更新。
 
 ### 0.6.1.1 竖向候选、女仆标记排除与公平唤醒（2026-10-05）
 

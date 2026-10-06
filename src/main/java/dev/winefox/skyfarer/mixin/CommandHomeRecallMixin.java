@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Suppress only Home schedule movement/recall during a live creative dispatch. */
+/** Keep live dispatch and managed airborne recovery from being interrupted by Home scheduling. */
 @Mixin(value=SchedulePos.class,remap=false)
 public abstract class CommandHomeRecallMixin {
     @Inject(method="tick",at=@At("HEAD"),cancellable=true)

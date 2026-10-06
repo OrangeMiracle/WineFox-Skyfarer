@@ -1,10 +1,12 @@
 # 飞控系统总设计与当前实现
 
-核对日期：2026-10-05。源码基线：Gradle 项目版本 `0.6.1.1`。本文描述当前源码，不是未来设计提案；mapped 物理依据与完整路线认证详见 [VANILLA_PHYSICS.md](VANILLA_PHYSICS.md)。
+核对日期：2026-10-05。源码基线：Gradle 项目版本 `0.6.2.1`。本文描述当前源码，不是未来设计提案；mapped 物理依据与完整路线认证详见 [VANILLA_PHYSICS.md](VANILLA_PHYSICS.md)。
 
 本文面向修改飞控算法、状态机和路径规划，以及排查飞行行为的维护者。新会话先读 [PROJECT_INDEX.md](PROJECT_INDEX.md)，线程池、快照、缓存与结果有效性细节继续读 [ASYNC_PLANNING.md](ASYNC_PLANNING.md)。配置、HUD 和命令见 [CONFIG_DEBUG_REFERENCE.md](CONFIG_DEBUG_REFERENCE.md)，验证入口见 [VALIDATION.md](VALIDATION.md)。
 
 **本文属于实现的一部分。** 改动控制流程、状态条件、预测公式、Planner、线程边界或参数含义时同步更新。若本文与源码冲突，以源码为准并修正文档。历史迭代原因可查 [buildHistory.md](../buildHistory.md)，不要把旧版本描述套用于当前实现。
+
+0.6.2.1 的紧急转向、Launch Attack、交接/卸载恢复和最新崩溃分析见 [稳定性与起飞攻击](STABILITY_LAUNCH_0621.md)。
 
 ## 导航
 
@@ -66,7 +68,7 @@ TLM Skyfarer 工作行为 -> SkyfarerRuntime.workTick -> acquire 请求
 
 快照采集由服务端 tick 的公共预算调度，不是上述每次 API 调用都同步扫描完整世界。`AsyncPlanning` 保留部分旧调用形状，但传入的 live corridor/support/contact 回调不会作为对象交给 Worker；Worker 用 `CollisionSnapshot.Space` 实现查询。
 
-`SkyfarerRuntime` 在主线程按女仆 UUID 持有 `AirCombatController`。女仆离开世界时释放控制器和指挥任务；`release()` 关闭规划会话、清理飞行/充能状态，恢复 `GROUNDED` 并设置重试时间。恢复后的控制器可在后续工作 tick 再次采集任务。源码：[SkyfarerRuntime](../src/main/java/dev/winefox/skyfarer/runtime/SkyfarerRuntime.java)、[AirCombatController](../src/main/java/dev/winefox/skyfarer/ai/AirCombatController.java)。
+`SkyfarerRuntime` 在主线程按女仆 UUID 持有 `AirCombatController`。女仆离开世界时释放控制器和指挥任务；`release(reason)` 在合法空中状态保留控制并转安全返航；地面/失去资格才关闭会话、清理滑翔并回到 `GROUNDED`。交接/卸载/替换使用显式 `dispose`，保留空中滑翔标志。恢复后的控制器可在后续工作 tick 再次采集任务。源码：[SkyfarerRuntime](../src/main/java/dev/winefox/skyfarer/runtime/SkyfarerRuntime.java)、[AirCombatController](../src/main/java/dev/winefox/skyfarer/ai/AirCombatController.java)。
 
 ## 3. 状态机与共同规则
 
@@ -131,7 +133,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 ### 4.1 `GROUNDED`
 
-- **目的/进入：** 闲置入口；构造时和 `release()` 后进入，把普通地面行为交还 TLM。
+- **目的/进入：** 闲置入口；构造时和地面/失效释放后进入，把普通地面行为交还 TLM。
 - **输入：** 工作资格、主人/工作区域、装备、地面状态、`retryAt`、扫描节拍。
 - **规划/控制：** 不飞行、不向 Worker 请求全局路径。`acquire()` 满足条件后发起 `TARGET_ACQUIRE`；缺少装备等只写诊断原因。
 - **退出：** 默认每 `scan_interval_ticks=10` ticks 尝试，释放后的 `launch_retry_ticks=60` ticks 内不能重新起飞。入水且有可用鞘翅和燃料/仍活动的火箭时可独立进入 `WATER_ESCAPE`。
@@ -152,10 +154,10 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 ### 4.4 `TAKEOFF_PREP`
 
-- **目的：** 保证站立身体能离地，并选择对实际库存烟花所有随机寿命都安全的起飞姿态。
+- **目的：** 保证站立身体能离地；优先搜索同一战略层内更适合起飞上刺的合法目标，以完整 Launch Attack 认证选择目标和姿态，无解回退普通起飞。
 - **进入/输入：** 来自 `TARGET_SELECTED`；目标、当前姿态/速度、起跳预测点、重力、库存 Flight 时长。
-- **Worker：** `SurfaceLaunchPlanner.choose()`，枚举相对朝向 `0/±45/±90/180°` 和 pitch `-88/-70/-50/-25/0/15°`，验证完整推进加滑翔恢复；使用预计滑翔体积，而非站立头高作为空中通道尺寸。
-- **主线程：** 先真实扫掠站立眼点上方约 `0.45` 格；构造预期跳起状态（脚底基点 + `0.82`、`vy=.33`）；逐库存 duration 比较计划；转向选定姿态，准备满 4 ticks 调用原版 JumpControl。
+- **Worker：** 先由 `LaunchAttackPlanner` 搜索每目标 27 条上升曲线，并在地面预热滑翔体积的 Rejoin；准备等待有界。普通起飞用 `SurfaceLaunchPlanner.choose()`，枚举相对朝向 `0/±45/±90/180°` 和 pitch `-88/-70/-50/-25/0/15°`，验证完整推进加滑翔恢复；使用预计滑翔体积，而非站立头高作为空中通道尺寸。
+- **主线程：** 先真实扫掠站立眼点上方约 `0.45` 格；构造预期跳起状态（脚底基点 + `0.82`、`vy=(.42-gravity)*.98`）；逐库存 duration 比较计划；转向选定姿态，准备满 4 ticks 调用原版 JumpControl。
 - **退出/失败：** 起跳 -> `TAKEOFF`；目标失效、跳起被堵或计划无解 -> 释放。等待异步必需结果时抵消该状态本 tick 的计时，不消耗准备窗口。
 
 ### 4.5 `TAKEOFF`
@@ -163,7 +165,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 - **目的：** 真正离地后启动鞘翅和选定烟花，避免“预测能起飞但火箭作用于错误姿态”。
 - **输入/Worker：** 实际离地状态、准备计划及烟花 duration；若位置/垂直速度偏离准备容差，则重新请求起飞计划。
 - **主线程：** `ElytraFlightController.startGliding()` 检查地面、水、骑乘、漂浮效果、鞘翅；按选定角度转身，对当前第一步再做 live 身体检查，成功生成附着火箭并消耗一枚库存。
-- **退出：** 推进成功 -> `CLIMB`，前 6 ticks 的离地姿态由 `SurfaceLaunchPlanner` 控制（已执行第一步，保存剩余 5 ticks）。
+- **退出：** Launch Attack 当前 Rejoin 通过且目标仍合法时，开始原生蓄力并进入 `ATTACK_RUN`；待定最多三空中 ticks 或无解后回退普通起飞。普通推进成功 -> `CLIMB`，前 6 ticks 的离地姿态由 `SurfaceLaunchPlanner` 控制（已执行第一步，保存剩余 5 ticks）。
 - **失败：** 缺计划释放；默认超过 `takeoff_timeout_ticks=60` -> 返航。已生成火箭不叠加新火箭。
 
 ### 4.6 `WATER_ESCAPE`
@@ -327,7 +329,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 曲线从当前实际速度方向构造起点切线；低速才退到目标方向。保留原来的 108 条浅角候选，另将直达和左右 `30/60/90/120°` 与接触仰角 `±50/±60/±70°`、两档起始控制柄组合，增加 108 条竖向候选，每个动力条件上限 216。初始上升切线接下降接触可形成越脊俯冲，初始下降切线接上升接触可形成先降后攻；它们与转弯共同搜索，不设固定陡角姿态。当前无动力候选不可用时，还可按真实库存 duration 生成拟点火候选（最大预测推进 ≤80 ticks）；这种候选不代表当前已有推力。它仍走当前状态 Rejoin、全部随机寿命与真实点火后才能承诺攻击。接触处 entry 末切线与 exit 起切线一致；陡角出口缩短接触控制柄，随后可收平、抬升并侧向转出。
 
-竖向曲线以三维速度和局部路径高度误差跟踪，接触附近同时修正 yaw/pitch 指向目标，姿态范围 ±75°；进攻 pitch 速率仍为 6°/tick，陡角离场允许 9°/tick。以上只是候选指令，`VanillaElytra` 与每步身体扫掠仍决定能否执行。只有完整命中、前摇及安全离场成立的路线进入成本比较；旧普通路线必须预测到实际接触（miss ≤1e-8）才能压过已认证曲线。
+竖向曲线以三维速度和局部路径高度误差跟踪，接触附近同时修正 yaw/pitch 指向目标，姿态范围 ±75°；进攻 pitch 速率仍为 6°/tick，陡角离场允许 14°/tick。以上只是候选指令，`VanillaElytra` 与每步身体扫掠仍决定能否执行。只有完整命中、前摇及安全离场成立的路线进入成本比较；旧普通路线必须预测到实际接触（miss ≤1e-8）才能压过已认证曲线。
 
 `Path` 按控制多边形长度约每 `.75` 格采样，每段 8–160 步；先真实身体走廊过滤，再模拟原版动量/姿态/有限火箭。模拟在原生前摇之后检查最低攻击速度、长矛接触与逐步身体净空。命中后的提前成功退出条件要求至少再模拟 16 ticks，并达到火箭结束后 12 ticks；但总时域为 `min(160, max(budget, rocket + 16))`，达到上限时也会返回已模拟部分的 `safe/hit`。因此，接触发生在时域末尾时，当前实现不保证完整的上述恢复窗口；不能将有限预测写成整段离场安全的无条件证明。
 
@@ -402,6 +404,8 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 普通 Glide 首 24 ticks 是硬安全窗口；`prediction_length_multiplier` 扩大的远端碰撞仍采样并增加风险成本，不能把无限无动力延伸最终落地当成禁止现在起飞。完整烟花寿命 + 后续滑翔的验证另有硬窗口，不因远端软惩罚而省略。
 
+0.6.2.1 在状态分支前另有真实动量 TTC 检测：速度、转向角差决定 6–32 ticks 余量，危险保持 12 ticks；曲线使用动态控制律。独立紧急请求先验六个滑翔候选，无解才搜索全寿命烟花转向，执行前用当前状态复核，详见 [紧急避障](STABILITY_LAUNCH_0621.md#紧急避障)。陡角 Exit 俯仰上限为 14°/tick，预测与执行一致。
+
 主线程 `validateImmediateMotion()` 对当前真实身体和实际世界检查本 tick，依次当前 pitch、-35/-65/-88，再必要时检查一次 180°/-20 回头。它不执行整套候选搜索，也不把未知空间当安全。正常 `LANDING` 跳过这条防线，否则着陆会被抬头回避。
 
 快照有年龄，动态放方块、爆炸、其他 Mod 外力、区块加载状态变化都可能让旧预测失效；因此不能删除当前步 live guard 或最终伤害射线来追求“完全异步”。[CorridorProbe](../src/main/java/dev/winefox/skyfarer/safety/CorridorProbe.java) 仍是主线程实时适配器，与 Worker 的 `CollisionSnapshot.Space` 不可混用。
@@ -436,7 +440,7 @@ expectedTicks(duration) = minimumTicks + 5.5
 
 每个 Flight duration 有 12 个可能的整数推进时长。起飞、攻击补能和恢复规划必须覆盖全部，而非只验证均值；活动火箭则读取真实 `life/lifetime`，剩余为 `max(0,lifetime-life+1)`。预测程序遵循火箭在女仆移动后更新速度的顺序；EntityTick.Pre 新建火箭下 tick 才首次推进，0/1 tick 的 `rocketDelay` 单独冻结，不扣掉一次有效推进。
 
-`FireworkManager` 有默认 30 ticks CD，活动火箭期间也拒绝叠加。选择只在主线程遍历可提取的真实库存，按 duration 合并规划成本；带爆炸效果加 1000 成本但不是绝对禁用。成功 addFreshEntity 后才真正提取一件，失败时撤销新火箭。`release()` 会丢弃所管理的活动火箭。
+`FireworkManager` 有默认 30 ticks CD，活动火箭期间也拒绝叠加。选择只在主线程遍历可提取的真实库存，按 duration 合并规划成本；带爆炸效果加 1000 成本但不是绝对禁用。成功 addFreshEntity 后才真正提取一件，失败时撤销新火箭。地面释放和显式 dispose 会丢弃所管理的活动火箭；合法空中 release 进入返航，不直接撤销滑翔。
 
 保守预算有上限：SurfaceLaunch 拒绝最大寿命 >64 ticks，Glide 完整 forecast 拒绝剩余推进 >80 ticks，Compact 基准 `max(32,rocket+rocketDelay+16)>96` 则不接受。额外 Mod 自定义超长烟花不被假定为可安全预测。
 
