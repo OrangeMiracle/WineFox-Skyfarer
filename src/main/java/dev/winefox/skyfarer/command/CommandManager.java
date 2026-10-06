@@ -257,6 +257,7 @@ public final class CommandManager {
             if(!maid.isHomeModeEnable()||maid.isWithinRestriction()||++o.landedTicks>45){cancel(maid.getUUID());return false;}
         } else o.landedTicks=0;
         if(!o.transit)return false;
+        if(entity instanceof LivingEntity target&&target.isAlive())SkyfarerRuntime.ensure(maid).prewarmCommand(target);
         // Adding a ticket does not promise that every entity-ticking future completed this tick.
         // Wait on the ground for initial corridor activation; never freeze an airborne entity.
         if(o.creative&&maid.onGround()&&!CommandTickets.ready(maid.getUUID())&&++o.loadingTicks<=100)return true;

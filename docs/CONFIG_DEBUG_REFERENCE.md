@@ -1,6 +1,6 @@
 # 配置、指挥、调试与兼容接口
 
-核对基线：**0.6.1，2026-10-05**。本文面向维护者，描述当前源码事实；源码变化时必须同步维护。总入口见 [PROJECT_INDEX.md](PROJECT_INDEX.md)，飞控细节见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)。本文中的 tick 是游戏逻辑 tick，20 TPS 时 20 ticks = 1 秒；格/tick 不是格/秒。
+核对基线：**0.6.2，2026-10-05**。本文面向维护者，描述当前源码事实；源码变化时必须同步维护。总入口见 [PROJECT_INDEX.md](PROJECT_INDEX.md)，飞控细节见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)。本文中的 tick 是游戏逻辑 tick，20 TPS 时 20 ticks = 1 秒；格/tick 不是格/秒。
 
 0.6.1 未新增可调物理伪属性：gravity/缓降从实体冻结，滑翔阻力使用 1.21.1 常量。`energy_reserve` / `attack_energy_reserve` 是路线最差预测储备的补能门槛，不是轨迹可达性开关。HUD `energyReserve` 在普通攻击证书/曲线回放返回后显示最差 reserve；`ATTACK_PHYSICS_VETO:<reason>` 表示完整物理认证拒绝，需结合 `contact_missed`、`exit_incomplete`、`sweep_<tick>` 与异步等待判断。详细每步 envelope 目前是 Worker 结果 DTO，未新增网络包或 HUD 曲线。
 
@@ -205,11 +205,14 @@ Home 保留由 [CommandHomeRecallMixin](../src/main/java/dev/winefox/skyfarer/mi
 | 红线 | 女仆到本轮实际 run target；尚未锁定不会凭候选画红线。 |
 | 蓝线 | `AirRoute` 引导点折线，非精确物理轨迹。 |
 | 青绿线 | `attack_curve` 拟合攻击 Bezier 折线，包含进入/接触/离场几何。 |
+| 紫色管道 | `attack_funnels`：已完成的服务端目标窗口；最多四条、每条十八个三维转向截面和四条纵边。空间进入不代表动力学成立，最终仍需 Rejoin。 |
 | 黄色通道 | 已有预测 trace 对应身体 + 安全余量；4 条纵边 + 每 6 个截面及末端的框；不画整张三角网格。 |
 | 绿色 1 格立方框 | `attack_entry`，中心引出 2 格 `entry_direction` 线。 |
 | 亮绿粗四角框 | 当前 HUD 女仆；独立 SELECTED RenderType 无深度测试，只写颜色；线宽是普通基准的 3 倍。 |
 
 黄色框半径会按横截面方向投影 AABB，不能把画面宽度当作女仆身体宽度本身；截面上/下高使用实际 body/eye 与预测余量。它读取已完成的后台预测，debug 渲染不再次跑 Planner。F1 隐藏 GUI 时也隐藏这些世界辅助显示；打开调试面板时隐藏 HUD。
+
+紫色截面随中心线的三维切线改变朝向，是低密度采样图示，不画网格/连续曲面，不表示整条管道内任意状态都安全。`FUNNEL_CAPTURE_PENDING` / `FUNNEL_REPOSITION` / `FUNNEL_SPATIAL_*` 反映候选捕获阶段；`FUNNEL_CAPTURE:<style>` 是最终 Rejoin 已通过后的攻击转移日志。`funnelJobs/funnelCells` 为地图 session 指标。NBT 新增字段沿用协议 3，其他色彩不变；未增加新的飞控配置项。Capture 黄色完整轨迹只显示八 ticks 内取得的结果。
 
 HUD 当前字段包含名称/UUID 前缀/维度/选中序号、状态、原因/曲线类型、扫描统计、异步规划、锁定目标、候选及分数、速度/离地、Charge 时长/前摇/射程、俯仰/目标距离/相对中心高度、转角/搜索/作战范围。
 

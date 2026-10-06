@@ -1,6 +1,6 @@
 # WineFox: Skyfarer 工程总索引
 
-这是**项目总索引、当前项目事实总览和新开发会话的第一阅读入口**，面向维护者与后续 Codex。玩家安装与使用介绍保留在 [README](../README.md)。本文按 2026-10-05 的源码核对；构建版本为 **0.6.1**。
+这是**项目总索引、当前项目事实总览和新开发会话的第一阅读入口**，面向维护者与后续 Codex。玩家安装与使用介绍保留在 [README](../README.md)。本文按 2026-10-05 的源码核对；构建版本为 **0.6.2**。
 
 ## 先读：长期维护规则
 
@@ -13,6 +13,8 @@
 > 完成重要修改后，应主动检查 `PROJECT_INDEX.md`、`FLIGHT_CONTROL_OVERVIEW.md` 以及其他相关技术文档是否需要同步更新。
 
 **文档描述当前实现事实。文档与源码冲突时，以源码为最终权威；发现冲突后应立即修正文档。** 历史需求、聊天记录、类名、注释、旧构建日志均不能替代对实际调用路径的检查。未接入的枚举、配置或方法必须注明，不能当成现有功能。
+
+0.6.2 新增目标中心的 Attack Funnel / Capture 组织层，具体算法、DTO、缓存和限制见 [ATTACK_FUNNELS](ATTACK_FUNNELS.md)。目标选定后可在地面或已加载目标的指挥赶路期间预热；REPOSITION 主动捕获已知窗口，空间进入本身不授权攻击。本轮只执行六项直接相关验证与编译/打包，没有重跑全量验证。
 
 新会话按以下顺序阅读：
 
@@ -35,7 +37,7 @@
 | Java / 构建 | Java 21；Gradle Wrapper；ModDev 插件 2.0.148；[build.gradle](../build.gradle)、[gradle.properties](../gradle.properties) |
 | 必需依赖 | `libs/touhoulittlemaid-1.5.3-neoforge+mc1.21.1.jar`、`libs/spear-backport-neoforge-1.8.0-1.21.1.jar` |
 | 可选兼容 | YSM；`tools/ysm-reference.jar` 只用于编译参考；兼容检查针对其 2.6.5 接口，不是必需依赖 |
-| 构建版本 | `build.gradle` 的 `version='0.6.1'`，Jar Manifest 的 `Implementation-Version` 来自它；[neoforge.mods.toml](../src/main/resources/META-INF/neoforge.mods.toml) 同步为 0.6.1。修正了此前 0.6.0/0.5.4 不一致；发版仍须核对实际 Jar |
+| 构建版本 | `build.gradle` 的 `version='0.6.2'`，Jar Manifest 的 `Implementation-Version` 来自它；[neoforge.mods.toml](../src/main/resources/META-INF/neoforge.mods.toml) 同步为 0.6.2。0.6.1 已修正此前 0.6.0/0.5.4 不一致；发版仍须核对实际 Jar |
 | 运行依赖范围 | 元数据限定 MC `[1.21.1]`、NeoForge `[21.1.250,21.2)`、TLM `[1.5.3,1.6)`、Spears `[1.8.0,1.9)`，均为 BOTH；范围声明不等于每个版本均已实测 |
 | 许可证 | [LGPL-3.0-only](../LICENSE) |
 
@@ -134,6 +136,7 @@ Java 包根为 `src/main/java/dev/winefox/skyfarer/`。目录名称不能直接�
 | [VanillaElytra](../src/main/java/dev/winefox/skyfarer/flight/VanillaElytra.java) / [PhysicsContext](../src/main/java/dev/winefox/skyfarer/flight/PhysicsContext.java) / [PhysicsProvider](../src/main/java/dev/winefox/skyfarer/flight/PhysicsProvider.java) | 1.21.1 mapped 源码自由飞行公式；gravity/缓降冻结 DTO；实体/Level 身份绑定采集 | Provider 只在主线程；step 只读 DTO，不发明空气阻力属性 |
 | [EnergyReserveEnvelope](../src/main/java/dev/winefox/skyfarer/flight/EnergyReserveEnvelope.java) | Approach→Strike→Exit 每步未来需求与最差 reserve | Worker 中的评分/补能指标；普通 AttackCertificate 和曲线 Rejoin 的动力学认证拥有最终否决权 |
 | [SweepingAttackPlanner](../src/main/java/dev/winefox/skyfarer/flight/SweepingAttackPlanner.java) | 当前动量、接触方向、目标 → C1 连续入口/离场曲线与闭环回放 | 候选/评分/接入重验证在 Worker；当前曲线指令与进度判断是主线程轻量跟踪 |
+| [AttackFunnelPlanner](../src/main/java/dev/winefox/skyfarer/flight/AttackFunnelPlanner.java) | 目标相对合成状态 → 最多四个正向认证窗口；当前状态 → coast/全寿命脉冲 Capture | 复用 C1/物理/能量/碰撞/接触/离场；控制器仍以最终 Rejoin 承诺攻击；独立目标地图 session 可跨起飞与接近阶段复用 |
 | [HeadingController](../src/main/java/dev/winefox/skyfarer/flight/HeadingController.java) / [FireworkManager](../src/main/java/dev/winefox/skyfarer/flight/FireworkManager.java) | 规划姿态 / 已验证寿命代价和背包 → 朝向 / 实际火箭及消耗 | 主线程；前者每 tick 起始姿态避免多次指令累加转向，后者每控制器维护活动火箭与冷却 |
 | [CommandManager](../src/main/java/dev/winefox/skyfarer/command/CommandManager.java) | 玩家标记、女仆记录、目标与区域 → 分配、赶路、战斗交接、回收 | 主线程服务；玩家退出/死亡/卸载/关服对应清理；不按所有女仆机械选列表第一项 |
 | [TransitFlight](../src/main/java/dev/winefox/skyfarer/command/TransitFlight.java) | 已分配目标、女仆状态 → 普通免费推进或创造高速赶路 | 每次指挥赶路实例；主线程执行 + 独立异步会话；交接/结束 close，不与空战同时控制实体 |
@@ -170,6 +173,7 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 - 主线程按预算采集真实形状；每会话缓存最多 768 个单元。缺失数据不当空气执行，探索结果仅用于请求更多快照。
 - 目标、逻辑阶段、配置 revision 或维度变化取消旧任务；参数、年龄、位移和姿态继续验证。阶段分组是 LAUNCH / ENTRY / ATTACK 等逻辑组，不是每个枚举变化都取消所有工作。
 - 普通预测短暂复用，曲线几何与当前接入验证分离。缓存让控制继续运行，不代表旧轨迹可以无限期执行。
+- 目标地图另有一个固定阶段的 session，共用 Source、Worker 和全服采集预算。每地图最多一个在途任务、一个完成地图、四个窗口、768 cells；与控制 session 合计最多 25 pending、1536 cells。正地图最多 40 ticks，空结果 8 ticks；已采集的证明 Cell 改变/丢失也会拒绝复用。Capture/Rejoin 使用严格当前状态门槛。
 - 即时世界碰撞、最终伤害、落点、目标扫描、物品和实体操作仍在主线程。创造高速当前 tick 的长位移扫掠也是主线程工作。
 
 **线程安全红线：**
@@ -220,15 +224,16 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 - `/wfs`：配置查看/设置/重置与 debuglog 开关，配置和日志子命令要求权限等级 2；没有调试绑定子命令。绑定通过调试棒或其远程面板完成。精确参数树见 [配置与调试参考](CONFIG_DEBUG_REFERENCE.md)。
 - HUD：状态、原因、目标、蓄力、姿态与异步指标。`captureMs` 是累计快照采集墙钟时间，`workerMs` 是各任务累计墙钟耗时，**不是 CPU profiler 结果**；`stale` 包含被失效取消的 pending，不是每 tick 过期比例。
 - 世界调试：红色目标线、蓝色引导、黄色身体预测通道、绿色入口方块与方向、青绿色拟合曲线；当前 HUD 女仆亮绿色粗透视框。不同线表示不同数据，不能用蓝色单一 waypoint 代替完整预测轨迹。
+- 紫色稀疏管道显示已完成的目标攻击窗口；每只女仆最多四条、各十八个截面。它是采样可接入区域的图示，不能把进入紫色空间当成已满足动力学或攻击资格。
 - 指挥目标标记：普通亮红橙、创造亮紫，角框 + `▼` + 序号；穿墙简化，只有标记者可见。它和调试棒的女仆选择框是独立系统。
-- 入口命令：`./gradlew.bat build` 触发 `check` 及 24 项 verify；只编译可用 `classes`。当前环境包装脚本为 `tools/build.ps1`，参数和限制见 [验证文档](VALIDATION.md)。
-- 完整验证包括 21 个控制器生命周期、2 个特殊攻击入口、2 个镜像山腰、7 个赶路生命周期，以及物理差分与包络验证；本轮实际结果与日志见 [buildHistory](../buildHistory.md)。离线通过不是对任意世界/模组组合的全覆盖证明。
+- 入口命令：`./gradlew.bat build` 触发 `check` 及 26 项 verify；只编译可用 `classes`。当前环境包装脚本为 `tools/build.ps1`，参数和限制见 [验证文档](VALIDATION.md)。
+- 完整验证包括 21 个控制器生命周期、2 个特殊攻击入口、2 个镜像山腰、7 个赶路生命周期，以及物理差分与包络验证；本轮仅执行六项相关检查，实际结果与日志见 [buildHistory](../buildHistory.md)。离线通过不是对任意世界/模组组合的全覆盖证明。
 
 ## 10. 当前开发状态与限制
 
 | 状态 | 当前事实 |
 | --- | --- |
-| 已实现 | 骑空士空战、直线/曲线与坡面攻击、持续作战、指挥调度/区块票据、调试体系、共享异步流水线，以及 0.6.1 mapped 物理预测/冻结上下文/全程能量包络 |
+| 已实现 | 骑空士空战、直线/曲线与坡面攻击、持续作战、指挥调度/区块票据、调试体系、共享异步流水线，以及 mapped 物理预测/冻结上下文/全程能量包络、0.6.2 目标窗口与主动 Capture |
 | 正在长期维护 | 预测与实际执行一致性、取消/旧结果边界、兼容 Mixin、配置消费者、离线回放，以及这套 `docs/`；不是承诺后台另有自动维护任务 |
 | 当前边界 | 预测不覆盖第三方 travel Mixin、外部火箭或外力；完整攻击认证时域最多 160 ticks。原生效果/实体 tick 时序与复杂模组组合仍需实机确认 |
 | 已知遗留 | 三个不驱动当前行为的配置，以及保留但当前没有普通入口的状态分支；不要为“文档看起来齐全”编造作用或自动删除兼容字段 |
@@ -245,7 +250,7 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 | --- | --- | --- |
 | 不起飞、水中卡住、起飞立即急转 | [飞控总览](FLIGHT_CONTROL_OVERVIEW.md) | prepare / launchFlight / waterEscape、SurfaceLaunchPlanner；verifySurfaceLaunch、verifyControllerReplay |
 | 盘旋、不攻击、错误返航/跟主人 | 飞控总览、配置参考 | approach / compactTurn / CombatAnchor / TargetEvaluator；完整生命周期回放 |
-| 山腰、斜坡、曲线提前离场、掠过 | 飞控总览 | AttackLanePlanner、SlopeSampler、SweepingAttackPlanner / passedContact / Rejoin；verifySweepingAttacks、verifySweepingReplay |
+| 山腰、斜坡、窗口捕获、曲线提前离场 | 飞控总览、[攻击窗口](ATTACK_FUNNELS.md) | AttackFunnelPlanner、AttackLanePlanner、SlopeSampler、SweepingAttackPlanner / Rejoin；verifyAttackFunnels、verifyFunnelAsync、verifySweepingAttacks、verifySweepingReplay |
 | 火箭补能迟滞/过冲/连续作战变差 | 飞控总览、[异步架构](ASYNC_PLANNING.md) | FireworkManager、manageEnergy、Pulse/Compact/SweepPulse slot 与兼容性；verifyCombatEntries、Controller replay |
 | 主线程卡顿、任务一直 waiting、GC | 异步架构、[验证体系](VALIDATION.md) | capture / pump / enqueue、MaidTerrainSource、PlannerExecutor；verifyAsyncPlanning、verifyPlannerLoad，再做实机测量 |
 | 远处唤醒、标记分配、落地回家 | 配置参考、飞控总览 | CommandManager、Registry、Tickets、TransitFlight、CommandHomeRecallMixin；verifyCommandDispatch、verifyDispatchReplay |

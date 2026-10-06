@@ -1,6 +1,6 @@
 # 验证、离线回放与构建
 
-核对日期：2026-10-05。实现基线：Gradle 项目版本 0.6.1。本文根据当前构建、验证源码与回放夹具整理；本轮新增 mapped 物理差分与全路线包络验证。
+核对日期：2026-10-05。实现基线：Gradle 项目版本 0.6.2。本文根据当前构建、验证源码与回放夹具整理；本轮新增目标攻击窗口与异步捕获验证；保留既有物理差分与全路线包络验证。
 
 本文属于工程实现的一部分。修改验证入口、夹具、场景或发布方式时必须更新本文及 [项目索引](PROJECT_INDEX.md)。飞控语义见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)，并发保证见 [ASYNC_PLANNING.md](ASYNC_PLANNING.md)。历史构建与问题修复原因仍记入 [buildHistory.md](../buildHistory.md)，不以本文代替 changelog。
 
@@ -12,8 +12,10 @@
 
 在仓库根目录用 PowerShell：
 
+0.6.2 本轮按用户要求只运行 Funnel/Capture/Async/Debug 的六项直接相关检查与编译/打包，**没有运行下方完整 build 示例**。具体任务与日志见第 7 节。
+
 ```powershell
-# 完整发布检查：build → check → 所有 24 项 verify 任务
+# 完整发布检查：build → check → 所有 26 项 verify 任务
 & .\tools\build.ps1 -Stage maintenance-release -Tasks @('build', '--continue')
 
 # 有针对性的并发、几何和生命周期检查
@@ -30,7 +32,7 @@
 
 [tools/build.ps1](../tools/build.ps1) 只有 `-Stage` 与 `-Tasks` 两个参数，没有 `-ExtraArgs`。它在已安装路径存在时设置 JDK 21.0.10；为本机 Windows 的 AF_UNIX 限制设置 `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir`，让 JDK 回退 TCP；调用根目录 wrapper，日志写入 `tools/<Stage>.log`，显示尾部 65 行并保留 Gradle 返回码。移植到其他机器需核对本地 JDK/该环境专用设置，不把此路径当作项目必装目录。
 
-`build` 同时构建 Jar 和检查；仅 `assemble` 或 `jar` 成功不代表回归通过。`test` 目前是 `NO-SOURCE`，真正检查是 24 个 `JavaExec` 任务，它们的 `main()` 抛 `AssertionError` 判失败，不依赖 Java `-ea`。需要强制复跑时按 Gradle 方式传 `--rerun-tasks`；不要同时启动多个构建去争用相同的 `build/classes/controllerReplay` 和报告文件。
+`build` 同时构建 Jar 和检查；仅 `assemble` 或 `jar` 成功不代表回归通过。`test` 目前是 `NO-SOURCE`，真正检查是 26 个 `JavaExec` 任务，它们的 `main()` 抛 `AssertionError` 判失败，不依赖 Java `-ea`。需要强制复跑时按 Gradle 方式传 `--rerun-tasks`；不要同时启动多个构建去争用相同的 `build/classes/controllerReplay` 和报告文件。
 
 ## 2. 三类证据必须区分
 
@@ -42,7 +44,7 @@
 
 数值片段测试不能代替生命周期回放。过去有“单段算法测试通过，但连续状态机一直盘旋”的回归；新增/修改状态时应有真实控制器从地面或明确外部起始状态开始的场景，不直接篡改 controller 私有状态来凑通过。
 
-## 3. 当前全部 24 项 Gradle 验证任务
+## 3. 当前全部 26 项 Gradle 验证任务
 
 注册和 `check` 依赖以 [build.gradle](../build.gradle) 为准。表内类名可在 [verification 源码](../src/verification/java/dev/winefox/skyfarer) 或 [replay 源码](../src/replay/java/dev/winefox/skyfarer) 下按包找到。
 
@@ -72,6 +74,8 @@
 | `verifyAsyncPlanning` | `async.AsyncPlannerChecks` | 不可变快照、世界边界坐标键、未知拒绝、导航范围、实际 Worker、配置冻结、主线程所有权、generation/目标/阶段/维度/配置失效、取消、有界队列、重启、接触结果年龄/姿态容差 |
 | `verifyAsyncSweep` | `async.AsyncSweepChecks` | 完整 snapshot 可生成山腰曲线；移动女仆冷快照可在有限 tick 内取得候选。**不独自证明候选可安全执行** |
 | `verifyPlannerLoad` | `async.PlannerLoadChecks` | 24 个 session、100 ticks 的合成异步调度；方块读取/队列/每女仆任务和 cell 上限、所有会话获得采集、有效结果、停止清理 |
+| `verifyAttackFunnels` | `flight.AttackFunnelChecks` | 目标中心山腰弯曲窗口、反向独立物理否决、空间/动态捕获区分、前摇过冲、最小安全火箭及全部 12 种寿命、无动力优先 |
+| `verifyFunnelAsync` | `async.FunnelAsyncChecks` | 冷快照不可执行、姿态独立缓存、证明覆盖与年龄、目标/Level/维度/物理/配置失效、旧任务取消、地面窗口预热及实际控制器 Capture→Rejoin→命中 |
 
 `verifyDebugTools` 显式使用 [offline-log4j2.xml](../tools/offline-log4j2.xml)，避免依赖 Jar 的游戏日志配置。API/字节码类使用编译依赖作为验证 classpath；其他纯算法任务不会引导一个游戏实例。
 
@@ -127,15 +131,17 @@
 
 排查顺序：先看失败任务/断言和最后有效状态，再读对应 TSV/events，核对参数及源代码。并发修改至少看 `waiting/gen/requested/jobs/queue/stale/failed`；区别“未取得快照”“结果不兼容”“搜索无路线”“立即碰撞防线拒绝”，不能一概增加超时。具体指标语义见 [异步架构](ASYNC_PLANNING.md#10-诊断指标与验证入口)。
 
-改变数值算法先跑对应小型任务，状态或 Planner 接口变化再跑相关 Controller/Dispatch/Sweeping；发布前完整 `build`。一旦发现新类型失败，应添加有意义的反例并覆盖恢复/收尾，不只放宽断言使当前日志通过。
+改变数值算法先跑对应小型任务，状态或 Planner 接口变化再跑相关 Controller/Dispatch/Sweeping；验证范围遵循当前任务要求，不为了保险自动扩大为完整 `build`。一旦发现新类型失败，应添加有意义的反例并覆盖恢复/收尾，不只放宽断言使当前日志通过。
 
 ## 7. 当前构建证据与已知缺口
 
-2026-10-05 的最终完整构建见 [tools/v061-acceptance.log](../tools/v061-acceptance.log)：**BUILD SUCCESSFUL in 8m 28s**。第 3 节列出的全部 **24 项 verify 任务均执行并通过**，未使用场景筛选；包含 21 个 Controller、7 个 Dispatch、2 个特殊进场、2 个镜像曲线场景，以及新增的 18,000 步物理差分和完整攻击包络检查。连续上坡与孤立高处上升入口在同一完整构建中通过。API、并发/队列、配置冻结、Level/物理变化和陈旧结果检查亦通过。
+0.6.2 针对性验证见 [tools/v062-targeted.log](../tools/v062-targeted.log)：**BUILD SUCCESSFUL in 1m 5s**。只执行 `compileJava`、`verifyAttackFunnels`、`verifyFunnelAsync`、`verifyDebugTools`、`verifyAsyncPlanning`、`verifySweepingAttacks`、`verifySweepingReplay` 和 `jar`。六项验证全部通过；左右山腰均第 53 tick 命中，分别第 142/151 tick 落地。后续库存执行保护及实际控制器 coast/pulse 捕获回归见 [tools/v062-capture-final.log](../tools/v062-capture-final.log)。没有运行 build/check 或其他 20 项 verify。
 
-最终 Jar 大小、SHA-256 与逐项证据记录在 [buildHistory](../buildHistory.md)。`tools/physics-*.log`、`v061-release`、`v061-verified`、`v061-final`、`v061-complete`、`v061-validation` 是中间验证记录，其中存在失败；名字包含 final/release 并不代表交付成功。此前 0.6.0 的独立记录保留在 [tools/v060-release.log](../tools/v060-release.log)，不与本轮结果混用。
+0.6.1 的历史完整构建保留于 [tools/v061-acceptance.log](../tools/v061-acceptance.log)，当时 24 项全部通过（含 21 个 Controller、7 个 Dispatch、2 个特殊进场、2 个镜像曲线、18,000 步物理差分）；这不是本轮重新执行的证据。
 
-Gradle、最终 Jar 的 Manifest 与 Mod 元数据已核对统一为 0.6.1，修正此前 0.6.0/0.5.4 的已知差异。最终包的模块、Mixin/语言资源及夹具隔离均已检查；未启动 Minecraft。
+最终 Jar 大小、SHA-256 与逐项证据记录在 [buildHistory](../buildHistory.md)。`tools/funnel-*.log` 是本轮迭代日志，包含缺少夹具方法、窗口方向不足及异步候选交接失败的中间结果；以实际成功的交付日志为准。此前 0.6.0/0.6.1 的记录不与本轮结果混用。
+
+本轮 Gradle / Mod 元数据版本为 0.6.2。Jar 内容、实际版本及哈希的核对结果见 buildHistory；未启动 Minecraft。
 
 下次交付至少检查：
 
@@ -145,6 +151,8 @@ Gradle、最终 Jar 的 Manifest 与 Mod 元数据已核对统一为 0.6.1，修
 4. README 与 docs 的行为、限制和验证入口与最终源码一致。
 
 ## 8. 必须实机确认的事项
+
+- Funnel 在起飞/已加载目标的赶路阶段是否及时出现，活动目标与动态地形下是否合理刷新，窗口捕获是否减少绕圈；紫色截面与已有黄/青绿线的区分、多女仆地图缓存与 Worker 等待开销。
 
 - gravity/noGravity、缓降到期、魂符收起后跨维度放出、同名 Level 重建以及其他 Mod 修改 travel 或实体 tick 顺序时的真实行为。
 - 真正 NeoForge/TLM/Mixin 生命周期、服务端关服/重新开世界、实体卸载重载/跨维度、玩家退出时序。

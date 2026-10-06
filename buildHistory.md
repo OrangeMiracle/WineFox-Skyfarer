@@ -2,7 +2,21 @@
 
 ## 当前交付状态
 
-0.6.1 在共享异步规划上接入 mapped 原版物理、冻结 PhysicsContext 与完整攻击储备包络。本轮验证与产物记录见以下版本条目；未安装或启动 Minecraft，实际服务器与模组组合由用户实测。
+0.6.2 在共享异步/原版物理与完整攻击认证之上加入目标中心 Attack Funnel 和主动 Capture。本轮按要求只做编译、六项直接相关检查与打包；没有运行全量 build/check，没有安装或启动 Minecraft。
+
+### 0.6.2 目标攻击窗口与主动捕获（2026-10-05）
+
+- **根因**：旧 Sweep 把女仆当前坐标/速度切线作为几何起点，且只在距离 6–64 格、已经滑翔时搜索；Compact 缺少稳定的已知攻击入口。新层在目标选定后提前搜索，支持地面准备，以及已分配目标实体已加载时的指挥赶路预热。预热不接管 TransitFlight、不动库存，不为窗口额外加载世界。
+- **组织层**：新增 `AttackFunnelPlanner.Input/Window/Atlas/Capture`。目标相对的最多 160 条定向 C1 几何，采样速度/高度/弧度/侧偏接触和活动火箭状态；两端交换后逐个重新向前模拟，不能倒放轨迹。最多保留四个不同入场方向；容差是搜索门槛，不能声称整个连续状态域都获认证。
+- **复用**：提取既有 `SweepingAttackPlanner.candidate()` 原语，不改变局部 candidates 的数学。复用 VanillaElytra / PhysicsContext、CollisionSnapshot swept-body/接触射线、完整前摇、EnergyReserveEnvelope、Rejoin、FireworkManager 全寿命/真实库存及既有 ATTACK_EXIT / Spears 原生伤害。现有 Lane/局部 Sweep 继续补充有限地图遗漏的机会，战略目标排序没有改动。
+- **Capture 执行**：当前状态先尝试无新增烟花，随后按真实可用 duration 从小到大比较现在/8/16 ticks 后点火，每个方案验证 12 个寿命。最多 64 ticks 接入，接入后重新预留完整原生前摇并证明 Strike/Exit。延迟方案到时重新认证立即点火；实际生成/库存消耗失败则撤销 funded 证书。低速进入紫色空间不能直接承诺；最终当前状态 Rejoin 成功才开始新 charge session。
+- **异步/缓存**：新增封闭 `PlanningTask.Funnel/FunnelResult/Capture`。目标地图单独使用固定阶段 session，与控制 session 共用同一个 Source、共享 Worker 和全服采集预算；不新增线程池、join 或主线程同步 fallback。最多一个在途地图、一个完成地图、四个窗口；正缓存 40 ticks，空结果 8 ticks，证明覆盖最多 640 cells。目标位移/参数、Level/dimension、物理/config/generation/年龄和已观测到的 Cell 变化/驱逐/缺失均参与验收。Capture 使用 Rejoin 同级的 2-tick 严格姿态门槛。地图额外最多 768 cells / 一个 pending，女仆含控制 session 合计最多 1536 cells / 25 pending；全服 32+32 队列和采集额度保持。
+- **回放中修正**：仅保留反向远端窗口会让女仆追逐不能当前捕获的入口，因此补充目标相对的肩部绕行和侧偏接触，入口位置门槛覆盖曲线前段，最终仍须完整 Rejoin。冷启动时新地图先返回也不能饿死已经在途的局部曲线认证；保留两者的异步领取，防止结果先后顺序导致山腰绕行失败。
+- **Debug**：新增紫色 `attack_funnels` NBT，最多四条、每条十八个三维切向截面，四条纵边、不画连续网格。客户端只消费服务端完成结果；青绿已选攻击曲线、黄色身体、蓝/红/绿均保持。NBT 可扩展字段沿用协议 3；推荐服务端与客户端同时更新才能看到新图示。
+- **验证**：[v062-targeted.log](tools/v062-targeted.log) 成功（1m 5s）：编译、`verifyAttackFunnels`、`verifyFunnelAsync`、`verifyDebugTools`、`verifyAsyncPlanning`、`verifySweepingAttacks`、`verifySweepingReplay`、Jar。包含用户要求的七类反例；左右山腰均第 53 tick 命中，第 142/151 tick 落地，无身体碰撞。最终库存保护改动后，[v062-capture-final.log](tools/v062-capture-final.log) 成功（37s）：重新编译，扩展 `verifyFunnelAsync` 运行真实控制器无烟花/Flight 0 两种 Capture→Rejoin→命中，并核对实际库存消耗，再生成最终 Jar。未运行其他 20 项 verify / build / check，也未将旧版全量结果冒充本轮结果。
+- **文档**：新增 [ATTACK_FUNNELS](docs/ATTACK_FUNNELS.md)，同步总索引、飞控、异步、物理、Debug、验证与 README。修正飞控总览遗留的“达到时域上限仍可接受部分 safe/hit”说明；0.6.1 实际源码已要求完整离场，这次以源码校正文档。
+- **交付**：`build/libs/winefox_skyfarer-1.21.1-0.6.2.jar`，**468,617 bytes**；SHA-256 `E1F0636143538441184B5A847D8763AB58A81342C066885BBE73961EE64934C1`。Gradle、Manifest、Mod 元数据均为 0.6.2；247 个条目，新增 Planner/DTO、Mixin 与中英文资源已检查，不含回放/verification/模拟 Minecraft/TLM 类或嵌套依赖 Jar。`git diff --check` 通过。
+- **实机边界**：未启动 Minecraft。离线世界/API 是夹具，不能替代原生 Spears、引擎实体时序、活动目标、动态方块或第三方运动规则。有限窗口与 Capture 控制策略不保证任意山地可达；请观察起飞前窗口出现、主动接入是否减少绕圈、烟花时机、目标移动后的刷新、紫色截面与多女仆的 MSPT/内存/GC。地图 Cell 是分批刷新，不宣称动态地形立即失效。
 
 ### 0.6.1 原版物理预测与完整路线储备（2026-10-05）
 

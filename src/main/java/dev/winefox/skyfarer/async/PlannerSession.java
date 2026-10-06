@@ -87,7 +87,7 @@ public final class PlannerSession {
             }
             if(!done.missing().isEmpty()){
                 var task=work.task.unbound();
-                int priority=task instanceof PlanningTask.Slope?2:task instanceof PlanningTask.Sweep sweep&&sweep.path()==null?2:0;
+                int priority=task instanceof PlanningTask.Slope||task instanceof PlanningTask.Funnel?2:task instanceof PlanningTask.Sweep sweep&&sweep.path()==null?2:0;
                 for(long cell:done.preferred())request(cell,0);
                 // A one-cell halo absorbs the entity's movement during the async round trip.
                 // Without it, a moving route can always be one uncaptured cell ahead of its result.
@@ -101,6 +101,7 @@ public final class PlannerSession {
                 // Missing alternative corridors cannot invalidate a selected, fully certified path.
                 if(!usable(done.value()))continue;
             }
+            if(work.task.unbound() instanceof PlanningTask.Funnel)cache.removeIf(c->c.task.unbound() instanceof PlanningTask.Funnel);
             cache.addFirst(new Cached(work.task,done.value(),work.tick,work.generation));while(cache.size()>96)cache.removeLast();
         }
         if(localEpoch!=captureEpoch){localEpoch=captureEpoch;capturedThisEpoch=0;}
@@ -129,6 +130,7 @@ public final class PlannerSession {
     }
     private void request(long key,int priority){if(requested.size()<512||requested.containsKey(key))requested.merge(key,priority,Math::min);}
     private static boolean usable(Object value){
+        if(value instanceof PlanningTask.FunnelResult f)return !f.atlas().windows().isEmpty();
         if(value instanceof PlanningTask.GlideResult g)return g.plan().safe()&&g.forecast().safe();
         if(value instanceof GlidePlanner.PulseReview p)return Double.isFinite(p.cost());
         if(value instanceof PlanningTask.PulseResult p)return Double.isFinite(p.review().cost());
@@ -143,23 +145,33 @@ public final class PlannerSession {
         if(unbound instanceof PlanningTask.Glide||unbound instanceof PlanningTask.Launch||unbound instanceof PlanningTask.Compact)urgent=task.start();
         for(var cached:cache){
             boolean terrain=unbound instanceof PlanningTask.Slope;
+            boolean funnel=unbound instanceof PlanningTask.Funnel;
             boolean geometry=unbound instanceof PlanningTask.Sweep sweep&&sweep.path()==null;
-            if(cached.generation!=generation||now-cached.tick>(terrain?20:geometry?12:4)||!task.compatible(cached.task))continue;
+            int maxAge=funnel?(cached.value instanceof PlanningTask.FunnelResult f&&!f.atlas().windows().isEmpty()?40:8):terrain?20:geometry?12:4;
+            if(cached.generation!=generation||now-cached.tick>maxAge||!task.compatible(cached.task))continue;
+            if(cached.value instanceof PlanningTask.FunnelResult f&&!coverageValid(f))continue;
             var a=task.start();var b=cached.task.start();
             // Committing a contact curve is more sensitive than reusing a steering hint.
             // Especially under a long rocket pulse, two ticks of turning can invalidate
             // the hit forecast even though the old general-purpose position bound passes.
-            if((unbound instanceof PlanningTask.Rejoin||unbound instanceof PlanningTask.AttackCertificate)&&!contactStateCompatible(a,b,now-cached.tick))continue;
+            if((unbound instanceof PlanningTask.Rejoin||unbound instanceof PlanningTask.AttackCertificate||unbound instanceof PlanningTask.Capture)&&!contactStateCompatible(a,b,now-cached.tick))continue;
             if(!Objects.equals(a.physics(),b.physics()==null?null:b.physics().after(now-cached.tick)))continue;
             if(a.rocketDelay()!=Math.max(0,b.rocketDelay()-(now-cached.tick)))continue;
             double distance=Math.sqrt(Math.pow(a.x()-b.x(),2)+Math.pow(a.y()-b.y(),2)+Math.pow(a.z()-b.z(),2));
-            if(!terrain&&(distance>(geometry?16:4)||Math.abs(FlightPrediction.turn(a.yaw(),b.yaw(),180)-a.yaw())>(geometry?90:24)
+            if(!terrain&&!funnel&&(distance>(geometry?16:4)||Math.abs(FlightPrediction.turn(a.yaw(),b.yaw(),180)-a.yaw())>(geometry?90:24)
                 ||!geometry&&Math.abs(a.vx()-b.vx())+Math.abs(a.vy()-b.vy())+Math.abs(a.vz()-b.vz())>1.2))continue;
             cacheHits++;
             if(unbound instanceof PlanningTask.Glide&&now>cached.tick&&!pending.containsKey(task.slot()))enqueue(task);
             return cached.value;
         }
         enqueue(task);throw WAIT;
+    }
+    boolean coverageValid(PlanningTask.FunnelResult result){
+        for(var e:result.coverage().entrySet()){
+            var current=cells.get(e.getKey());
+            if(current==null||now-current.tick>80||!current.cell.equals(e.getValue()))return false;
+        }
+        return true;
     }
     static boolean contactStateCompatible(FlightPrediction.State a,FlightPrediction.State b,long age){
         return age<=2&&Math.hypot(Math.hypot(a.x()-b.x(),a.z()-b.z()),a.y()-b.y())<=2.5
@@ -174,13 +186,13 @@ public final class PlannerSession {
             else seeds.put(task.slot(),new Seed(task,now+12));
         }
         var prior=pending.get(task.slot());
-        if(prior!=null&&now-prior.tick<=6&&task.compatible(prior.task))return;
+        if(prior!=null&&now-prior.tick<=(task.unbound() instanceof PlanningTask.Funnel?40:6)&&task.compatible(prior.task))return;
         if(prior!=null){prior.ticket.cancel();pending.remove(task.slot());}
         // Expired shapes are absent, not silently considered empty. Fetch only cells actually queried.
         if(cells.values().removeIf(c->now-c.tick>80))dirty=true;
         if(dirty){var map=new HashMap<Long,CollisionSnapshot.Cell>();cells.forEach((k,v)->map.put(k,v.cell));frozen=Map.copyOf(map);dirty=false;}
         var unbound=task.unbound();boolean wet=unbound instanceof PlanningTask.Launch l&&l.wet();
-        var snapshot=source.snapshot(frozen,wet,unbound instanceof PlanningTask.Launch);
+        var snapshot=source.snapshot(frozen,wet,unbound instanceof PlanningTask.Launch||unbound instanceof PlanningTask.Funnel);
         if(pending.size()>=24)return;
         var ticket=PlannerExecutor.submit(task,snapshot,horizon);
         if(ticket!=null)pending.put(task.slot(),new Work(task,ticket,now,generation));

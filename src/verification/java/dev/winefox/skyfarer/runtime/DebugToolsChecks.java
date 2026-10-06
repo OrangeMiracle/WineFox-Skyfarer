@@ -28,6 +28,17 @@ public final class DebugToolsChecks {
         var remove=new CompoundTag();remove.putUUID("remove",b);ClientDebugState.accept(new AirCombatDebugPayload(remove));
         require(ClientDebugState.all().size()==2&&ClientDebugState.selection.selected().equals(c),"unbind removes only one snapshot");
         ClientDebugState.accept(new AirCombatDebugPayload(new CompoundTag()));require(ClientDebugState.all().isEmpty()&&!ClientDebugState.current().hasUUID("maid"),"logout/clear removes every binding");
+        var input=new dev.winefox.skyfarer.flight.AttackFunnelPlanner.Input(new dev.winefox.skyfarer.flight.SweepingAttackPlanner.Point(0,13.4,10),
+            new dev.winefox.skyfarer.flight.FlightPrediction.Aim(0,9,10,.3,7.8,0,0,0,0,2.25,.1,10),dev.winefox.skyfarer.flight.PhysicsContext.VANILLA,5,.3,8);
+        var atlas=dev.winefox.skyfarer.flight.AttackFunnelPlanner.discover(input,(s,n,side,vertical)->true,(s,aim,tick)->true);
+        var funnelTag=new CompoundTag();DebugSnapshot.funnels(funnelTag,atlas);
+        var tubes=funnelTag.getList("attack_funnels",10);
+        require(!tubes.isEmpty()&&tubes.size()<=4,"bounded completed funnel payload missing");
+        for(int i=0;i<tubes.size();i++)require(tubes.getCompound(i).getList("frames",10).size()<=18,"dense funnel mesh leaked into network");
+        DebugSnapshot.funnels(funnelTag,null);require(funnelTag.getList("attack_funnels",10).isEmpty(),"invalidated map left purple tubes behind");
+        var renderer=new ClassNode();new ClassReader(java.nio.file.Files.readAllBytes(java.nio.file.Path.of("build/classes/java/main/dev/winefox/skyfarer/client/debug/AirCombatDebugRenderer.class"))).accept(renderer,0);
+        for(var method:renderer.methods)for(var instruction:method.instructions)if(instruction instanceof MethodInsnNode call)
+            require(!call.owner.startsWith("dev/winefox/skyfarer/async/")&&!call.owner.startsWith("dev/winefox/skyfarer/flight/"),"renderer launched a planner");
 
         try(var jar=new JarFile("libs/touhoulittlemaid-1.5.3-neoforge+mc1.21.1.jar")){
             var world=read(jar,"com/github/tartaricacid/touhoulittlemaid/world/data/MaidWorldData");
@@ -46,7 +57,7 @@ public final class DebugToolsChecks {
             var node=new ClassNode();new ClassReader(java.nio.file.Files.readAllBytes(java.nio.file.Path.of("build/classes/java/main/dev/winefox/skyfarer/runtime/"+name+".class"))).accept(node,0);
             for(var method:node.methods)for(var instruction:method.instructions)if(instruction instanceof MethodInsnNode call)require(!call.owner.startsWith("net/minecraft/client/")&&!call.owner.startsWith("dev/winefox/skyfarer/client/"),"common code links a client class");
         }
-        System.out.println("Debug tools: multi-binding, wraparound, unloaded snapshot retention, reload, unbind, logout, exact TLM/teleport APIs and common-side isolation passed.");
+        System.out.println("Debug tools: bounded funnel payload/clear/no renderer planning, multi-binding, unloaded retention, reload/unbind/logout, exact APIs and common-side isolation passed.");
     }
     private static void accept(UUID id,boolean unloaded,boolean select,String name,double x){var tag=new CompoundTag();tag.putUUID("maid",id);tag.putString("maid_name",name);tag.putBoolean("unloaded",unloaded);tag.putBoolean("select",select);tag.putDouble("x",x);ClientDebugState.accept(new AirCombatDebugPayload(tag));}
     private static ClassNode read(JarFile jar,String name)throws Exception{var node=new ClassNode();new ClassReader(jar.getInputStream(jar.getJarEntry(name+".class"))).accept(node,ClassReader.SKIP_DEBUG);return node;}

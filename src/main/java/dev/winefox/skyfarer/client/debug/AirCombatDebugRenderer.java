@@ -68,6 +68,27 @@ public final class AirCombatDebugRenderer {
             }
             last=corners;
         }
+        var funnels=data.getList("attack_funnels",Tag.TAG_COMPOUND);
+        for(int tubeIndex=0;tubeIndex<Math.min(4,funnels.size());tubeIndex++){
+            var frames=funnels.getCompound(tubeIndex).getList("frames",Tag.TAG_COMPOUND);Vec3[] previousFrame=null;
+            int count=Math.min(18,frames.size());
+            for(int i=0;i<count;i++){
+                var frame=frames.getCompound(i);Vec3 center=DebugSnapshot.vector(frame,"center");
+                Vec3 tangent=i+1<count?DebugSnapshot.vector(frames.getCompound(i+1),"center").subtract(center):
+                    i>0?center.subtract(DebugSnapshot.vector(frames.getCompound(i-1),"center")):new Vec3(0,0,1);
+                tangent=tangent.normalize();
+                Vec3 side=tangent.cross(new Vec3(0,1,0)).normalize();
+                if(side.lengthSqr()<1e-6)side=new Vec3(1,0,0);
+                Vec3 up=side.cross(tangent).normalize();double radius=Math.clamp(frame.getDouble("radius"),.2,4);
+                Vec3[] corners={center.add(side.add(up).scale(radius)),center.add(up.subtract(side).scale(radius)),
+                    center.subtract(side.add(up).scale(radius)),center.add(side.subtract(up).scale(radius))};
+                for(int edge=0;edge<4;edge++){
+                    if(previousFrame!=null)RenderHelper.renderLine(pose,lines,previousFrame[edge].subtract(camera),corners[edge].subtract(camera),.73f,.3f,1f);
+                    RenderHelper.renderLine(pose,lines,corners[edge].subtract(camera),corners[(edge+1)%4].subtract(camera),.73f,.3f,1f);
+                }
+                previousFrame=corners;
+            }
+        }
         buffers.endBatch(RenderType.lines());
         if(data.contains("attack_entry")){
             Vec3 center=DebugSnapshot.vector(data,"attack_entry");var entryLines=buffers.getBuffer(RenderType.lines());
@@ -110,7 +131,7 @@ public final class AirCombatDebugRenderer {
             String.format(Locale.ROOT, "Charge %s | 已用 %d / 前摇 %d ticks | 射程 %.2f", data.getBoolean("charging") ? "开启" : "关闭", data.getInt("charge_ticks"), data.getInt("charge_delay"), data.getDouble("spear_reach")),
             String.format(Locale.ROOT, "俯仰 %.1f° | 距目标 %.1f | 高于目标中心 %.1f", data.getDouble("pitch"), data.getDouble("target_distance"), data.getDouble("above_target")),
             String.format(Locale.ROOT, "转角 %.1f / %.0f° | 搜索 %.0f | 作战 %.0f", data.getDouble("angle"), data.getDouble("max_turn"), data.getDouble("search_range"), data.getDouble("combat_range")),
-            "蓝线: 引导航迹 | 青绿线: 拟合攻击曲线 | 绿方块: 攻击入口 | 方向键 ←/→: 切换女仆"
+            "紫色: 攻击窗口 | 青绿: 已选攻击曲线 | 黄: 身体预测 | 蓝: 引导 | 绿: 入口 | ←/→: 切换女仆"
         };
         var graphics = event.getGuiGraphics();
         int width = Math.max(100, Math.min(420, graphics.guiWidth() - 16));

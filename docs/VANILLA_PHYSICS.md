@@ -47,6 +47,8 @@ Provider 按 **Entity 引用、Level 引用、dimension key、真实游戏 tick*
 
 ## Heuristic 与认证
 
+0.6.2 新增 [Attack Funnel / Capture](ATTACK_FUNNELS.md) 组织层，继续复用本文件所述物理。目标相对合成状态的正向模拟证明窗口存在，交换曲线几何后必须重新正向验证；绝不倒放动力学。Capture 从实际状态先测 coast，必要时验证真实库存每种 duration 的全部随机寿命及 0/8/16 ticks 点火时机。接入之前没有充能，未来 Rejoin 必须重新保留完整原生前摇；最终攻击仍由当前状态证书授权。Window 的位置/速度等容差是搜索门槛，不是整个连续状态域的数学证明。
+
 `E=g*(eyeY-requiredY)+.5*speed²` 只用于排序、补能、候选价值评估；不宣称守恒。`EnergyReserveEnvelope` 沿实际模拟轨迹记录 tick、阶段、未来高度需求、最低速度与 reserve，结果取整段最差 reserve。曲线使用采样路径的剩余最高高度，普通路线纳入当前剖面、接触高度和出口高度；不使用女仆脚下谷底或世界绝对 Y 作为能量信用。
 
 无动力候选无法完成整段离场时，还会按真实可用库存 duration 生成明确的拟点火候选。State 的实际火箭仍为零；任务的 ignition 标志表示模拟提案的首 tick 启动等待，不是给实体虚构推力。候选使用该 duration 最长寿命，随后 Rejoin 用当前状态检查该物品全部 12 个寿命，实际点火成功后才承诺攻击；普通/拟点火缓存分 slot 隔离。

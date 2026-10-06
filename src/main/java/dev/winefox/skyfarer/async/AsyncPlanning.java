@@ -12,25 +12,36 @@ public final class AsyncPlanning {
     }
     private static PlanningTask bounded(PlanningTask task,GlidePlanner.Corridor space){return space instanceof BoundedCorridor b?new PlanningTask.Bounded(task,b.bounds):task;}
     private final PlannerSession session;
+    // A target map outlives launch/entry phase changes, but shares the global pools/capture budget.
+    private final PlannerSession funnels;
     private boolean waiting,lastPending;
     private PlanningTask.GlideResult lastGlide;
     public double clearanceCost(){return lastGlide==null?Double.POSITIVE_INFINITY:lastGlide.narrowCost();}
     private record ApprovedPulse(GlidePlanner.Request request,PlanningTask.PulseResult result) {}
     private final java.util.ArrayList<ApprovedPulse> approvedPulses=new java.util.ArrayList<>();
-    public AsyncPlanning(EntityMaid maid){session=new PlannerSession(new MaidTerrainSource(maid));}
+    public AsyncPlanning(EntityMaid maid){var source=new MaidTerrainSource(maid);session=new PlannerSession(source);funnels=new PlannerSession(source);}
     public PhysicsContext physics(){return session.physics();}
-    public void begin(long tick,Object phase,Object target,long revision){waiting=false;approvedPulses.clear();session.begin(tick,phase,target,revision,PredictionHorizon.factor());}
+    public void begin(long tick,Object phase,Object target,long revision){waiting=false;approvedPulses.clear();session.begin(tick,phase,target,revision,PredictionHorizon.factor());funnels.begin(tick,"TARGET_FUNNELS",target,revision,PredictionHorizon.factor());}
     public boolean waiting(){return waiting;}
     public boolean lastPending(){return lastPending;}
-    public void close(){session.close();}
-    public void invalidate(){session.invalidate();}
+    public void close(){session.close();funnels.close();}
+    public void invalidate(){session.invalidate();funnels.invalidate();}
     public int pending(){return session.pendingCount();}
     public int cells(){return session.cellCount();}
-    public String detail(){return session.detail();}
+    public String detail(){return session.detail()+" funnelJobs="+funnels.pendingCount()+" funnelCells="+funnels.cellCount();}
     public List<GlidePlanner.TracePoint> trace(){return session.trace();}
     private Object call(PlanningTask task){lastPending=false;try{return session.query(task);}catch(PlannerSession.Pending pending){lastPending=true;waiting=true;throw pending;}}
     public AttackLanePlanner.Lane lane(AttackLanePlanner.Input input){return (AttackLanePlanner.Lane)call(new PlanningTask.Lane(input));}
     private Object optional(PlanningTask task,Object fallback){try{return call(task);}catch(PlannerSession.Pending pending){waiting=true;return fallback;}}
+    public AttackFunnelPlanner.Atlas funnels(AttackFunnelPlanner.Input input,GlidePlanner.Corridor space){
+        var p=input.target();var state=new FlightPrediction.State(p.x(),p.y(),p.z(),0,0,0,0,0,input.physics());
+        try{return ((PlanningTask.FunnelResult)funnels.query(bounded(new PlanningTask.Funnel(state,input),space))).atlas();}
+        catch(PlannerSession.Pending pending){return null;}
+    }
+    public AttackFunnelPlanner.Capture capture(FlightPrediction.State start,AttackFunnelPlanner.Atlas atlas,FlightPrediction.Aim aim,int rocket,
+        double rate,double minimum,List<Integer> durations,boolean immediateOnly,GlidePlanner.Corridor space){
+        return (AttackFunnelPlanner.Capture)optional(bounded(new PlanningTask.Capture(start,atlas,aim,rocket,rate,minimum,durations,immediateOnly),space),null);
+    }
     public GlidePlanner.Plan glide(FlightPrediction.State s,GlidePlanner.Request r,GlidePlanner.Corridor ignored){
         var result=(PlanningTask.GlideResult)optional(bounded(new PlanningTask.Glide(s,r),ignored),null);
         lastGlide=result;

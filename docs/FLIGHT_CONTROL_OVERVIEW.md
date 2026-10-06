@@ -1,8 +1,10 @@
 # 飞控系统总设计与当前实现
 
-核对日期：2026-10-05。源码基线：Gradle 项目版本 `0.6.1`。本文描述当前源码，不是未来设计提案；mapped 物理依据与完整路线认证详见 [VANILLA_PHYSICS.md](VANILLA_PHYSICS.md)。
+核对日期：2026-10-05。源码基线：Gradle 项目版本 `0.6.2`。本文描述当前源码，不是未来设计提案；mapped 物理依据与完整路线认证详见 [VANILLA_PHYSICS.md](VANILLA_PHYSICS.md)。
 
 本文面向修改飞控算法、状态机和路径规划，以及排查飞行行为的维护者。新会话先读 [PROJECT_INDEX.md](PROJECT_INDEX.md)，线程池、快照、缓存与结果有效性细节继续读 [ASYNC_PLANNING.md](ASYNC_PLANNING.md)。配置、HUD 和命令见 [CONFIG_DEBUG_REFERENCE.md](CONFIG_DEBUG_REFERENCE.md)，验证入口见 [VALIDATION.md](VALIDATION.md)。
+
+0.6.2 在原有路线族之上增加目标中心的 [Attack Funnel / Capture](ATTACK_FUNNELS.md)。目标已选定时即可异步搜索，APPROACH/REPOSITION 优先接入已知窗口；旧 Sweep/Lane 是有限地图的补充。以下当前姿态候选、Compact 和普通入口规则描述该补充分支，不再表示必须先随机飞到合适姿态才开始找攻击窗口。
 
 **本文属于实现的一部分。** 改动控制流程、状态条件、预测公式、Planner、线程边界或参数含义时同步更新。若本文与源码冲突，以源码为准并修正文档。历史迭代原因可查 [buildHistory.md](../buildHistory.md)，不要把旧版本描述套用于当前实现。
 
@@ -148,7 +150,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 - **目的：** 将取得目标和接管起飞分开，保留可观察状态。
 - **输入/控制：** 当前 `preferred`；下一次分支进入 `TAKEOFF_PREP`，该转移设置 `managed=true`、清零滞空计时和待返航原因。
-- **规划：** 本状态无独立 Worker 任务；目标再验证在准备阶段进行。
+- **规划：** 控制器已可异步预热所选目标的 Funnel；目标再验证在准备阶段继续。
 
 ### 4.4 `TAKEOFF_PREP`
 
@@ -187,7 +189,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 - **目的：** 根据当前动量竞争直线、竖向坡面/速降与持续转弯路线，选出可实际接触并安全离场的攻击。
 - **进入/输入：** 初次爬升完成、离场完成、返航途中恢复战斗、指挥镜交接或重定位完成。`startApproach()` 清掉旧 run/curve/recovery，保留合法 preferred，评估次要穿刺目标；同时记录本次是否从目标脚底以下开始进场。
-- **Worker：** `Sweep` 生成两段三次曲线及动力学预测；`Rejoin` 用当前状态重新认证；`Slope/Lane/Glide` 生成与评估常规路线。
+- **Worker：** `Funnel` 提前生成目标相对窗口；`Capture` 比较主动接入和全寿命烟花；`Rejoin` 用当前状态重新认证。`Sweep`、`Slope/Lane/Glide` 继续补充地图未覆盖的局部机会。
 - **主线程：** 首先请求曲线候选，曲线候选仅在目标距离 6–64 格且滑翔时搜索。尚待结果的前 8 ticks 面向目标引导，普通入口保持当前高度；从下方开始的入口以 `attackHeight-min(3,spear_vertical_expansion)` 为准备高度，并贯穿本轮接近、重定位与低能量恢复，避免准备过程中又切换到目标上方巡航。它只影响准备引导，不能代替完整攻击认证。
 - **地形例外：** 坡面采样至少 12 点且不满足原平地门槛时，取消上述低位空中准备并清除较低 Compact 目标，恢复已有地形爬升规则。连续上坡与孤立高处目标不能共用低位准备高度。
 - **常规承诺条件：** look 和真实动量都可在到达前对正，剩余距离覆盖原生前摇；稳定高度/垂直速度或相应坡面曲线误差满足容差；入口、接触、出口走廊合法。见 `AttackPolicy.minimumEntry/canEnter`。
@@ -195,6 +197,8 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 - **失败/特殊：** 目标失效重扫；太近、朝向大偏差或常规走廊堵塞 -> `REPOSITION`；总 setup 超过 `attack_timeout_ticks*4` -> 记一次失败、换目标。合法锁定目标可以暂时被山体遮挡；并不要求整个 APPROACH 持续直视目标。
 
 ### 4.9 `REPOSITION`
+
+**窗口优先：** 有有效地图时首先比较当前状态到各个已知入口的完整 Capture；先 coast，再验证最小足够库存 duration 的现在/延迟脉冲。位置、动量方向、速度、pitch/vy、活动火箭和启动延迟同时满足门槛，且最终 Rejoin 成功，才进入攻击。等待时继续廉价反馈与实时身体检查，已明确无完整捕获方案时采用局部 Glide；已有局部 Sweep 结果仍可提交。只有无有效地图时才完整回到下面的 Compact 规则。详见 [窗口与捕获](ATTACK_FUNNELS.md)。
 
 - **目的：** 在固定局部区域内用爬升减速换取转向能力，恢复可用入口；不是继续向外高速飞到远端再绕圈。
 - **进入/输入：** 入口太近、未稳定、夹角过大、通道堵塞或低能量攻击恢复；目标、采样坡度、当前动量、前摇/触及距离。
@@ -327,7 +331,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 曲线从当前实际速度方向构造起点切线；低速才退到目标方向。目标附近方向枚举直达和左右 `30/60/90/120°`，结合两档控制柄长度、两档高度和三档横向接触偏移，每个动力条件共 108 条几何候选。当前无动力候选不可用时，还可按真实库存 duration 生成拟点火候选（最大预测推进 ≤80 ticks）；这种候选不代表当前已有推力。它仍走当前状态 Rejoin、全部随机寿命与真实点火后才能承诺攻击。接触处 entry 末切线与 exit 起切线一致；出口继续顺着左/右趋势，而非强行回到旧直线。
 
-`Path` 按控制多边形长度约每 `.75` 格采样，每段 8–160 步；先真实身体走廊过滤，再模拟原版动量/姿态/有限火箭。模拟在原生前摇之后检查最低攻击速度、长矛接触与逐步身体净空。命中后的提前成功退出条件要求至少再模拟 16 ticks，并达到火箭结束后 12 ticks；但总时域为 `min(160, max(budget, rocket + 16))`，达到上限时也会返回已模拟部分的 `safe/hit`。因此，接触发生在时域末尾时，当前实现不保证完整的上述恢复窗口；不能将有限预测写成整段离场安全的无条件证明。
+`Path` 按控制多边形长度约每 `.75` 格采样，每段 8–160 步；先真实身体走廊过滤，再模拟原版动量/姿态/有限火箭。模拟在原生前摇之后检查最低攻击速度、长矛接触与逐步身体净空。成功必须完成有界出口行程、至少接触后 16 ticks、火箭及启动延迟结束后 16 次无动力移动，并满足末端速度；总时域上限 160 ticks，末尾接触会在此上限内延长恢复验证，耗尽时域则失败。此前文档保留了旧版“部分 safe/hit 可成功”的描述，与 0.6.1 源码不符，已修正。
 
 成本含时间、紧通道、姿态变化平方、与当前转向趋势反向的代价。直达几何 simplicity 为 0、弧线/绕山为 1.5，保留小的简单性优势；不是几何直线能通就强制放弃曲线。控制器还用实际预测 miss、能量亏空、净空和预计时间与已有常规路线竞争。
 
@@ -512,6 +516,8 @@ expectedTicks(duration) = minimumTicks + 5.5
 `planningPhase()` 合并 `APPROACH/REPOSITION -> ENTRY`、`ATTACK_RUN/DIVE/SPEAR_CHARGE -> ATTACK`、`TAKEOFF_PREP/TAKEOFF -> LAUNCH`；其余按枚举名。阶段、目标、配置 revision 或维度变化会取消旧 generation。把中间状态拆成不同 generation 会使可复用任务不断失效；把真正互斥任务并在一起又会错误套用旧结果。
 
 当前结果有年龄、位置、姿态、速度、目标运动和请求兼容检查；曲线候选可以短暂保留为几何种子，但 `Rejoin` 的当前接入证书要求更严格。火箭预计/实际剩余寿命也属于请求有效性，不能使用无动力计划控制刚点燃的火箭。
+
+目标地图使用另一个固定阶段的 session；起飞/入口阶段变化只取消相应控制任务，地图依赖目标、配置、世界、物理及证明覆盖失效。两 session 共用同一个 Source、共享 Worker 和采集预算；Capture 与 Rejoin 都采用 ≤2 ticks 的严格姿态验收。详细限额见 [ASYNC_PLANNING](ASYNC_PLANNING.md)。
 
 等待规则不是所有函数都相同：
 
