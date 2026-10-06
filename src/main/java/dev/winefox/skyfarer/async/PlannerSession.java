@@ -101,12 +101,34 @@ public final class PlannerSession {
                 // Missing alternative corridors cannot invalidate a selected, fully certified path.
                 if(!usable(done.value()))continue;
             }
-            if(work.task.unbound() instanceof PlanningTask.Funnel)cache.removeIf(c->c.task.unbound() instanceof PlanningTask.Funnel);
-            cache.addFirst(new Cached(work.task,done.value(),work.tick,work.generation));while(cache.size()>96)cache.removeLast();
+            Object value=done.value();
+            if(value instanceof PlanningTask.FunnelResult fresh){
+                for(var old:cache)if(old.value instanceof PlanningTask.FunnelResult prior&&work.task.compatible(old.task)&&coverageValid(prior)
+                    &&((PlanningTask.Funnel)work.task.unbound()).input().equals(((PlanningTask.Funnel)old.task.unbound()).input())){
+                    // Cold discovery may find a different subset as cells arrive. Existing
+                    // legal windows remain stable; fill vacant slots instead of replacing
+                    // them with another partially observed sample of the same static sky.
+                    var windows=new ArrayList<>(prior.atlas().windows());
+                    var coverage=new HashMap<>(prior.coverage());coverage.putAll(fresh.coverage());
+                    if(coverage.size()<=640)for(var w:fresh.atlas().windows()){
+                        if(windows.size()==AttackFunnelPlanner.MAX_WINDOWS)break;
+                        if(windows.stream().noneMatch(p->p.id()==w.id()))windows.add(w);
+                    }
+                    value=windows.equals(prior.atlas().windows())?prior:
+                        new PlanningTask.FunnelResult(new AttackFunnelPlanner.Atlas(windows),coverage);break;
+                }
+                if(usable(value))cache.removeIf(c->c.task.unbound() instanceof PlanningTask.Funnel);
+            }
+            cache.addFirst(new Cached(work.task,value,work.tick,work.generation));while(cache.size()>96)cache.removeLast();
         }
         if(localEpoch!=captureEpoch){localEpoch=captureEpoch;capturedThisEpoch=0;}
         int local=Math.max(1,256/participants)-capturedThisEpoch;
         // Refresh gradually; dropping the entire warm volume every expiry period starves control.
+        // Keep the selected proof's terrain warm before speculative alternatives. Equal
+        // refreshed cells preserve the atlas identity; snapshot publication is not invalidation.
+        for(var c:cache)if(c.value instanceof PlanningTask.FunnelResult f)for(long key:f.coverage().keySet()){
+            var entry=cells.get(key);if(entry==null||now-entry.tick>=20)request(key,0);
+        }
         int refresh=8;
         for(var entry:cells.entrySet()){
             if(refresh==0||requested.size()>=512)break;
@@ -126,7 +148,12 @@ public final class PlannerSession {
             long begin=System.nanoTime();var captured=source.capture(key);long elapsed=System.nanoTime()-begin;captureNanos+=elapsed;epochCaptureNanos+=elapsed;
             int reads=source.lastReads();cells.put(key,new CellEntry(captured,now));dirty=true;local--;cellBudget--;capturedThisEpoch++;captureBudget-=reads;capturedBlocks+=reads;
         }
-        while(cells.size()>768){cells.remove(cells.keySet().iterator().next());dirty=true;}
+        var protectedCells=new HashSet<Long>();
+        for(var c:cache)if(c.value instanceof PlanningTask.FunnelResult f)protectedCells.addAll(f.coverage().keySet());
+        while(cells.size()>768){
+            var key=cells.keySet().stream().filter(k->!protectedCells.contains(k)).findFirst().orElse(cells.keySet().iterator().next());
+            cells.remove(key);dirty=true;
+        }
     }
     private void request(long key,int priority){if(requested.size()<512||requested.containsKey(key))requested.merge(key,priority,Math::min);}
     private static boolean usable(Object value){
@@ -140,14 +167,19 @@ public final class PlannerSession {
         return value!=null;
     }
     public Object query(PlanningTask task){
-        check();lastQueryEpoch=captureEpoch;pump();
+        check();lastQueryEpoch=captureEpoch;
         var unbound=task.unbound();
+        // Only a currently legal map may pin terrain. A moved target or changed proof
+        // must release its old footprint so a cold replacement can use the bounded cache.
+        if(unbound instanceof PlanningTask.Funnel)cache.removeIf(c->c.value instanceof PlanningTask.FunnelResult f
+            &&(!task.compatible(c.task)||!coverageValid(f)));
+        pump();
         if(unbound instanceof PlanningTask.Glide||unbound instanceof PlanningTask.Launch||unbound instanceof PlanningTask.Compact)urgent=task.start();
         for(var cached:cache){
             boolean terrain=unbound instanceof PlanningTask.Slope;
             boolean funnel=unbound instanceof PlanningTask.Funnel;
             boolean geometry=unbound instanceof PlanningTask.Sweep sweep&&sweep.path()==null;
-            int maxAge=funnel?(cached.value instanceof PlanningTask.FunnelResult f&&!f.atlas().windows().isEmpty()?40:8):terrain?20:geometry?12:4;
+            int maxAge=funnel?(cached.value instanceof PlanningTask.FunnelResult f&&!f.atlas().windows().isEmpty()?Integer.MAX_VALUE:8):terrain?20:geometry?12:4;
             if(cached.generation!=generation||now-cached.tick>maxAge||!task.compatible(cached.task))continue;
             if(cached.value instanceof PlanningTask.FunnelResult f&&!coverageValid(f))continue;
             var a=task.start();var b=cached.task.start();
@@ -162,6 +194,10 @@ public final class PlannerSession {
                 ||!geometry&&Math.abs(a.vx()-b.vx())+Math.abs(a.vy()-b.vy())+Math.abs(a.vz()-b.vz())>1.2))continue;
             cacheHits++;
             if(unbound instanceof PlanningTask.Glide&&now>cached.tick&&!pending.containsKey(task.slot()))enqueue(task);
+            // Refresh alternatives without a display/control gap. Identical results keep
+            // Atlas/Window identity, so Capture jobs are not cancelled by a no-op refresh.
+            if(funnel&&cached.value instanceof PlanningTask.FunnelResult f&&f.atlas().windows().size()<AttackFunnelPlanner.MAX_WINDOWS
+                &&now-cached.tick>=40&&!pending.containsKey(task.slot()))enqueue(task);
             return cached.value;
         }
         enqueue(task);throw WAIT;
@@ -213,5 +249,6 @@ public final class PlannerSession {
     public long generation(){check();return generation;}
     public static int activeSessions(){return sessions.size();}
     public static String metrics(){return "queue="+PlannerExecutor.queued()+" cache="+cacheHits+" stale="+staleResults+" failed="+failures
+        +" cancelled="+PlannerExecutor.cancelled.sum()+" submitted="+PlannerExecutor.submitted.sum()
         +" captureMs="+captureNanos/1_000_000+" workerMs="+PlannerExecutor.workerNanos.sum()/1_000_000;}
 }

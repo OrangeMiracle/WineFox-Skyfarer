@@ -1,10 +1,12 @@
 # 配置、指挥、调试与兼容接口
 
-核对基线：**0.6.2，2026-10-05**。本文面向维护者，描述当前源码事实；源码变化时必须同步维护。总入口见 [PROJECT_INDEX.md](PROJECT_INDEX.md)，飞控细节见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)。本文中的 tick 是游戏逻辑 tick，20 TPS 时 20 ticks = 1 秒；格/tick 不是格/秒。
+核对基线：**0.6.3，2026-10-05**。本文面向维护者，描述当前源码事实；源码变化时必须同步维护。总入口见 [PROJECT_INDEX.md](PROJECT_INDEX.md)，飞控细节见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)。本文中的 tick 是游戏逻辑 tick，20 TPS 时 20 ticks = 1 秒；格/tick 不是格/秒。
 
 0.6.1 未新增可调物理伪属性：gravity/缓降从实体冻结，滑翔阻力使用 1.21.1 常量。`energy_reserve` / `attack_energy_reserve` 是路线最差预测储备的补能门槛，不是轨迹可达性开关。HUD `energyReserve` 在普通攻击证书/曲线回放返回后显示最差 reserve；`ATTACK_PHYSICS_VETO:<reason>` 表示完整物理认证拒绝，需结合 `contact_missed`、`exit_incomplete`、`sweep_<tick>` 与异步等待判断。详细每步 envelope 目前是 Worker 结果 DTO，未新增网络包或 HUD 曲线。
 
 ## 1. 配置的入口与生效方式
+
+0.6.3 行为修正：普通/创造指挥镜的服务端标记射线入口直接排除全部 `EntityMaid`（含子类），不按归属、阵营或任务放行；Debug 棒和遥控器入口不变。合法近距明确命令会唤醒地面获取，仍保留全部资格与起飞净空检查。紫色 Funnel 使用轨迹群截面的独立 width/height；其他颜色语义保持。日志额外记录 `funnelGen`、`cancelled`、`submitted`，Capture 的 energy 行不再依赖 flightRequest 存在；`capture_async_pending`、`capture_no_complete_route`、`capture_cooldown` 与完整 coast/pulse 分开。
 
 定义源为 [SkyfarerConfig](../src/main/java/dev/winefox/skyfarer/config/SkyfarerConfig.java)，统一读取与写入入口为 [SkyfarerSettings](../src/main/java/dev/winefox/skyfarer/config/SkyfarerSettings.java)。[WineFoxSkyfarer](../src/main/java/dev/winefox/skyfarer/WineFoxSkyfarer.java) 注册的是 NeoForge **SERVER** 配置；没有单独的客户端飞控配置。常规服务端配置文件名为 `winefox_skyfarer-server.toml`，由 NeoForge 管理其存档配置位置。
 

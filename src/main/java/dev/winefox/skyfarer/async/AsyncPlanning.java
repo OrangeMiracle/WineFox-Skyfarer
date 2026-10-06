@@ -28,7 +28,7 @@ public final class AsyncPlanning {
     public void invalidate(){session.invalidate();funnels.invalidate();}
     public int pending(){return session.pendingCount();}
     public int cells(){return session.cellCount();}
-    public String detail(){return session.detail()+" funnelJobs="+funnels.pendingCount()+" funnelCells="+funnels.cellCount();}
+    public String detail(){return session.detail()+" funnelGen="+funnels.generation()+" funnelJobs="+funnels.pendingCount()+" funnelCells="+funnels.cellCount();}
     public List<GlidePlanner.TracePoint> trace(){return session.trace();}
     private Object call(PlanningTask task){lastPending=false;try{return session.query(task);}catch(PlannerSession.Pending pending){lastPending=true;waiting=true;throw pending;}}
     public AttackLanePlanner.Lane lane(AttackLanePlanner.Input input){return (AttackLanePlanner.Lane)call(new PlanningTask.Lane(input));}

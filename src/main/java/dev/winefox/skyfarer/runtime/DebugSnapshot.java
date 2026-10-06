@@ -17,7 +17,10 @@ public final class DebugSnapshot {
             var tube=new CompoundTag();var frames=new ListTag();var points=window.tube();
             for(int i=0;i<Math.min(18,points.size());i++){
                 var p=points.get(i);var frame=new CompoundTag();vector(frame,"center",new Vec3(p.x(),p.y(),p.z()));
-                frame.putDouble("radius",i==0?window.radius():1.25);frames.add(frame);
+                var section=window.sections().isEmpty()?null:window.sections().get(i);
+                frame.putDouble("width",section==null?window.radius():section.width());
+                frame.putDouble("height",section==null?window.radius():section.height());
+                frame.putDouble("radius",section==null?window.radius():section.width());frames.add(frame);
             }
             tube.put("frames",frames);tube.putInt("id",window.id());tubes.add(tube);
         }

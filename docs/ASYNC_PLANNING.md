@@ -1,6 +1,6 @@
 # 异步规划与线程边界
 
-核对日期：2026-10-05。实现基线：Gradle 项目版本 0.6.2。本文描述当前源码；物理快照依据见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)，构建证据见 [验证文档](VALIDATION.md#7-当前构建证据与已知缺口)。
+核对日期：2026-10-05。实现基线：Gradle 项目版本 0.6.3。本文描述当前源码；物理快照依据见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)，构建证据见 [验证文档](VALIDATION.md#7-当前构建证据与已知缺口)。
 
 本文是工程实现的一部分。修改调度、快照、任务类型、缓存、线程边界或结果应用规则时，必须同步更新本文及 [项目索引](PROJECT_INDEX.md)。源码是最终权威，发现文档冲突须修正文档。飞行行为与状态转换见 [飞控总览](FLIGHT_CONTROL_OVERVIEW.md)，配置/调试入口见 [配置与调试参考](CONFIG_DEBUG_REFERENCE.md)。
 
@@ -8,7 +8,7 @@
 
 异步化的是预测和搜索，实体控制仍由服务端主线程拥有。不是把整个 `AirCombatController.tick()` 搬到后台，也不是给每位女仆创建线程。
 
-0.6.2 的目标地图与控制任务分 session、共用同一个 MaidTerrainSource 和全服预算。固定 `TARGET_FUNNELS` 阶段允许地图跨地面准备/起飞/接近复用；目标/配置/Level/物理/显式 generation 失效仍清除它。算法与控制器衔接见 [ATTACK_FUNNELS](ATTACK_FUNNELS.md)。空战地图只保留一个 Funnel slot 与一个完成地图；未使用地图的赶路 facade 不提交这类任务。
+目标地图与控制任务分 session，共用同一个 MaidTerrainSource 和全服预算。固定 `TARGET_FUNNELS` 阶段跨地面/起飞/接近复用；目标/配置/Level/物理/generation 失效仍清除它。0.6.3 保留合法正地图及其证明 cells，后台补充不清空旧图；相同 Input 只补空槽，避免冷快照搜索子集互相替换。算法见 [ATTACK_FUNNELS](ATTACK_FUNNELS.md)。空战地图一个 Funnel slot，一个正地图；赶路 facade 不提交地图任务。
 
 ```text
 服务端主线程
@@ -109,8 +109,8 @@
 | 全服每 `ServerTickEvent.Pre` 重置 | 256 cells、21,600 次方块读取、累计采集耗时 2 ms | 三者任一到限停止继续采集；时间是软上限，单元不可拆分 |
 | 活跃 session 公平份额 | 每 epoch 最多 `max(1,256/participants)` cells | 参与者为仍有 pending/requested 或最近 2 epochs 查询的 session；轮换处理起点 |
 | 待采集 cell | 每 session 最多 512 | 选中走廊优先，其次邻格/其他候选/刷新；近当前位置者先 |
-| 已缓存 cell | 每 session 最多 768 | 按 LinkedHashMap 插入顺序淘汰；不是完整 LRU |
-| 刷新 | cell 年龄达 20 ticks，每次 pump 最多加入 8 个刷新请求 | 受全局预算继续限制，不保证第 20 tick 已刷新 |
+| 已缓存 cell | 每 session 最多 768 | 优先保留 Funnel 所引用的 ≤640 cells，其余按插入顺序淘汰；不是完整 LRU |
+| 刷新 | cell 年龄达 20 ticks，证明覆盖优先请求；其余每次 pump 最多加 8 个 | 待采集上限与全局预算不变，不保证第 20 tick 已刷新 |
 | 过期 | enqueue 时移除年龄大于 80 ticks 的 cell | 已提交快照不可回写；当前真实位移仍需 live guard |
 | Worker 缺失记录 | 每个 Space 最多 192 个不同 cell | 单次缺失集有限；严格计算与发现计算可以分别产生集合 |
 
@@ -152,7 +152,7 @@
 | 几何 seed | 在兼容的候选 slot 内固定最多 12 ticks |
 | `Rejoin` / `AttackCertificate` 接触认证 | 在一般门槛之上，年龄 ≤2 ticks，位置差 ≤2.5 格，yaw/pitch 差各 ≤8°，速度 L1 差 ≤0.35 |
 | `Capture` | 与 Rejoin 相同的严格姿态/年龄门槛；Atlas 身份、实际火箭、真实可用 duration 列表和点火时机选项也要匹配 |
-| `Funnel` | 正结果 ≤40 ticks，空结果 ≤8；不检查女仆位置；目标几何位移 ≤.75 格且 Aim/参数兼容，物理按年龄推进，证明 Cell 仍在缓存且内容一致；最多一个完成地图 |
+| `Funnel` | 合法正结果持续复用；未满四窗口每 40 ticks 后台补充，等待时旧图继续返回；同 Input 保持已有 Window，没有新增时保持 Atlas 身份。空结果 ≤8；目标位移 ≤.75 格及 Aim/参数/物理兼容，证明 cells 内容一致且 ≤80 ticks |
 | Pending 复用 | 6 ticks 内且兼容；否则取消并换新 |
 | Debug trace | 仅读 generation 相同、年龄 ≤8 ticks 的完成缓存，不新提交预测 |
 

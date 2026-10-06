@@ -79,9 +79,10 @@ public final class AirCombatDebugRenderer {
                 tangent=tangent.normalize();
                 Vec3 side=tangent.cross(new Vec3(0,1,0)).normalize();
                 if(side.lengthSqr()<1e-6)side=new Vec3(1,0,0);
-                Vec3 up=side.cross(tangent).normalize();double radius=Math.clamp(frame.getDouble("radius"),.2,4);
-                Vec3[] corners={center.add(side.add(up).scale(radius)),center.add(up.subtract(side).scale(radius)),
-                    center.subtract(side.add(up).scale(radius)),center.add(side.subtract(up).scale(radius))};
+                Vec3 up=side.cross(tangent).normalize();
+                side=side.scale(Math.clamp(frame.getDouble("width"),.2,6));up=up.scale(Math.clamp(frame.getDouble("height"),.2,4));
+                Vec3[] corners={center.add(side).add(up),center.add(up).subtract(side),
+                    center.subtract(side).subtract(up),center.add(side).subtract(up)};
                 for(int edge=0;edge<4;edge++){
                     if(previousFrame!=null)RenderHelper.renderLine(pose,lines,previousFrame[edge].subtract(camera),corners[edge].subtract(camera),.73f,.3f,1f);
                     RenderHelper.renderLine(pose,lines,corners[edge].subtract(camera),corners[(edge+1)%4].subtract(camera),.73f,.3f,1f);

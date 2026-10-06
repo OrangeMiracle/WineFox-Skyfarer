@@ -129,9 +129,13 @@ public sealed interface PlanningTask extends PlannerExecutor.Task<Object> {
             var coverage=new java.util.HashMap<Long,CollisionSnapshot.Cell>();
             for(var w:atlas.windows()){
                 var proof=s.proofSpace();
-                var roll=SweepingAttackPlanner.simulate(w.witness(),w.path(),input.aim(),w.rocket(),input.physics().gravity(),input.rate(),input.minimum(),false,proof,
-                    (a,b,t)->proof.ray(a.x(),a.y(),a.z(),b.x()+b.vx()*t,b.bottom()+b.height()*.5+b.vy()*t,b.z()+b.vz()*t),120);
-                if(!roll.safe()||!roll.hit())continue;
+                boolean valid=true;
+                for(var seed:w.seeds()){
+                    var roll=SweepingAttackPlanner.simulate(seed,w.path(),input.aim(),w.rocket(),input.physics().gravity(),input.rate(),input.minimum(),false,proof,
+                        (a,b,t)->proof.ray(a.x(),a.y(),a.z(),b.x()+b.vx()*t,b.bottom()+b.height()*.5+b.vy()*t,b.z()+b.vz()*t),120);
+                    if(!roll.safe()||!roll.hit()){valid=false;break;}
+                }
+                if(!valid)continue;
                 var union=new java.util.HashMap<>(coverage);union.putAll(proof.coverage());
                 if(union.size()>640)continue;
                 accepted.add(w);coverage=union;

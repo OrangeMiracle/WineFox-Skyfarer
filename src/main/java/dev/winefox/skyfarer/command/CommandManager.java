@@ -96,7 +96,7 @@ public final class CommandManager {
         if(block.getType()!=HitResult.Type.MISS)end=block.getLocation();
         LivingEntity best=null;double distance=from.distanceToSqr(end);
         for(var entity:player.level().getEntitiesOfClass(LivingEntity.class,new AABB(from,end).inflate(1),
-            e->e.isAlive()&&!(e instanceof Player)&&e!=player&&!e.isSpectator()&&!e.isInvulnerable())) {
+            e->e.isAlive()&&!(e instanceof Player)&&!(e instanceof EntityMaid)&&e!=player&&!e.isSpectator()&&!e.isInvulnerable())) {
             var hit=entity.getBoundingBox().inflate(.1).clip(from,end);
             if(hit.isPresent()&&from.distanceToSqr(hit.get())<distance){best=entity;distance=from.distanceToSqr(hit.get());}
         }return best;

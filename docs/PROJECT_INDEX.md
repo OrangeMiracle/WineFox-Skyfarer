@@ -1,6 +1,6 @@
 # WineFox: Skyfarer 工程总索引
 
-这是**项目总索引、当前项目事实总览和新开发会话的第一阅读入口**，面向维护者与后续 Codex。玩家安装与使用介绍保留在 [README](../README.md)。本文按 2026-10-05 的源码核对；构建版本为 **0.6.2**。
+这是**项目总索引、当前项目事实总览和新开发会话的第一阅读入口**，面向维护者与后续 Codex。玩家安装与使用介绍保留在 [README](../README.md)。本文按 2026-10-05 的源码核对；构建版本为 **0.6.3**。
 
 ## 先读：长期维护规则
 
@@ -14,7 +14,7 @@
 
 **文档描述当前实现事实。文档与源码冲突时，以源码为最终权威；发现冲突后应立即修正文档。** 历史需求、聊天记录、类名、注释、旧构建日志均不能替代对实际调用路径的检查。未接入的枚举、配置或方法必须注明，不能当成现有功能。
 
-0.6.2 新增目标中心的 Attack Funnel / Capture 组织层，具体算法、DTO、缓存和限制见 [ATTACK_FUNNELS](ATTACK_FUNNELS.md)。目标选定后可在地面或已加载目标的指挥赶路期间预热；REPOSITION 主动捕获已知窗口，空间进入本身不授权攻击。本轮只执行六项直接相关验证与编译/打包，没有重跑全量验证。
+0.6.3 根据 [实机日志分析](FIELD_ANALYSIS_0.6.3.md) 修复窗口生命周期、下降捕获和标记起飞，并将 Funnel 扩为成功轨迹群的截面包络，支持显式俯冲/上升与转弯。算法、DTO、缓存及限制见 [ATTACK_FUNNELS](ATTACK_FUNNELS.md)。本轮仅编译、直接相关检查与打包，没有重跑全量验证。
 
 新会话按以下顺序阅读：
 
@@ -37,7 +37,7 @@
 | Java / 构建 | Java 21；Gradle Wrapper；ModDev 插件 2.0.148；[build.gradle](../build.gradle)、[gradle.properties](../gradle.properties) |
 | 必需依赖 | `libs/touhoulittlemaid-1.5.3-neoforge+mc1.21.1.jar`、`libs/spear-backport-neoforge-1.8.0-1.21.1.jar` |
 | 可选兼容 | YSM；`tools/ysm-reference.jar` 只用于编译参考；兼容检查针对其 2.6.5 接口，不是必需依赖 |
-| 构建版本 | `build.gradle` 的 `version='0.6.2'`，Jar Manifest 的 `Implementation-Version` 来自它；[neoforge.mods.toml](../src/main/resources/META-INF/neoforge.mods.toml) 同步为 0.6.2。0.6.1 已修正此前 0.6.0/0.5.4 不一致；发版仍须核对实际 Jar |
+| 构建版本 | `build.gradle` 的 `version='0.6.3'`，Jar Manifest 的 `Implementation-Version` 来自它；[neoforge.mods.toml](../src/main/resources/META-INF/neoforge.mods.toml) 同步为 0.6.3。0.6.1 已修正此前 0.6.0/0.5.4 不一致；发版仍须核对实际 Jar |
 | 运行依赖范围 | 元数据限定 MC `[1.21.1]`、NeoForge `[21.1.250,21.2)`、TLM `[1.5.3,1.6)`、Spears `[1.8.0,1.9)`，均为 BOTH；范围声明不等于每个版本均已实测 |
 | 许可证 | [LGPL-3.0-only](../LICENSE) |
 
@@ -173,7 +173,7 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 - 主线程按预算采集真实形状；每会话缓存最多 768 个单元。缺失数据不当空气执行，探索结果仅用于请求更多快照。
 - 目标、逻辑阶段、配置 revision 或维度变化取消旧任务；参数、年龄、位移和姿态继续验证。阶段分组是 LAUNCH / ENTRY / ATTACK 等逻辑组，不是每个枚举变化都取消所有工作。
 - 普通预测短暂复用，曲线几何与当前接入验证分离。缓存让控制继续运行，不代表旧轨迹可以无限期执行。
-- 目标地图另有一个固定阶段的 session，共用 Source、Worker 和全服采集预算。每地图最多一个在途任务、一个完成地图、四个窗口、768 cells；与控制 session 合计最多 25 pending、1536 cells。正地图最多 40 ticks，空结果 8 ticks；已采集的证明 Cell 改变/丢失也会拒绝复用。Capture/Rejoin 使用严格当前状态门槛。
+- 目标地图另有固定阶段 session，共用 Source、Worker 和全服采集预算。每地图最多一个在途任务、一个正地图、四个窗口、768 cells；与控制 session 合计最多 25 pending、1536 cells。合法正地图保持，未满额每 40 ticks 后台补空槽；空结果 8 ticks。证明 Cell 优先保留/刷新，变化、缺失或超过 80 ticks 仍拒绝复用。Capture/Rejoin 使用严格当前状态门槛。
 - 即时世界碰撞、最终伤害、落点、目标扫描、物品和实体操作仍在主线程。创造高速当前 tick 的长位移扫掠也是主线程工作。
 
 **线程安全红线：**

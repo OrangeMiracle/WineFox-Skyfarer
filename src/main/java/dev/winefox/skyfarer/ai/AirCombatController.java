@@ -94,9 +94,11 @@ public final class AirCombatController {
     private AttackFunnelPlanner.Atlas funnelAtlas;
     private UUID funnelTarget;
     private AttackFunnelPlanner.Window captureWindow;
+    private AttackFunnelPlanner.Section captureSection;
     private long captureIgnitionAt=-1;
     private long captureTraceAt=-1;
     private List<GlidePlanner.TracePoint> captureTrace=List.of();
+    private boolean commandedAcquire;
 
     public AirCombatController(EntityMaid maid) { this.maid = maid;planning=new dev.winefox.skyfarer.async.AsyncPlanning(maid);lastPosition = maid.position();previousYaw=maid.getYRot(); }
     public AirCombatState state() { return state; }
@@ -107,8 +109,9 @@ public final class AirCombatController {
         preferred=target;planningContext();sampleTargetMotion();refreshFunnels();
     }
     public void acceptCommand(LivingEntity target) {
-        if(state.locksRunTarget())return;
+        if(state.locksRunTarget()||!TargetEvaluator.attackable(maid,target))return;
         preferred=target;combatAnchor=target.position();
+        if(state==AirCombatState.GROUNDED){commandedAcquire=true;retryAt=maid.level().getGameTime();}
         if(maid.isFallFlying()){managed=true;airborneTicks=0;pendingReturn="";startApproach();}
     }
     public void commandReturn(){if(!maid.onGround()){managed=true;beginReturn("COMMAND_COMPLETE");}}
@@ -130,7 +133,7 @@ public final class AirCombatController {
     public void acquire() {
         if (state != AirCombatState.GROUNDED || !SkyfarerRuntime.isSkyfarer(maid)) return;
         long now = maid.level().getGameTime();
-        if (now < retryAt || !scanCadence.ready(now, SkyfarerSettings.ticks("scan_interval_ticks"))) return;
+        if (now < retryAt || !commandedAcquire&&!scanCadence.ready(now, SkyfarerSettings.ticks("scan_interval_ticks"))) return;
         String blocked = workBlockReason();
         if (!blocked.isEmpty()) { diagnostic = blocked; return; }
         if (!maid.onGround()) { diagnostic = "WAITING_FOR_GROUND"; return; }
@@ -241,7 +244,9 @@ public final class AirCombatController {
         switch (state) {
             case GROUNDED -> { }
             case TARGET_ACQUIRE -> {
-                scan(); transition(preferred == null ? AirCombatState.GROUNDED : AirCombatState.TARGET_SELECTED, preferred == null ? "NO_LEGAL_TARGET" : "TARGET_SELECTED");
+                if(!commandedAcquire||!TargetEvaluator.valid(maid,preferred,false,anchor()))scan();
+                commandedAcquire=false;
+                transition(preferred == null ? AirCombatState.GROUNDED : AirCombatState.TARGET_SELECTED, preferred == null ? "NO_LEGAL_TARGET" : "TARGET_SELECTED");
             }
             case TARGET_SELECTED -> transition(AirCombatState.TAKEOFF_PREP, "PREPARING_JUMP");
             case TAKEOFF_PREP -> prepare();
@@ -545,13 +550,15 @@ public final class AirCombatController {
         setupTicks++;
         if (!TargetEvaluator.valid(maid, preferred, true, anchor())) { scan(); startApproach(); return; }
         if (setupTicks > SkyfarerSettings.ticks("attack_timeout_ticks") * 4) { retryAnotherTarget("ALIGNMENT_RESELECT"); return; }
+        // A certified target map already contains terrain-aware vertical alternatives;
+        // do not make its Capture wait for the legacy staging slope query.
+        if(tryFunnelCapture())return;
         if(ascentEntry){
             var support=sampleSlope(preferred);
             // A continuous terrain slope needs its established terrain clearance; the
             // lower airborne staging height is only for an isolated elevated contact.
             if(support.samples()>=12&&!flatTerrain(support)){ascentEntry=false;compactGoal=null;}
         }
-        if(tryFunnelCapture())return;
         if(trySweepingEntry()) { attack(); return; }
         if(sweepPending&&++entryWaitTicks<=8){
             // Keep the entry direction while the initial candidate set is being evaluated. Starting a
@@ -649,8 +656,9 @@ public final class AirCombatController {
     private double sweepRate(){return Math.max(SkyfarerSettings.attackTurnRate(),SkyfarerSettings.turnRate());}
     /** Target selection is unchanged. Prewarm the selected target even during ground preparation. */
     private void refreshFunnels(){
-        funnelAtlas=null;funnelTarget=null;
-        if(!TargetEvaluator.attackable(maid,preferred)||returning()||state==AirCombatState.WATER_ESCAPE)return;
+        if(!TargetEvaluator.attackable(maid,preferred)||returning()||state==AirCombatState.WATER_ESCAPE){
+            funnelAtlas=null;funnelTarget=null;captureWindow=null;captureIgnitionAt=-1;captureTrace=List.of();return;
+        }
         double height=Math.max(preferred.getY()+SkyfarerSettings.get("attack_ground_clearance")+.55,TargetEvaluator.aimPoint(preferred).y);
         var input=new AttackFunnelPlanner.Input(new SweepingAttackPlanner.Point(preferred.getX(),height,preferred.getZ()),
             sweepAim(preferred,true),planning.physics(),sweepRate(),Math.max(.3,SpearCompat.minimumDamageSpeed(maid.getMainHandItem())+.05),SkyfarerSettings.attackExitDistance());
@@ -658,7 +666,7 @@ public final class AirCombatController {
             new dev.winefox.skyfarer.async.CollisionSnapshot.Bounds(preferred.getX(),preferred.getZ(),64),new CorridorProbe(maid)));
         funnelTarget=preferred.getUUID();
         if(funnelAtlas==null||captureWindow!=null&&!funnelAtlas.windows().contains(captureWindow)){
-            captureWindow=null;captureIgnitionAt=-1;captureTrace=List.of();
+            captureWindow=null;captureSection=null;captureIgnitionAt=-1;captureTrace=List.of();
         }
     }
     private List<Integer> captureDurations(){
@@ -683,13 +691,15 @@ public final class AirCombatController {
             if(current!=null&&commitSweep(current,"FUNNEL_CAPTURE")){attack();return true;}
         }
         boolean due=captureIgnitionAt>=0&&maid.level().getGameTime()>=captureIgnitionAt;
-        var capture=planning.capture(start,funnelAtlas,aim,fireworks.remainingBoostTicks(),sweepRate(),minimum,captureDurations(),due,space);
+        var durations=captureDurations();
+        var capture=planning.capture(start,funnelAtlas,aim,fireworks.remainingBoostTicks(),sweepRate(),minimum,durations,due,space);
         boolean pending=planning.lastPending();
         // A sampled map is incomplete. A locally certifiable opportunity can still win
         // when none of its windows can currently be captured, without abandoning the map.
         if(capture==null&&(sweepPending||!pending)&&trySweepingEntry()){attack();return true;}
         if(capture!=null){
             if(captureWindow!=capture.window()){captureWindow=capture.window();captureIgnitionAt=-1;}
+            captureSection=capture.section();
             captureTrace=capture.trace();captureTraceAt=maid.level().getGameTime();
             if(capture.duration()>=0){
                 if(capture.igniteIn()==0){
@@ -698,28 +708,30 @@ public final class AirCombatController {
                     captureIgnitionAt=-1;
                 }else if(captureIgnitionAt<0)captureIgnitionAt=maid.level().getGameTime()+capture.igniteIn();
             }else captureIgnitionAt=-1;
-        }else if(!pending){captureWindow=AttackFunnelPlanner.nearest(start,funnelAtlas);captureIgnitionAt=-1;captureTrace=List.of();}
-        if(captureWindow==null)captureWindow=AttackFunnelPlanner.nearest(start,funnelAtlas);
+        }else if(!pending){captureWindow=AttackFunnelPlanner.nearest(start,funnelAtlas);captureSection=null;captureIgnitionAt=-1;captureTrace=List.of();}
+        if(captureWindow==null){captureWindow=AttackFunnelPlanner.nearest(start,funnelAtlas);captureSection=null;}
         var w=captureWindow;
+        if(captureSection==null)captureSection=AttackFunnelPlanner.section(start,w);
         if(state!=AirCombatState.REPOSITION){endCharge();compactGoal=null;transition(AirCombatState.REPOSITION,"FUNNEL_CAPTURE");}
-        var command=w.dynamic(predictionStart(),fireworks.remainingBoostTicks())
+        var command=capture!=null?capture.first():w.dynamic(predictionStart(),fireworks.remainingBoostTicks())
             ?SweepingAttackPlanner.command(predictionStart(),w.path(),aim,false,fireworks.remainingBoostTicks(),gravity(),sweepRate())
-            :AttackFunnelPlanner.captureCommand(predictionStart(),w,fireworks.remainingBoostTicks(),gravity(),sweepRate());
+            :AttackFunnelPlanner.captureCommand(predictionStart(),w,captureSection,fireworks.remainingBoostTicks(),gravity(),sweepRate());
         // A pending/rejected full capture gives no ignition permission. Only local steering
         // continues, followed by the same live swept-body guard as other pending planners.
-        var entry=w.path().entry.a();waypoint=new Vec3(entry.x(),entry.y(),entry.z());
-        if(capture==null&&!pending){
-            var tangent=w.path().entry.b().subtract(entry).unit();
-            var align=entry.subtract(tangent.scale(8));
-            guide("FUNNEL_ALIGN",new Vec3(align.x(),align.y(),align.z()),entry.y(),false,0,0,Double.NaN);
-        }else{
+        var entry=captureSection.center();waypoint=new Vec3(entry.x(),entry.y(),entry.z());
+        {
             flightPlan=new GlidePlanner.Plan(command.yaw(),command.pitch(),command.yawRate(),command.pitchRate(),capture==null?GlidePlanner.Mode.GLIDE:GlidePlanner.Mode.RECOVERY,
                 capture!=null,capture==null?Double.POSITIVE_INFINITY:capture.cost(),0,capture==null?0:capture.captureTicks(),0);applyPlan();
         }
         debugEntry=waypoint;var tangent=w.path().entry.b().subtract(entry).unit();debugEntryDirection=new Vec3(tangent.x(),tangent.y(),tangent.z());
         route=new AirRoute(List.of(new AirRoute.Waypoint("FUNNEL_CAPTURE",waypoint)));
         diagnostic="FUNNEL_"+(w.spatial(start)?"SPATIAL_":"")+(capture!=null?"CAPTURABLE":pending?"CAPTURE_PENDING":"REPOSITION")+":"+w.id();
-        energyDecision=capture!=null&&capture.duration()>=0?"capture_pulse_"+capture.duration()+"_in_"+capture.igniteIn():"capture_coast";
+        energyReserve=AttackFunnelPlanner.reserve(start,captureSection,gravity());
+        energyDecision=capture!=null?(capture.duration()>=0?"capture_pulse_"+capture.duration()+"_in_"+capture.igniteIn():"capture_coast"):
+            pending?(start.vy()<-.04&&energyReserve<.2?"capture_reserve_pulse_pending":"capture_pending"):"capture_coast_and_pulse_rejected";
+        pulseReview=capture!=null?(capture.duration()>=0?"capture_all_lifetimes_strike_exit":"capture_coast_strike_exit"):
+            pending?"capture_async_pending":fireworks.active()?"capture_active_pulse_no_route":fireworks.cooldown(maid)>0?"capture_cooldown":
+                durations.isEmpty()?"capture_no_inventory_duration":"capture_no_complete_route";
         return true;
     }
     private boolean trySweepingEntry() {
@@ -1068,6 +1080,11 @@ public final class AirCombatController {
         }
     }
     private void terrainSafety() {
+        // Failure to complete Capture/Strike/Exit does not certify a local collision.
+        // Keep capture feedback continuous; validateImmediateMotion still sweeps the
+        // actual next movement, and no attack/rocket can bypass its full certificate.
+        if(state==AirCombatState.REPOSITION&&!route.waypoints().isEmpty()
+            &&route.waypoints().getFirst().name().equals("FUNNEL_CAPTURE"))return;
         if(flightPlan!=null&&!flightPlan.safe()&&flightPlan.mode()==GlidePlanner.Mode.GLIDE&&planning.waiting())return;
         if (flightPlan==null || GlidePlanner.ordinary(flightPlan)) return;
         endCharge();
@@ -1314,7 +1331,7 @@ public final class AirCombatController {
     }
     public void release() {
         planning.close();
-        funnelAtlas=null;captureWindow=null;captureIgnitionAt=-1;captureTrace=List.of();
+        funnelAtlas=null;captureWindow=null;captureSection=null;captureIgnitionAt=-1;captureTrace=List.of();commandedAcquire=false;
         sweepPath=null;sweepTrace=List.of();
         compactGoal=null; chainCandidate=null; chainTarget=null; chainCenter=null; sampledSlope=null;
         if(state==AirCombatState.WATER_ESCAPE) maid.getSwimManager().setWantToSwim(previousWantToSwim);
@@ -1340,7 +1357,7 @@ public final class AirCombatController {
         WineFoxSkyfarer.LOGGER.info("[WFS debug] async {}",planning.detail());
         if (flightPlan!=null) WineFoxSkyfarer.LOGGER.info("[WFS debug] maid={} planner={} safe={} clearTicks={} energyReserve={} rocketTicks={} exit={} corridor=[{}] pitch={}",
             maid.getUUID(),flightPlan.mode(),flightPlan.safe(),flightPlan.clearTicks(),energyReserve,fireworks.remainingBoostTicks(),exitStyle,laneStatus,flightPlan.pitch());
-        if(flightRequest!=null)WineFoxSkyfarer.LOGGER.info("[WFS debug] maid={} energyDecision={} pulseReview={} cooldown={} contactDistance={} contactHeight={} signedSlope={}",maid.getUUID(),energyDecision,pulseReview,fireworks.cooldown(maid),flightRequest.distance(),flightRequest.height(),flightRequest.slope());
+        WineFoxSkyfarer.LOGGER.info("[WFS debug] maid={} energyDecision={} pulseReview={} cooldown={} contactDistance={} contactHeight={} signedSlope={}",maid.getUUID(),energyDecision,pulseReview,fireworks.cooldown(maid),flightRequest==null?Double.NaN:flightRequest.distance(),flightRequest==null?(captureSection==null?Double.NaN:captureSection.center().y()):flightRequest.height(),flightRequest==null?Double.NaN:flightRequest.slope());
         if(state==AirCombatState.REPOSITION && preferred!=null && compactGoal!=null) {
             var slope=sampleSlope(preferred);
             WineFoxSkyfarer.LOGGER.info("[WFS debug] maid={} entryDistance={} entryAngle={} staging={} goalY={} supportY={} targetFeetY={} slopeNear=({}, {}) slopeWide=({}, {}) samples={} radius={} aimOffset={}",
@@ -1367,6 +1384,8 @@ public final class AirCombatController {
         }
         data.putString("planner_status",(planningPending||planning.waiting()?"waiting":"ready")+" "+planning.detail());
         data.putString("maid_name", maid.getName().getString()); data.putString("reason", diagnostic); data.putString("scan", lastScan);
+        data.putString("energy_decision",energyDecision);data.putString("pulse_review",pulseReview);
+        data.putDouble("capture_reserve",energyReserve);
         data.putDouble("clearance", clearance); data.putBoolean("charging", maid.isUsingItem() && SpearCompat.isChargeWeapon(maid.getUseItem()));
         data.putInt("charge_ticks", maid.getTicksUsingItem()); data.putInt("charge_delay", SpearCompat.delayTicks(maid.getMainHandItem()));
         data.putDouble("pitch", maid.getXRot());

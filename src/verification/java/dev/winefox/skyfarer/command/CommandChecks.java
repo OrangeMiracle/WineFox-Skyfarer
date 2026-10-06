@@ -8,6 +8,13 @@ import org.objectweb.asm.tree.*;
 
 public final class CommandChecks {
     public static void main(String[] args) throws Exception {
+        var manager=new ClassNode();new ClassReader(java.nio.file.Files.readAllBytes(java.nio.file.Path.of("build/classes/java/main/dev/winefox/skyfarer/command/CommandManager.class"))).accept(manager,0);
+        require(manager.methods.stream().filter(m->m.name.startsWith("lambda$pick$")).anyMatch(m->{
+            for(var insn:m.instructions)if(insn instanceof TypeInsnNode t&&t.getOpcode()==org.objectweb.asm.Opcodes.INSTANCEOF
+                &&t.desc.equals("com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid")){
+                var next=t.getNext();return next instanceof JumpInsnNode j&&j.getOpcode()==org.objectweb.asm.Opcodes.IFNE;
+            }return false;
+        }),"server mark ray predicate must reject every EntityMaid before nearest-hit selection");
         var a=new MarkQueue();var b=new MarkQueue();var ids=new ArrayList<UUID>();
         for(int i=0;i<6;i++){ids.add(new UUID(0,i));a.toggle(ids.get(i),i==5);}
         require(a.ids().equals(ids.subList(1,6)),"sixth mark must evict oldest");

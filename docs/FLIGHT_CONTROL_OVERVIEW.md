@@ -1,10 +1,12 @@
 # 飞控系统总设计与当前实现
 
-核对日期：2026-10-05。源码基线：Gradle 项目版本 `0.6.2`。本文描述当前源码，不是未来设计提案；mapped 物理依据与完整路线认证详见 [VANILLA_PHYSICS.md](VANILLA_PHYSICS.md)。
+核对日期：2026-10-05。源码基线：Gradle 项目版本 `0.6.3`。本文描述当前源码，不是未来设计提案；mapped 物理依据与完整路线认证详见 [VANILLA_PHYSICS.md](VANILLA_PHYSICS.md)。
 
 本文面向修改飞控算法、状态机和路径规划，以及排查飞行行为的维护者。新会话先读 [PROJECT_INDEX.md](PROJECT_INDEX.md)，线程池、快照、缓存与结果有效性细节继续读 [ASYNC_PLANNING.md](ASYNC_PLANNING.md)。配置、HUD 和命令见 [CONFIG_DEBUG_REFERENCE.md](CONFIG_DEBUG_REFERENCE.md)，验证入口见 [VALIDATION.md](VALIDATION.md)。
 
 0.6.2 在原有路线族之上增加目标中心的 [Attack Funnel / Capture](ATTACK_FUNNELS.md)。目标已选定时即可异步搜索，APPROACH/REPOSITION 优先接入已知窗口；旧 Sweep/Lane 是有限地图的补充。以下当前姿态候选、Compact 和普通入口规则描述该补充分支，不再表示必须先随机飞到合适姿态才开始找攻击窗口。
+
+0.6.3 改为成功轨迹群的 17 截面包络，显式采样俯冲/上升切线及持续转弯；REPOSITION 比较前段截面并执行 Capture 认证首步。合法窗口跨后台补充保持，Capture 失败不再切回 FUNNEL_ALIGN 或被误判成局部碰撞。下降储备参考下一截面，coast 无法完成接入便异步评估库存烟花全部寿命，与谷底净空无关；承诺攻击仍要求当前 Rejoin。日志根因见 [FIELD_ANALYSIS_0.6.3](FIELD_ANALYSIS_0.6.3.md)。
 
 **本文属于实现的一部分。** 改动控制流程、状态条件、预测公式、Planner、线程边界或参数含义时同步更新。若本文与源码冲突，以源码为准并修正文档。历史迭代原因可查 [buildHistory.md](../buildHistory.md)，不要把旧版本描述套用于当前实现。
 
@@ -136,7 +138,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 - **目的/进入：** 闲置入口；构造时和 `release()` 后进入，把普通地面行为交还 TLM。
 - **输入：** 工作资格、主人/工作区域、装备、地面状态、`retryAt`、扫描节拍。
 - **规划/控制：** 不飞行、不向 Worker 请求全局路径。`acquire()` 满足条件后发起 `TARGET_ACQUIRE`；缺少装备等只写诊断原因。
-- **退出：** 默认每 `scan_interval_ticks=10` ticks 尝试，释放后的 `launch_retry_ticks=60` ticks 内不能重新起飞。入水且有可用鞘翅和燃料/仍活动的火箭时可独立进入 `WATER_ESCAPE`。
+- **退出：** 普通扫描默认每 `scan_interval_ticks=10` ticks 尝试，释放后等待 `launch_retry_ticks=60`。合法明确指令重置旧 retry 并跳过下一次扫描节拍，进入 TARGET_ACQUIRE；仍检查主人/装备/AI/着地及完整起飞通道。入水且有可用鞘翅和燃料/活动火箭时可独立进入 WATER_ESCAPE。
 - **失败：** 保持地面，不通过临时生成燃料或强制传送来制造可起飞条件。
 
 ### 4.2 `TARGET_ACQUIRE`
@@ -198,7 +200,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 ### 4.9 `REPOSITION`
 
-**窗口优先：** 有有效地图时首先比较当前状态到各个已知入口的完整 Capture；先 coast，再验证最小足够库存 duration 的现在/延迟脉冲。位置、动量方向、速度、pitch/vy、活动火箭和启动延迟同时满足门槛，且最终 Rejoin 成功，才进入攻击。等待时继续廉价反馈与实时身体检查，已明确无完整捕获方案时采用局部 Glide；已有局部 Sweep 结果仍可提交。只有无有效地图时才完整回到下面的 Compact 规则。详见 [窗口与捕获](ATTACK_FUNNELS.md)。
+**窗口优先：** 有有效地图时比较当前状态到各窗口前段截面的完整 Capture；先 coast，再验证最小足够库存 duration 的现在/延迟脉冲。位置、动量方向、速度、pitch/vy、活动火箭和启动延迟同时满足门槛，且最终 Rejoin 成功，才进入攻击。等待或无解时保持截面反馈与实时身体检查，不把完整攻击无解当作局部碰撞；已有局部 Sweep 结果仍可提交。只有无有效地图时才完整回到下面的 Compact 规则。详见 [窗口与捕获](ATTACK_FUNNELS.md)。
 
 - **目的：** 在固定局部区域内用爬升减速换取转向能力，恢复可用入口；不是继续向外高速飞到远端再绕圈。
 - **进入/输入：** 入口太近、未稳定、夹角过大、通道堵塞或低能量攻击恢复；目标、采样坡度、当前动量、前摇/触及距离。

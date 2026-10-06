@@ -46,7 +46,17 @@ public final class FunnelAsyncChecks {
         var absent=new PlanningTask.FunnelResult(result.atlas(),Map.of(CollisionSnapshot.key(200,200,200),AIR));
         require(!session.coverageValid(absent),"evicted/missing proof coverage accepted");
         require(!task(3,physics[0]).compatible(original),"significant movement retained target map compatibility");
-        session.begin(tick+=41,"map","target",1,1);pending(session,original);
+        long stableGeneration=session.generation();
+        var stableAtlas=result.atlas();
+        for(int i=0;i<100;i++){
+            PlannerSession.serverTick();session.begin(++tick,"map","target",1,1);
+            var current=((PlanningTask.FunnelResult)session.query(original)).atlas();
+            require(current.windows().containsAll(stableAtlas.windows()),"legal stationary windows replaced during refresh at "+i);
+            if(current.windows().size()==stableAtlas.windows().size())require(current==stableAtlas,"no-op refresh replaced Atlas identity");
+            stableAtlas=current;
+            Thread.sleep(3);
+        }
+        require(session.generation()==stableGeneration,"stationary map changed generation");
         pending(session,task(3,physics[0])); // significant target movement, same UUID
         long generation=session.generation();
         session.begin(++tick,"map","different-target",1,1);
@@ -61,10 +71,25 @@ public final class FunnelAsyncChecks {
         pending(session,task(1,physics[0]));generation=session.generation();session.begin(++tick,"map","different-target",2,1);
         require(session.generation()>generation,"configuration change kept windows");
         session.close();require(session.pendingCount()==0&&session.cellCount()==0,"closed atlas retained resources");
-        earlyGroundWindow(false);earlyGroundWindow(true);PlannerSession.stop();
+        earlyGroundWindow(false);earlyGroundWindow(true);earlyGroundWindow(true,true);markedGroundLaunch();PlannerSession.stop();
         System.out.println("Funnel async: bounded cold map, cache/age/context invalidation, cancelled mailbox, ground prewarm and real controller coast/pulse Capture-Rejoin-hit passed.");
     }
+    private static void markedGroundLaunch()throws Exception{
+        var world=new dev.winefox.skyfarer.replay.ReplayWorld();
+        var maid=new com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid(world,new net.minecraft.world.phys.Vec3(0,0,0));
+        maid.owner=new net.minecraft.world.entity.player.Player(world,new net.minecraft.world.phys.Vec3(0,0,0));
+        var target=new net.minecraft.world.entity.LivingEntity(world,new net.minecraft.world.phys.Vec3(0,0,12));
+        var controller=new dev.winefox.skyfarer.ai.AirCombatController(maid);controller.release();
+        controller.acceptCommand(target);world.advance(1);controller.tick();
+        require(controller.state()==dev.winefox.skyfarer.ai.AirCombatState.TARGET_SELECTED,"explicit nearby command waited for scan/retry cooldown");
+        boolean takeoff=false;
+        for(int tick=2;tick<65;tick++){world.advance(tick);controller.tick();if(controller.state()==dev.winefox.skyfarer.ai.AirCombatState.TAKEOFF){takeoff=true;break;}}
+        require(takeoff,"marked nearby target never completed bounded asynchronous launch preparation");controller.release();
+    }
     private static void earlyGroundWindow(boolean needy)throws Exception{
+        earlyGroundWindow(needy,false);
+    }
+    private static void earlyGroundWindow(boolean needy,boolean descending)throws Exception{
         var world=new dev.winefox.skyfarer.replay.ReplayWorld();
         var maid=new com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid(world,new net.minecraft.world.phys.Vec3(0,0,-10));
         maid.owner=new net.minecraft.world.entity.player.Player(world,new net.minecraft.world.phys.Vec3(0,0,0));
@@ -82,15 +107,18 @@ public final class FunnelAsyncChecks {
         var tangent=window.path().entry.b().subtract(window.path().entry.a()).unit();
         maid.pose=net.minecraft.world.entity.Pose.FALL_FLYING;maid.glide=true;maid.ground=false;
         double back=needy?30:6;
-        maid.pos=new net.minecraft.world.phys.Vec3(entry.x()-tangent.x()*back,entry.y()-.4,entry.z()-tangent.z()*back);
-        maid.velocity=needy?new net.minecraft.world.phys.Vec3(tangent.x()*.15,-.05,tangent.z()*.15):new net.minecraft.world.phys.Vec3(entry.vx(),entry.vy(),entry.vz());
+        maid.pos=new net.minecraft.world.phys.Vec3(entry.x()-tangent.x()*back,entry.y()-.4-(descending?3:0),entry.z()-tangent.z()*back);
+        double speed=descending?.3:.15;
+        maid.velocity=needy?new net.minecraft.world.phys.Vec3(tangent.x()*speed,descending?-.2:-.05,tangent.z()*speed):new net.minecraft.world.phys.Vec3(entry.vx(),entry.vy(),entry.vz());
         maid.inventory.duration=0;maid.yaw=(float)(entry.yaw()+(needy?0:12));maid.pitch=(float)entry.pitch();
         dev.winefox.skyfarer.config.SkyfarerSettings.setDebugLogging(true);
         dev.winefox.skyfarer.replay.ReplayWorld.events.clear();controller.acceptCommand(target);
-        boolean capture=false,commit=false,hit=false;int startTick=(int)world.time+1;
+        boolean capture=false,commit=false,hit=false,pulseReviewed=false;int startTick=(int)world.time+1,firstRocket=-1;
         for(int tick=startTick;tick<startTick+100;tick++){
             world.advance(tick);controller.tick();
             var debug=controller.debugSnapshot();capture|=debug.getString("reason").startsWith("FUNNEL_");
+            pulseReviewed|=debug.getString("pulse_review").startsWith("capture_");
+            if(firstRocket<0&&maid.inventory.consumed>0){firstRocket=tick-startTick;if(descending)require(maid.pos.y>8,"pulse waited until the valley floor was close");}
             commit|=dev.winefox.skyfarer.replay.ReplayWorld.events.stream().anyMatch(e->e.contains("reason=FUNNEL_CAPTURE:"));
             var v=maid.velocity;var state=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.yaw,maid.pitch,PhysicsContext.VANILLA);
             var aim=new FlightPrediction.Aim(1,9,10,.3,7.8,0,0,0,0,2.25,.1,0);
@@ -104,6 +132,7 @@ public final class FunnelAsyncChecks {
         }
         require(capture&&commit&&hit,"actual controller did not capture/rejoin/hit the early window: needy="+needy+" capture="+capture+" commit="+commit+" hit="+hit+" state="+controller.state());
         require(needy?maid.inventory.consumed>=1:maid.inventory.consumed==0,"capture inventory action disagrees with coast/pulse certificate");
+        if(descending)require(pulseReviewed&&firstRocket>=0&&firstRocket<20,"descending reserve failed to trigger early async capture pulse evaluation");
         controller.release();
     }
 }
