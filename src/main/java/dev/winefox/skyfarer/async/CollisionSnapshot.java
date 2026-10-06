@@ -27,10 +27,6 @@ public record CollisionSnapshot(Map<Long,Cell> cells,double width,double height,
         private final LinkedHashSet<Long> missing=new LinkedHashSet<>();
         private Bounds bounds;
         private boolean exploratory;
-        private Map<Long,Cell> coverage;
-        /** Selected funnel proofs retain only the numeric cells they actually depended on. */
-        public Space proofSpace(){var result=new Space(snapshot,cancelled);result.bounds=bounds;result.exploratory=exploratory;result.coverage=new HashMap<>();return result;}
-        public Map<Long,Cell> coverage(){return coverage==null?Map.of():Map.copyOf(coverage);}
         public void explore(){exploratory=true;}
         public void navigation(Bounds bounds){this.bounds=bounds;}
         public Space(CollisionSnapshot snapshot,AtomicBoolean cancelled){this.snapshot=snapshot;this.cancelled=cancelled;}
@@ -38,7 +34,6 @@ public record CollisionSnapshot(Map<Long,Cell> cells,double width,double height,
         private Cell get(int x,int y,int z){
             if(cancelled.get()||Thread.currentThread().isInterrupted())throw new CancellationException();
             long key=key(x,y,z);var c=snapshot.cells.get(key);
-            if(coverage!=null&&c!=null)coverage.put(key,c);
             if(c==null&&missing.size()<192)missing.add(key);
             return c;
         }

@@ -30,8 +30,9 @@ public final class AttackLanePlanner {
         for(int fit=0;fit<2;fit++){
             double gx=fit==0?r.slopes.nearX():r.slopes.wideX(),gz=fit==0?r.slopes.nearZ():r.slopes.wideZ();
             if(fit==1&&Math.hypot(gx-r.slopes.nearX(),gz-r.slopes.nearZ())<.025)continue;
-            double gradient=Math.clamp(gx*r.dx+gz*r.dz,-1.5,1.5);
-            if(Math.abs(gradient)<=.06&&s.y()>=r.y-.2)continue;
+            double gradient=Math.clamp(gx*r.dx+gz*r.dz,-AttackLinePlanner.MAX_GRADE,AttackLinePlanner.MAX_GRADE);
+            // Flat ground does not imply a level airborne attack; search the signed direct grade too.
+            if(Math.abs(gradient)<=.06&&Math.abs(s.y()-r.y)<3)continue;
             var line=AttackLinePlanner.choose(s,r.x,r.y,r.z,r.dx,r.dz,gradient,-gx*r.dz+gz*r.dx,r.minimum,r.exit,r.expansion,r.fuel,r.gravity,
                 (ax,ay,az,bx,by,bz)->space.clear(ax,ay,az,bx,by,bz,r.side,r.vertical));
             if(line!=null&&(best==null||line.cost()<best.cost())){best=line;bestX=gx;bestZ=gz;}

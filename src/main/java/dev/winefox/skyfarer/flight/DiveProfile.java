@@ -6,5 +6,9 @@ public final class DiveProfile {
     public static double minimumDistance(double rise,double speed,double gravity) {
         return Math.max(12,speed*(Math.sqrt(2*Math.max(0,rise-2)/Math.max(.01,gravity))+8));
     }
+    /** Search admission only. Smooth-bottom geometry still uses minimumDistance above. */
+    public static double attackDistance(double rise,double speed,double gravity) {
+        return Math.min(minimumDistance(rise,speed,gravity),Math.max(4,Math.abs(rise)/AttackLinePlanner.MAX_GRADE));
+    }
     public static double slope(double rise,double distance) { return rise*(distance+8)/(distance*distance); }
 }

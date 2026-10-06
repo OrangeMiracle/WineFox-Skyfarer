@@ -7,19 +7,34 @@ Daemon will be stopped at the end of the build
 注: 某些输入文件使用或覆盖了已过时的 API。
 注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
 
-> Task :compileControllerReplay
-
-Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
-> Task :verifyFunnelAsync
-Funnel async: bounded cold map, cache/age/context invalidation, cancelled mailbox, ground prewarm and real controller coast/pulse Capture-Rejoin-hit passed.
-
 > Task :processResources UP-TO-DATE
 > Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyVerticalAttacks
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+dive contact=17 pitch=61.13945007324219 style=VERTICAL_DIVE exitTicks=35
+climb contact=13 pitch=-51.91439437866211 style=VERTICAL_CLIMB_RIGHT exitTicks=49
+
+> Task :compileControllerReplay
+
+> Task :verifyCombatEntries
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+low-energy-summit hit=19 landed=128 upward=false maxSlowTicks=0 rockets=2
+upward-entry hit=90 landed=139 upward=true maxSlowTicks=0 rockets=2
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifySweepingReplay
+Occluded hillside mirror=1 curved hit=53 continued exit=true landed=142
+Occluded hillside mirror=-1 curved hit=53 continued exit=true landed=139
+
 > Task :jarJar NO-SOURCE
 > Task :jar
 
 [Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
 
-BUILD SUCCESSFUL in 37s
-6 actionable tasks: 4 executed, 2 up-to-date
+BUILD SUCCESSFUL in 1m 12s
+9 actionable tasks: 7 executed, 2 up-to-date
 Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

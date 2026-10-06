@@ -10,22 +10,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
 public final class DebugSnapshot {
-    /** Completed server windows only; at most four tubes and eighteen sparse sections per tube. */
-    public static void funnels(CompoundTag data,dev.winefox.skyfarer.flight.AttackFunnelPlanner.Atlas atlas){
-        var tubes=new ListTag();
-        if(atlas!=null)for(var window:atlas.windows().stream().limit(4).toList()){
-            var tube=new CompoundTag();var frames=new ListTag();var points=window.tube();
-            for(int i=0;i<Math.min(18,points.size());i++){
-                var p=points.get(i);var frame=new CompoundTag();vector(frame,"center",new Vec3(p.x(),p.y(),p.z()));
-                var section=window.sections().isEmpty()?null:window.sections().get(i);
-                frame.putDouble("width",section==null?window.radius():section.width());
-                frame.putDouble("height",section==null?window.radius():section.height());
-                frame.putDouble("radius",section==null?window.radius():section.width());frames.add(frame);
-            }
-            tube.put("frames",frames);tube.putInt("id",window.id());tubes.add(tube);
-        }
-        data.put("attack_funnels",tubes);
-    }
     public static void corridor(CompoundTag data,EntityMaid maid,java.util.List<dev.winefox.skyfarer.flight.GlidePlanner.TracePoint> path) {
         var list=new ListTag();
         for(var point:path) {var t=new CompoundTag();var s=point.state();vector(t,"center",new Vec3(s.x(),s.y(),s.z()));

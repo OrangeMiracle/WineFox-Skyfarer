@@ -12,6 +12,11 @@ public final class DispatchPolicy {
         return creative?(creativeRange==0||distance<=creativeRange):admitted(home,false,distance,homeRange);
     }
     public static boolean transit(boolean targetLoaded,double distance) {return !targetLoaded||distance>HANDOFF_RANGE;}
+    /** Persisted work-mode hints cannot veto discovery; the loaded entity supplies authority. */
+    public static boolean discover(boolean known,boolean home,boolean creative,boolean survival,double distance,double homeRange,double creativeRange){
+        return creative&&admitted(home,true,distance,homeRange,creativeRange)
+            ||survival&&(distance<=homeRange||known&&!home);
+    }
     public static boolean transit(boolean targetLoaded,double distance,boolean creative){return !targetLoaded||distance>handoffRange(creative);}
     public static boolean retainCreative(boolean creative,boolean marked,boolean alive,boolean loaded) {
         return creative&&marked&&alive&&loaded;

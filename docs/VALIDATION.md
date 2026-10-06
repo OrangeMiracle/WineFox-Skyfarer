@@ -1,6 +1,10 @@
 # 验证、离线回放与构建
 
-核对日期：2026-10-05。实现基线：Gradle 项目版本 0.6.3。本轮扩展静止窗口、面积/垂直转弯、下降补能、标记起飞与服务端 Maid 排除检查；保留既有物理差分和全路线包络验证定义。
+核对日期：2026-10-05。实现版本 0.6.1.1，基于用户明确指定的本地 606f79d（0.6.1）。本轮只做下述针对性验证，未执行 build/check 或全量 verify，未启动 Minecraft。
+
+本轮证据：`tools/baseline-vertical-final.log` 的陡角回放验证约 61.14° 俯冲和 −51.91° 转弯上升接触、完整离场、12 种上升剩余烟花寿命，以及身体/射线拒绝；低能量/上升进场与左右遮挡山腰共 4 个真实控制器生命周期完成命中和落地。`tools/baseline-delivery.log` 记录编译、标记排除、远程 wake 生命周期与打包。中间失败日志不是交付证据。
+
+`verifyRemoteWake` 使用生产 `RemoteWakeScheduler`、`DispatchPolicy.discover` 和实际 registry NBT 保存/加载：覆盖两只卸载 Home 同时合法、13 个候选分批调度、任务结束后再次唤醒两只、旧/未知角色记录重建、首批失败不饿死后批、同 generation 重试、全服 8 个上限、ticket 创建/资格失败、generation 变更和关服释放。外部区块异步加载、接单与 Home 返回由有界夹具模拟；不声称验证了真实 NeoForge 读盘时序或 TLM 实机传送。
 
 本文属于工程实现的一部分。修改验证入口、夹具、场景或发布方式时必须更新本文及 [项目索引](PROJECT_INDEX.md)。飞控语义见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)，并发保证见 [ASYNC_PLANNING.md](ASYNC_PLANNING.md)。历史构建与问题修复原因仍记入 [buildHistory.md](../buildHistory.md)，不以本文代替 changelog。
 
@@ -11,8 +15,6 @@
 当前依赖 Java 21、Gradle Wrapper 9.2.1、NeoForge 21.1.250、TLM 1.5.3、Spears 1.8.0。可选 YSM 编译/字节码检查使用 `tools/ysm-reference.jar`。实际构建定义只有 main mod 和独立验证/回放任务，没有配置供当前使用的 runClient/GameTest 流程。
 
 在仓库根目录用 PowerShell：
-
-0.6.3 按用户要求只运行六项直接相关检查及编译/打包，**没有运行下方完整 build 示例**。具体任务与日志见第 7 节。
 
 ```powershell
 # 完整发布检查：build → check → 所有 26 项 verify 任务
@@ -74,8 +76,8 @@
 | `verifyAsyncPlanning` | `async.AsyncPlannerChecks` | 不可变快照、世界边界坐标键、未知拒绝、导航范围、实际 Worker、配置冻结、主线程所有权、generation/目标/阶段/维度/配置失效、取消、有界队列、重启、接触结果年龄/姿态容差 |
 | `verifyAsyncSweep` | `async.AsyncSweepChecks` | 完整 snapshot 可生成山腰曲线；移动女仆冷快照可在有限 tick 内取得候选。**不独自证明候选可安全执行** |
 | `verifyPlannerLoad` | `async.PlannerLoadChecks` | 24 个 session、100 ticks 的合成异步调度；方块读取/队列/每女仆任务和 cell 上限、所有会话获得采集、有效结果、停止清理 |
-| `verifyAttackFunnels` | `flight.AttackFunnelChecks` | 面积、俯冲/上升/各自持续转弯、山腰、反向物理否决、下游截面捕获、低速门槛、前摇过冲、最小安全火箭全部 12 寿命、coast 优先 |
-| `verifyFunnelAsync` | `async.FunnelAsyncChecks` | 冷快照不可执行、100 tick 连续合法窗口、同 Input 补空槽/无变化身份、证明覆盖与上下文失效、地面预热、coast/pulse/下降控制器 Capture→Rejoin→命中、近距指令立即选择及异步安全起飞 |
+| `verifyRemoteWake` | `command.RemoteWakeChecks` | 生产有界唤醒调度器、发现策略、registry NBT 往返、重复 Home 任务、批次公平性、重试和释放 |
+| `verifyVerticalAttacks` | `flight.VerticalAttackChecks` | 50–70° 候选与实际陡角接触、转弯上升、12 个剩余烟花寿命、完整离场、身体/射线拒绝、70° 坡面拟合 |
 
 `verifyDebugTools` 显式使用 [offline-log4j2.xml](../tools/offline-log4j2.xml)，避免依赖 Jar 的游戏日志配置。API/字节码类使用编译依赖作为验证 classpath；其他纯算法任务不会引导一个游戏实例。
 
@@ -131,21 +133,15 @@
 
 排查顺序：先看失败任务/断言和最后有效状态，再读对应 TSV/events，核对参数及源代码。并发修改至少看 `waiting/gen/requested/jobs/queue/stale/failed`；区别“未取得快照”“结果不兼容”“搜索无路线”“立即碰撞防线拒绝”，不能一概增加超时。具体指标语义见 [异步架构](ASYNC_PLANNING.md#10-诊断指标与验证入口)。
 
-改变数值算法先跑对应小型任务，状态或 Planner 接口变化再跑相关 Controller/Dispatch/Sweeping；验证范围遵循当前任务要求，不为了保险自动扩大为完整 `build`。一旦发现新类型失败，应添加有意义的反例并覆盖恢复/收尾，不只放宽断言使当前日志通过。
+改变数值算法先跑对应小型任务，状态或 Planner 接口变化再跑相关 Controller/Dispatch/Sweeping；发布前完整 `build`。一旦发现新类型失败，应添加有意义的反例并覆盖恢复/收尾，不只放宽断言使当前日志通过。
 
 ## 7. 当前构建证据与已知缺口
 
-0.6.3 本轮六项为 `verifyAttackFunnels`、`verifyFunnelAsync`、`verifyAsyncPlanning`、`verifyCommandDispatch`、`verifyDebugTools`、`verifySweepingReplay`。首轮 [v063-targeted.log](../tools/v063-targeted.log) 成功（42s）；垂直持续转弯、下降回放与后台地图补充在后续迭代完善。`v063-regression.log` / `v063-final.log` 含中间失败，不能当作全部成功的交付证据。`v063-final.log` 中数值 Funnel、指挥镜、Debug、异步边界和双侧山腰已通过，但静止地图刷新断言发现冷快照子集替换，随后修复为保留合法窗口、仅补空槽。修复后的 [v063-cache-final.log](../tools/v063-cache-final.log) 成功（49s），重跑编译、FunnelAsync、AsyncPlanning 并打包。
+历史 **0.6.1** 的完整构建见 [tools/v061-acceptance.log](../tools/v061-acceptance.log)：**BUILD SUCCESSFUL in 8m 28s**。当时已有的 **24 项 verify 任务均执行并通过**，未使用场景筛选；包含 21 个 Controller、7 个 Dispatch、2 个特殊进场、2 个镜像曲线场景，以及 18,000 步物理差分和完整攻击包络检查。连续上坡与孤立高处上升入口在同一完整构建中通过。API、并发/队列、配置冻结、Level/物理变化和陈旧结果检查亦通过。**此历史记录不代表 0.6.1.1 全量重跑，当前限定范围见页首。**
 
-释放失效地图的旧 footprint 后，[v063-delivery.log](../tools/v063-delivery.log) 成功（1m 13s）：编译、FunnelAsync、AsyncPlanning、双侧山腰与 jar；左右山腰均第 53 tick 命中、第 143 tick 落地。最后将 Capture 提前到旧 ascent staging 查询之前，[v063-capture-priority.log](../tools/v063-capture-priority.log) 成功（41s），编译、实际 Capture/下降/起飞回归及最终打包通过。
+最终 Jar 大小、SHA-256 与逐项证据记录在 [buildHistory](../buildHistory.md)。`tools/physics-*.log`、`v061-release`、`v061-verified`、`v061-final`、`v061-complete`、`v061-validation` 是中间验证记录，其中存在失败；名字包含 final/release 并不代表交付成功。此前 0.6.0 的独立记录保留在 [tools/v060-release.log](../tools/v060-release.log)，不与本轮结果混用。
 
-0.6.2 的历史针对性结果保留于 [v062-targeted.log](../tools/v062-targeted.log) 和 [v062-capture-final.log](../tools/v062-capture-final.log)，不作为本轮验证。
-
-0.6.1 的历史完整构建保留于 [tools/v061-acceptance.log](../tools/v061-acceptance.log)，当时 24 项全部通过（含 21 个 Controller、7 个 Dispatch、2 个特殊进场、2 个镜像曲线、18,000 步物理差分）；这不是本轮重新执行的证据。
-
-最终 Jar 大小、SHA-256 与逐项证据记录在 [buildHistory](../buildHistory.md)。`tools/funnel-*.log` 属于 0.6.2 迭代记录；本轮 `v063-first/regression/final.log` 也含中间失败，应结合最后修复后的成功日志查看。
-
-本轮 Gradle / Mod 元数据版本为 0.6.3。Jar 内容、实际版本及哈希核对结果见 buildHistory；没有运行 build/check 或其他 20 项 verify，未启动 Minecraft。
+Gradle、最终 Jar 的 Manifest 与 Mod 元数据已核对统一为 0.6.1，修正此前 0.6.0/0.5.4 的已知差异。最终包的模块、Mixin/语言资源及夹具隔离均已检查；未启动 Minecraft。
 
 下次交付至少检查：
 
@@ -155,8 +151,6 @@
 4. README 与 docs 的行为、限制和验证入口与最终源码一致。
 
 ## 8. 必须实机确认的事项
-
-- Funnel 在起飞/已加载目标的赶路阶段是否及时出现，活动目标与动态地形下是否合理刷新，窗口捕获是否减少绕圈；紫色截面与已有黄/青绿线的区分、多女仆地图缓存与 Worker 等待开销。
 
 - gravity/noGravity、缓降到期、魂符收起后跨维度放出、同名 Level 重建以及其他 Mod 修改 travel 或实体 tick 顺序时的真实行为。
 - 真正 NeoForge/TLM/Mixin 生命周期、服务端关服/重新开世界、实体卸载重载/跨维度、玩家退出时序。

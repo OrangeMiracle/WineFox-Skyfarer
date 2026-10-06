@@ -23,7 +23,7 @@ import java.util.*;
 public final class CommandManager {
     private static final class Session {
         final ServerLevel level;final MarkQueue marks=new MarkQueue();final Map<UUID,CompoundTag> snapshots=new HashMap<>();
-        final Set<UUID> attempted=new HashSet<>();long lastClick=-100,revision;
+        final Map<UUID,String> discovery=new HashMap<>();long lastClick=-100,revision;
         Session(ServerLevel level){this.level=level;}
     }
     private static final class Order {
@@ -31,10 +31,9 @@ public final class CommandManager {
         UUID target;Vec3 destination;boolean transit,finishing;int stalled,landedTicks,loadingTicks;long revision;
         Order(UUID owner,ServerLevel level,boolean creative,UUID target,Vec3 destination,boolean transit){this.owner=owner;this.level=level;this.creative=creative;this.target=target;this.destination=destination;this.transit=transit;}
     }
-    private record Wake(UUID owner,ServerLevel level,UUID maid,long expires){}
     private static final Map<UUID,Session> SESSIONS=new HashMap<>();
     private static final Map<UUID,Order> ORDERS=new HashMap<>();
-    private static final Map<UUID,Wake> WAKES=new HashMap<>();
+    private static final RemoteWakeScheduler WAKES=new RemoteWakeScheduler();
     private static final Map<UUID,Long> RETRY=new HashMap<>();
     private record Recall(EntityMaid maid,long expires){}
     private static final Map<UUID,Recall> RECALLS=new HashMap<>();
@@ -82,7 +81,7 @@ public final class CommandManager {
         long now=player.level().getGameTime();if(now-session.lastClick<4)return;session.lastClick=now;
         LivingEntity target=pick(player);if(target==null)return;
         boolean added=session.marks.toggle(target.getUUID(),scope.unlimited());
-        session.revision++;session.attempted.clear();remember(session,target);sync(player,session);
+        session.revision++;session.discovery.clear();WAKES.generation(player.getUUID(),session.revision);remember(session,target);sync(player,session);
         player.displayClientMessage(net.minecraft.network.chat.Component.translatable(added?"message.winefox_skyfarer.marked":"message.winefox_skyfarer.unmarked",target.getDisplayName(),session.marks.ids().size()),true);
         player.playNotifySound(added?net.minecraft.sounds.SoundEvents.EXPERIENCE_ORB_PICKUP:net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),net.minecraft.sounds.SoundSource.PLAYERS,.8F,added?1.4F:.8F);
         SkyfarerMaidRegistry.get(player.server).seed(player);
@@ -117,7 +116,8 @@ public final class CommandManager {
         for(var pair:new ArrayList<>(SESSIONS.entrySet())) {
             var player=server.getPlayerList().getPlayer(pair.getKey());var s=pair.getValue();
             if(player==null||!player.isAlive()||player.serverLevel()!=s.level){logout(pair.getKey());continue;}
-            for(UUID id:s.marks.ids()) {
+            var previousMarks=s.marks.ids();
+            for(UUID id:previousMarks) {
                 var target=s.level.getEntity(id);
                 if(target instanceof LivingEntity living&&living.isAlive())remember(s,living);
                 else if(target!=null || !s.snapshots.containsKey(id))s.marks.remove(id);
@@ -128,36 +128,43 @@ public final class CommandManager {
                     if(s.level.getGameTime()-snapshot.getLong("seen")>100&&s.level.isPositionEntityTicking(BlockPos.containing(DebugSnapshot.vector(snapshot,"position"))))s.marks.remove(id);
                 }
             }
+            if(!previousMarks.equals(s.marks.ids())){s.revision++;s.discovery.clear();WAKES.generation(pair.getKey(),s.revision);}
             s.snapshots.keySet().retainAll(s.marks.ids());
             if(now%5==0)sync(player,s);
-            if(now%10!=0 || s.marks.isEmpty())continue;
-            int budget=2;
+            if(s.marks.isEmpty()){WAKES.stop(pair.getKey(),"mission_empty");continue;}
+            if(!activeCreative(s)&&s.marks.ids().stream().allMatch(s.marks::creative)){
+                WAKES.stop(pair.getKey(),"creative_target_unloaded");continue;
+            }
+            if(now%10!=0)continue;
+            var candidates=new ArrayList<UUID>();var positions=new HashMap<UUID,BlockPos>();
             for(var entry:SkyfarerMaidRegistry.get(server).owned(player.getUUID())) {
-                if(!entry.dimension().equals(s.level.dimension().location().toString())||ORDERS.containsKey(entry.id())||RECALLS.containsKey(entry.id())||RETRY.getOrDefault(entry.id(),0L)>now)continue;
+                String rejected=!entry.dimension().equals(s.level.dimension().location().toString())?"dimension":ORDERS.containsKey(entry.id())?"has_order":RECALLS.containsKey(entry.id())?"home_recall":RETRY.getOrDefault(entry.id(),0L)>now?"transit_retry":null;
+                if(rejected!=null){discovery(s,player.getUUID(),entry.id(),rejected);continue;}
                 var entity=s.level.getEntity(entry.id());
-                if(entity instanceof EntityMaid maid){assign(player,s,maid);continue;}
+                if(entity instanceof EntityMaid maid){discovery(s,player.getUUID(),entry.id(),"loaded");assign(player,s,maid);continue;}
                 boolean unlimited=s.marks.ids().stream().anyMatch(s.marks::creative);
                 double ownerDistance=player.position().distanceTo(Vec3.atCenterOf(entry.pos()));
-                boolean creativeEligible=unlimited&&DispatchPolicy.admitted(entry.home(),true,ownerDistance,SkyfarerSettings.get("command_home_range"),SkyfarerSettings.get("creative_command_range"));
                 boolean survival=s.marks.ids().stream().anyMatch(id->!s.marks.creative(id));
-                boolean nearby=player.position().distanceTo(Vec3.atCenterOf(entry.pos()))<=SkyfarerSettings.get("command_home_range");
-                boolean discover=creativeEligible||survival&&(nearby||entry.known()&&!entry.home());
-                if(!discover || entry.known()&&!entry.skyfarer() || s.attempted.contains(entry.id()) || WAKES.containsKey(entry.id()) || WAKES.size()>=8 || budget<=0)continue;
-                // Unknown legacy entries are only discovery candidates, never permission to command.
-                budget--;s.attempted.add(entry.id());CommandTickets.wake(s.level,entry.id(),entry.pos());
-                WAKES.put(entry.id(),new Wake(player.getUUID(),s.level,entry.id(),now+100));
+                boolean discover=DispatchPolicy.discover(entry.known(),entry.home(),unlimited,survival,ownerDistance,SkyfarerSettings.get("command_home_range"),SkyfarerSettings.get("creative_command_range"));
+                if(!discover){discovery(s,player.getUUID(),entry.id(),"range_or_mark_type");continue;}
+                // Persisted negative qualification is a hint, not permanent permission or denial.
+                discovery(s,player.getUUID(),entry.id(),entry.known()&&!entry.skyfarer()?"recheck_saved_role":"unloaded");
+                candidates.add(entry.id());positions.put(entry.id(),entry.pos());
             }
+            WAKES.offer(player.getUUID(),s.revision,now,candidates,new RemoteWakeScheduler.Backend(){
+                public boolean loaded(UUID id){return s.level.getEntity(id)!=null;}
+                public boolean ticket(UUID id){return CommandTickets.wake(s.level,id,positions.get(id));}
+                public String assign(UUID id){
+                    if(ORDERS.containsKey(id))return null;
+                    if(!(s.level.getEntity(id) instanceof EntityMaid maid))return "not_maid";
+                    SkyfarerMaidRegistry.get(server).observe(maid);
+                    return CommandManager.assign(player,s,maid,false,false);
+                }
+                public void release(UUID id){if(!ORDERS.containsKey(id))CommandTickets.release(id);}
+                public void event(UUID id,long generation,String stage,String reason,int attempted){wakeLog(player.getUUID(),id,generation,stage,reason,attempted);}
+            });
         }
-        for(var wake:new ArrayList<>(WAKES.values())) {
-            var player=server.getPlayerList().getPlayer(wake.owner);var s=SESSIONS.get(wake.owner);var entity=wake.level.getEntity(wake.maid);
-            if(entity instanceof EntityMaid maid) {
-                SkyfarerMaidRegistry.get(server).observe(maid);
-                if(player!=null&&s!=null)assign(player,s,maid);
-            }
-            if(entity!=null||now>wake.expires||s==null||s.marks.isEmpty()) {
-                WAKES.remove(wake.maid);if(!ORDERS.containsKey(wake.maid))CommandTickets.release(wake.maid);
-            }
-        }
+        WAKES.tick(now);
         for(var pair:new ArrayList<>(ORDERS.entrySet())) {
             var o=pair.getValue();var entity=o.level.getEntity(pair.getKey());
             if(!(entity instanceof EntityMaid)){if(++o.stalled>100)cancel(pair.getKey());continue;}
@@ -167,9 +174,11 @@ public final class CommandManager {
     private static void assign(ServerPlayer player,Session session,EntityMaid maid) {
         assign(player,session,maid,false,false);
     }
-    private static void assign(ServerPlayer player,Session session,EntityMaid maid,boolean continuing,boolean creativeMission) {
-        if(ORDERS.containsKey(maid.getUUID()) || !eligible(player,maid) || !SkyfarerEquipment.elytra(maid)||!SkyfarerEquipment.spear(maid)||!SkyfarerEquipment.fireworks(maid))return;
-        var controller=SkyfarerRuntime.get(maid);if(controller!=null&&controller.state().locksRunTarget())return;
+    private static String assign(ServerPlayer player,Session session,EntityMaid maid,boolean continuing,boolean creativeMission) {
+        if(ORDERS.containsKey(maid.getUUID()))return null;
+        String failure=qualification(player,maid);
+        if(failure!=null)return failure;
+        var controller=SkyfarerRuntime.get(maid);if(controller!=null&&controller.state().locksRunTarget())return "committed_attack";
         UUID selected=null;Vec3 destination=null;double best=-Double.MAX_VALUE;
         for(var id:session.marks.ids()) {
             var entity=session.level.getEntity(id);
@@ -185,7 +194,7 @@ public final class CommandManager {
                 controller!=null&&id.equals(controller.previousTarget()),route);
             if(score>best){best=score;selected=id;destination=pos;}
         }
-        if(selected==null)return;
+        if(selected==null)return "no_admissible_live_mark";
         var order=new Order(player.getUUID(),session.level,creativeMission||session.marks.creative(selected),selected,destination,
             DispatchPolicy.transit(session.level.getEntity(selected)!=null,maid.position().distanceTo(destination),creativeMission||session.marks.creative(selected)));
         ORDERS.put(maid.getUUID(),order);
@@ -195,6 +204,30 @@ public final class CommandManager {
         if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] COMMAND_ASSIGN maid={} target={} creative={} transit={} distance={}",maid.getUUID(),selected,order.creative,order.transit,maid.position().distanceTo(destination));
         if(order.transit&&controller!=null)controller.release();
         else if(session.level.getEntity(selected) instanceof LivingEntity target)SkyfarerRuntime.ensure(maid).acceptCommand(target);
+        return null;
+    }
+    private static String qualification(ServerPlayer owner,EntityMaid maid){
+        if(!owner.getUUID().equals(maid.getOwnerUUID()))return "owner";
+        if(owner.serverLevel()!=maid.level())return "dimension";
+        if(!SkyfarerRuntime.isSkyfarer(maid))return "work_mode";
+        if(owner.isSpectator())return "owner_spectator";
+        if(!maid.isAlive())return "dead";
+        if(maid.isNoAi())return "no_ai";
+        if(maid.isMaidInSittingPose())return "sitting";
+        if(maid.isSleeping())return "sleeping";
+        if(maid.isPassenger())return "passenger";
+        if(maid.isLeashed())return "leashed";
+        if(maid.guiOpening)return "gui_open";
+        if(!SkyfarerEquipment.elytra(maid))return "elytra";
+        if(!SkyfarerEquipment.spear(maid))return "spear";
+        return SkyfarerEquipment.fireworks(maid)?null:"fireworks";
+    }
+    private static void wakeLog(UUID owner,UUID maid,long generation,String stage,String reason,int attempted){
+        if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] REMOTE_WAKE owner={} maid={} generation={} stage={} reason={} attempted={} active={}",owner,maid,generation,stage,reason,attempted,WAKES.active());
+    }
+    private static void discovery(Session s,UUID owner,UUID id,String reason){
+        if(!Objects.equals(s.discovery.put(id,reason),reason))wakeLog(owner,id,s.revision,
+            reason.equals("unloaded")||reason.equals("loaded")||reason.equals("recheck_saved_role")?"candidate_discovered":"candidate_rejected",reason,0);
     }
     private static boolean eligible(ServerPlayer owner,EntityMaid maid){return !owner.isSpectator()&&owner.getUUID().equals(maid.getOwnerUUID())&&SkyfarerRuntime.isSkyfarer(maid)&&maid.isAlive()&&!maid.isNoAi()&&!maid.isMaidInSittingPose()&&!maid.isSleeping()&&!maid.isPassenger()&&!maid.isLeashed()&&!maid.guiOpening;}
     public static boolean beforeMaidTick(EntityMaid maid) {
@@ -257,7 +290,6 @@ public final class CommandManager {
             if(!maid.isHomeModeEnable()||maid.isWithinRestriction()||++o.landedTicks>45){cancel(maid.getUUID());return false;}
         } else o.landedTicks=0;
         if(!o.transit)return false;
-        if(entity instanceof LivingEntity target&&target.isAlive())SkyfarerRuntime.ensure(maid).prewarmCommand(target);
         // Adding a ticket does not promise that every entity-ticking future completed this tick.
         // Wait on the ground for initial corridor activation; never freeze an airborne entity.
         if(o.creative&&maid.onGround()&&!CommandTickets.ready(maid.getUUID())&&++o.loadingTicks<=100)return true;
@@ -284,15 +316,17 @@ public final class CommandManager {
     public static void observe(EntityMaid maid){if(maid.level() instanceof ServerLevel level)SkyfarerMaidRegistry.get(level.getServer()).observe(maid);}
     public static void died(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
         if(event.getEntity().level().isClientSide())return;
-        for(var s:SESSIONS.values())s.marks.remove(event.getEntity().getUUID());
+        for(var pair:SESSIONS.entrySet())if(pair.getValue().marks.contains(event.getEntity().getUUID())){
+            var s=pair.getValue();s.marks.remove(event.getEntity().getUUID());s.revision++;s.discovery.clear();WAKES.generation(pair.getKey(),s.revision);
+        }
     }
     public static void leave(EntityMaid maid) {
         if(maid.level() instanceof ServerLevel level){if(!maid.isAlive()||maid.getRemovalReason()==Entity.RemovalReason.DISCARDED)SkyfarerMaidRegistry.get(level.getServer()).remove(maid.getUUID());else observe(maid);}
-        cancel(maid.getUUID());
+        WAKES.remove(maid.getUUID(),"entity_leave");cancel(maid.getUUID());
     }
     public static void prepareDebugTeleport(EntityMaid maid){
         UUID id=maid.getUUID();var order=ORDERS.remove(id);if(order!=null)order.flight.close();
-        WAKES.remove(id);RECALLS.remove(id);CommandTickets.release(id);
+        WAKES.remove(id,"debug_teleport");RECALLS.remove(id);CommandTickets.release(id);
         SkyfarerRuntime.onSafetyTeleport(maid);
     }
     private static void cancel(UUID id){
@@ -326,6 +360,6 @@ public final class CommandManager {
             }
         }
     }
-    public static void logout(UUID owner){SESSIONS.remove(owner);for(var entry:new ArrayList<>(ORDERS.entrySet()))if(entry.getValue().owner.equals(owner))cancel(entry.getKey());for(var w:new ArrayList<>(WAKES.values()))if(w.owner.equals(owner)){WAKES.remove(w.maid);CommandTickets.release(w.maid);}}
+    public static void logout(UUID owner){SESSIONS.remove(owner);WAKES.stop(owner,"logout");for(var entry:new ArrayList<>(ORDERS.entrySet()))if(entry.getValue().owner.equals(owner))cancel(entry.getKey());}
     public static void clear(){for(var id:new ArrayList<>(ORDERS.keySet()))cancel(id);tickRecalls(Long.MAX_VALUE);RECALLS.clear();WAKES.clear();SESSIONS.clear();RETRY.clear();CommandTickets.clear();}
 }

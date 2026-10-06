@@ -14,7 +14,7 @@ public final class CommandChecks {
                 &&t.desc.equals("com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid")){
                 var next=t.getNext();return next instanceof JumpInsnNode j&&j.getOpcode()==org.objectweb.asm.Opcodes.IFNE;
             }return false;
-        }),"server mark ray predicate must reject every EntityMaid before nearest-hit selection");
+        }),"shared server pick must exclude all EntityMaid before nearest-hit selection, for both spyglasses");
         var a=new MarkQueue();var b=new MarkQueue();var ids=new ArrayList<UUID>();
         for(int i=0;i<6;i++){ids.add(new UUID(0,i));a.toggle(ids.get(i),i==5);}
         require(a.ids().equals(ids.subList(1,6)),"sixth mark must evict oldest");

@@ -2,14 +2,15 @@ package dev.winefox.skyfarer.flight;
 
 /** Signed attack lines. Climb and descent have no type penalty; distance, turning and fuel do. */
 public final class AttackLinePlanner {
+    public static final double MAX_GRADE=Math.tan(Math.toRadians(70));
     private AttackLinePlanner() {}
     @FunctionalInterface public interface Space { boolean clear(double ax,double ay,double az,double bx,double by,double bz); }
     public record Line(double gradient,double height,double entryX,double entryY,double entryZ,
         double exitX,double exitY,double exitZ,double cost) {}
     public static double gradient(double low,double center,double high,double spacing) {
-        if(Double.isFinite(low) && Double.isFinite(high)) return Math.clamp((high-low)/(2*spacing),-1.5,1.5);
-        if(Double.isFinite(high)) return Math.clamp((high-center)/spacing,-1.5,1.5);
-        if(Double.isFinite(low)) return Math.clamp((center-low)/spacing,-1.5,1.5);
+        if(Double.isFinite(low) && Double.isFinite(high)) return Math.clamp((high-low)/(2*spacing),-AttackLinePlanner.MAX_GRADE,AttackLinePlanner.MAX_GRADE);
+        if(Double.isFinite(high)) return Math.clamp((high-center)/spacing,-AttackLinePlanner.MAX_GRADE,AttackLinePlanner.MAX_GRADE);
+        if(Double.isFinite(low)) return Math.clamp((center-low)/spacing,-AttackLinePlanner.MAX_GRADE,AttackLinePlanner.MAX_GRADE);
         return 0;
     }
     public static Line choose(FlightPrediction.State s,double x,double y,double z,double dx,double dz,
@@ -23,20 +24,22 @@ public final class AttackLinePlanner {
     }
     public static Line choose(FlightPrediction.State s,double x,double y,double z,double dx,double dz,
         double groundGradient,double crossGradient,double minimumEntry,double exitDistance,double expansion,boolean pulseAvailable,double gravity,Space space) {
-        double distance=Math.hypot(x-s.x(),z-s.z()),direct=Math.clamp((y-s.y())/Math.max(1,distance),-1.5,1.5);
+        double distance=Math.hypot(x-s.x(),z-s.z()),direct=Math.clamp((y-s.y())/Math.max(1,distance),-MAX_GRADE,MAX_GRADE);
         Line best=null;
         var grades=new java.util.LinkedHashSet<Double>();
-        for(double candidate:new double[]{groundGradient,direct,0,groundGradient+.1,groundGradient-.1,groundGradient+.2,groundGradient-.2})
-            grades.add(Math.clamp(candidate,-1.5,1.5));
+        for(double candidate:new double[]{groundGradient,direct,0,groundGradient+.1,groundGradient-.1,groundGradient+.2,groundGradient-.2,
+            -MAX_GRADE,-Math.sqrt(3),-1.191754,1.191754,Math.sqrt(3),MAX_GRADE})
+            grades.add(Math.clamp(candidate,-MAX_GRADE,MAX_GRADE));
         for(double grade:grades)
             for(double extra=0;extra<=Math.min(2.5,expansion)+1e-6;extra+=.25) {
                 if(extra>expansion) continue;
                 double contact=y+extra;
                 double projection=((x-s.x())*dx+(contact-s.y())*grade+(z-s.z())*dz)/(1+grade*grade);
-                double entry=Math.clamp(projection,minimumEntry,Math.max(minimumEntry,distance));
+                double minimumHorizontal=minimumEntry/Math.sqrt(1+grade*grade);
+                double entry=Math.clamp(projection,minimumHorizontal,Math.max(minimumHorizontal,distance));
                 double ex=x-dx*entry,ey=contact-grade*entry,ez=z-dz*entry;
                 if(!space.clear(s.x(),s.y(),s.z(),ex,ey,ez) || !space.clear(ex,ey,ez,x,contact,z)) continue;
-                for(double turn:new double[]{0,-35,35,-65,65,-85,85}) for(double lift:new double[]{0,3,6}) {
+                for(double turn:new double[]{0,-35,35,-65,65,-85,85}) for(double lift:new double[]{0,3,6,10}) {
                     double a=Math.toRadians(turn),outX=dx*Math.cos(a)-dz*Math.sin(a),outZ=dx*Math.sin(a)+dz*Math.cos(a);
                     double outGrade=groundGradient*Math.cos(a)+crossGradient*Math.sin(a);
                     double ox=x+outX*exitDistance,oy=contact+outGrade*exitDistance+lift,oz=z+outZ*exitDistance;

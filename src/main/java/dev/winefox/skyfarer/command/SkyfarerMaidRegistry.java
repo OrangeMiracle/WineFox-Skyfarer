@@ -19,7 +19,7 @@ public final class SkyfarerMaidRegistry extends SavedData {
     public List<Entry> owned(UUID owner){return new ArrayList<>(owners.getOrDefault(owner,Map.of()).values());}
     public Set<UUID> owners(){return Set.copyOf(owners.keySet());}
     public Entry find(UUID id){for(var group:owners.values()){var e=group.get(id);if(e!=null)return e;}return null;}
-    private void put(Entry e){
+    void put(Entry e){
         for(var group:owners.entrySet())if(!group.getKey().equals(e.owner))group.getValue().remove(e.id);
         var old=owners.computeIfAbsent(e.owner,k->new HashMap<>()).put(e.id,e);
         if(!e.equals(old))setDirty();
@@ -35,12 +35,13 @@ public final class SkyfarerMaidRegistry extends SavedData {
     public void seed(MinecraftServer server,UUID owner) {
         var infos=MaidWorldData.get(server.overworld()).getInfos(owner);if(infos==null)return;
         for(var info:infos) {
+            if(info.getChunkPos()==null)continue;
             var old=find(info.getEntityId());
             if(old==null)put(new Entry(info.getEntityId(),owner,info.getDimension(),info.getChunkPos(),false,false,false,info.getName().getString()));
             else if(old.name.isEmpty())put(new Entry(old.id,old.owner,old.dimension,old.pos,old.known,old.home,old.skyfarer,info.getName().getString()));
         }
     }
-    private static SkyfarerMaidRegistry load(CompoundTag tag,HolderLookup.Provider lookup) {
+    static SkyfarerMaidRegistry load(CompoundTag tag,HolderLookup.Provider lookup) {
         var registry=new SkyfarerMaidRegistry();var entries=tag.getList("maids",Tag.TAG_COMPOUND);
         for(int i=0;i<entries.size();i++){var e=entries.getCompound(i);if(e.hasUUID("id")&&e.hasUUID("owner"))registry.put(new Entry(e.getUUID("id"),e.getUUID("owner"),e.getString("dim"),BlockPos.of(e.getLong("pos")),e.getBoolean("known"),e.getBoolean("home"),e.getBoolean("skyfarer"),e.getString("name")));}
         return registry;

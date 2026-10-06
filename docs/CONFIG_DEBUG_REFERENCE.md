@@ -1,12 +1,10 @@
 # 配置、指挥、调试与兼容接口
 
-核对基线：**0.6.3，2026-10-05**。本文面向维护者，描述当前源码事实；源码变化时必须同步维护。总入口见 [PROJECT_INDEX.md](PROJECT_INDEX.md)，飞控细节见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)。本文中的 tick 是游戏逻辑 tick，20 TPS 时 20 ticks = 1 秒；格/tick 不是格/秒。
+核对版本：**0.6.1.1，2026-10-05**，飞控基于 0.6.1。本文面向维护者，描述当前源码事实；源码变化时必须同步维护。总入口见 [PROJECT_INDEX.md](PROJECT_INDEX.md)，飞控细节见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)。本文中的 tick 是游戏逻辑 tick，20 TPS 时 20 ticks = 1 秒；格/tick 不是格/秒。
 
 0.6.1 未新增可调物理伪属性：gravity/缓降从实体冻结，滑翔阻力使用 1.21.1 常量。`energy_reserve` / `attack_energy_reserve` 是路线最差预测储备的补能门槛，不是轨迹可达性开关。HUD `energyReserve` 在普通攻击证书/曲线回放返回后显示最差 reserve；`ATTACK_PHYSICS_VETO:<reason>` 表示完整物理认证拒绝，需结合 `contact_missed`、`exit_incomplete`、`sweep_<tick>` 与异步等待判断。详细每步 envelope 目前是 Worker 结果 DTO，未新增网络包或 HUD 曲线。
 
 ## 1. 配置的入口与生效方式
-
-0.6.3 行为修正：普通/创造指挥镜的服务端标记射线入口直接排除全部 `EntityMaid`（含子类），不按归属、阵营或任务放行；Debug 棒和遥控器入口不变。合法近距明确命令会唤醒地面获取，仍保留全部资格与起飞净空检查。紫色 Funnel 使用轨迹群截面的独立 width/height；其他颜色语义保持。日志额外记录 `funnelGen`、`cancelled`、`submitted`，Capture 的 energy 行不再依赖 flightRequest 存在；`capture_async_pending`、`capture_no_complete_route`、`capture_cooldown` 与完整 coast/pulse 分开。
 
 定义源为 [SkyfarerConfig](../src/main/java/dev/winefox/skyfarer/config/SkyfarerConfig.java)，统一读取与写入入口为 [SkyfarerSettings](../src/main/java/dev/winefox/skyfarer/config/SkyfarerSettings.java)。[WineFoxSkyfarer](../src/main/java/dev/winefox/skyfarer/WineFoxSkyfarer.java) 注册的是 NeoForge **SERVER** 配置；没有单独的客户端飞控配置。常规服务端配置文件名为 `winefox_skyfarer-server.toml`，由 NeoForge 管理其存档配置位置。
 
@@ -63,7 +61,7 @@
 | combat.post_attack_charge_ticks | 60 | 0–200 | ticks | C 命中/掠过后的 Charge 保留；0 关闭。独立于离场完成，不强制飞满 3 秒。 |
 | combat.secondary_target_radius | 6 | 0–12 | 格 | T/C 多穿、CHAIN_ATTACK 的次要目标范围；0 禁用候选，不改变主目标战略排序。 |
 | combat.slope_sample_radius | 16 | 3–32 | 格 | C 提交近/远坡面采样的半径上限。 |
-| combat.slope_sample_step | 0.5 | 0.25–1 | 格 | C 提交坡面采样间隔，越小纯计算与快照请求成本越高。 |
+| combat.slope_sample_step | 0.5 | 0.25–1 | 格 | C 提交坡面采样间隔；Sampler 实际截到 .25–.4 以连续跟踪陡坡，越小纯计算与快照请求成本越高。 |
 | safety.emergency_teleport_range | 96 | 32–512 | 格 | C 远离活动中心恢复阈值基准；实际范围会与 T.hardRange + 16 取大值。 |
 | safety.forward_collision_check_distance | 6 | 2–24 | 格 | **遗留，无消费者**。当前动态预测走廊不读取此值。 |
 | safety.corridor_side_margin | 0.35 | 0.05–1 | 格 | C 普通 Glide 请求身体横向余量；不同紧急/创造/接触策略可有独立余量。 |
@@ -149,7 +147,7 @@ effectiveHard   = max(Settings.hardCombatRange(), effectiveCombat + 16)
 
 1. 限制在已加载区块，按 2 格前探缩短最大距离，不为射线生成新区块。
 2. 方块 `COLLIDER` 截断视线，忽略流体。
-3. 只选活着、非旁观、非无敌、非 Player 的 LivingEntity，身体 box 膨胀 0.1，取最近射线相交者。
+3. 只选活着、非旁观、非无敌、非 Player、非 EntityMaid 的 LivingEntity，身体 box 膨胀 0.1，取最近射线相交者。两种镜共用服务端 pick，所有女仆均在选取前排除，与归属、工作、Home/Follow 或敌友无关；不影响调试棒、女仆遥控器和远程调试。
 
 每玩家一个同维度 `Session`，列表为最多五个 UUID 的 LinkedHashMap，值记录**添加时**是否创造标记。第六个移除最早加入者；再次点击已存在目标取消，不能用另一镜直接“升级颜色”，需取消再添加。编号仅是列表顺序，绝不作为调度优先级。登出、死亡、换维度清除会话；指令不持久化到存档。
 
@@ -162,7 +160,9 @@ effectiveHard   = max(Settings.hardCombatRange(), effectiveCombat + 16)
 [SkyfarerMaidRegistry](../src/main/java/dev/winefox/skyfarer/command/SkyfarerMaidRegistry.java) 是 overworld DataStorage 中的 SavedData `winefox_skyfarer_maids`。按 owner 分组记录 `id, owner, dimension, BlockPos, known, home, skyfarer, name`。EntityJoin、女仆每 20 ticks、离开世界时更新；死亡或 DISCARDED 删除。它不是女仆实体的序列化替代品。
 
 - 从 TLM `MaidWorldData.getInfos(owner)` seed 时，未知记录使用 `known=false`；TLM 未提供的 Home/任务事实不能据此猜测为真实。加载后再次核实当前实体资格。
-- 每 10 ticks 检查待派遣记录；每玩家每轮最多发起 2 次唤醒，全球最多 8 个 WAKES，各 100 ticks 到期。`attempted` 防止同次标记版本不断唤醒同一失败记录。
+- 每 10 ticks 检查待派遣记录；每玩家每轮最多发起 2 次唤醒，全球最多 8 个 wake，各 100 ticks 到期。[RemoteWakeScheduler](../src/main/java/dev/winefox/skyfarer/command/RemoteWakeScheduler.java) 先处理从未尝试者，再按上次尝试顺序轮转；达到上限时不把未入队者标为 attempted。失败记录从尝试起冷却 200 ticks 后可重试，同一任务不会永久跳过它。
+- 标记增删、自然失效、死亡都刷新 revision/generation 并撤销旧 wake；任务空、创造目标卸载、登出、换维度和关服释放未接单票据。成功接单将发现票据移交订单的滚动窗口，生存订单直接释放；一只接单不终止其他候选的调度。回 Home 后下一任务重新建立尝试历史。
+- 持久化的 `skyfarer=false` 不再永久否决发现。旧/未知记录可以在范围内分批醒来核实，只有当前实体的主人、工作及装备符合条件才分配；命令和 attempted 均不存入 registry。TLM seed 忽略无位置记录。
 - 同维度、本人所属、当前骑空士、存活、有 AI、非坐下/睡眠/乘客/拴绳/打开 GUI，并有鞘翅、矛、库存烟花才可初次接单。
 - 生存镜：跟随女仆无额外 Home 半径门槛；Home 默认玩家三维距离 ≤128。创造镜：**跟随/Home 都受 1000 格默认三维范围限制**；0 为无限。已接任务不会仅因玩家后来移远被范围条件撤销。
 - 分配对每只女仆独立评分：`markBonus − distance×0.04 − headingAngle×0.25 + previous?20:0 + route`；64 格内且目标实际加载时 route 取 TargetEvaluator.score×0.1。不强制五个标记一一分配，不保证均匀分摊。
@@ -207,14 +207,11 @@ Home 保留由 [CommandHomeRecallMixin](../src/main/java/dev/winefox/skyfarer/mi
 | 红线 | 女仆到本轮实际 run target；尚未锁定不会凭候选画红线。 |
 | 蓝线 | `AirRoute` 引导点折线，非精确物理轨迹。 |
 | 青绿线 | `attack_curve` 拟合攻击 Bezier 折线，包含进入/接触/离场几何。 |
-| 紫色管道 | `attack_funnels`：已完成的服务端目标窗口；最多四条、每条十八个三维转向截面和四条纵边。空间进入不代表动力学成立，最终仍需 Rejoin。 |
 | 黄色通道 | 已有预测 trace 对应身体 + 安全余量；4 条纵边 + 每 6 个截面及末端的框；不画整张三角网格。 |
 | 绿色 1 格立方框 | `attack_entry`，中心引出 2 格 `entry_direction` 线。 |
 | 亮绿粗四角框 | 当前 HUD 女仆；独立 SELECTED RenderType 无深度测试，只写颜色；线宽是普通基准的 3 倍。 |
 
 黄色框半径会按横截面方向投影 AABB，不能把画面宽度当作女仆身体宽度本身；截面上/下高使用实际 body/eye 与预测余量。它读取已完成的后台预测，debug 渲染不再次跑 Planner。F1 隐藏 GUI 时也隐藏这些世界辅助显示；打开调试面板时隐藏 HUD。
-
-紫色截面随中心线的三维切线改变朝向，是低密度采样图示，不画网格/连续曲面，不表示整条管道内任意状态都安全。`FUNNEL_CAPTURE_PENDING` / `FUNNEL_REPOSITION` / `FUNNEL_SPATIAL_*` 反映候选捕获阶段；`FUNNEL_CAPTURE:<style>` 是最终 Rejoin 已通过后的攻击转移日志。`funnelJobs/funnelCells` 为地图 session 指标。NBT 新增字段沿用协议 3，其他色彩不变；未增加新的飞控配置项。Capture 黄色完整轨迹只显示八 ticks 内取得的结果。
 
 HUD 当前字段包含名称/UUID 前缀/维度/选中序号、状态、原因/曲线类型、扫描统计、异步规划、锁定目标、候选及分数、速度/离地、Charge 时长/前摇/射程、俯仰/目标距离/相对中心高度、转角/搜索/作战范围。
 
@@ -241,6 +238,8 @@ HUD 当前字段包含名称/UUID 前缀/维度/选中序号、状态、原因/�
 `/wfs debuglog on` 会产生 `[WFS debug]` 状态、扫描/阻断、能量/火箭决定、任务分配、赶路、回收等日志。周期由 log_interval_ticks 控制，转移与部分 sweep 诊断有独立事件/节流；大量女仆开启后会增加日志量。
 
 异步任务失败另有 `[WFS] Async planner failed; result discarded: ...` 错误，不依赖 debuglog。错误从主线程 Source.failed 输出，同一异常字符串按 200 epoch 限频；发生 worker 异常并不允许回退成主线程重算。定位补能先看 `energyDecision`、`pulseReview`、`cooldown`；定位远程生命周期看 `COMMAND_ASSIGN`、`COMMAND_TRANSIT`、`COMMAND_RELEASE`、`COMMAND_HOME_RETURN`，同时检查实际 chunk entity-ticking 状态。
+
+远程唤醒新增 `REMOTE_WAKE owner=... maid=... generation=... stage=... reason=... attempted=... active=...`：`candidate_discovered / candidate_rejected` 仅在原因变化时记录；随后有 `wake_queued`、`ticket_created / ticket_failed`、`entity_loaded`、`qualification_failed / assignment_accepted`、`timeout`、`released`。失败原因区分 owner、dimension、work_mode、sitting、sleeping、passenger、leashed、gui_open、elytra、spear、fireworks 等；`attempted_until` 为本次重试冷却时刻。`released reason=transferred_to_order` 表示 wake 槽已释放、票据归订单管理；实际撤票看 `COMMAND_TICKET stage=released`。`COMMAND_TICKET stage=replace` 记录 wanted/held/success，创建失败的块不会被伪记为已持有；空或未完整创建的票据窗口不判定 ready。
 
 ## 6. 网络与兼容边界
 

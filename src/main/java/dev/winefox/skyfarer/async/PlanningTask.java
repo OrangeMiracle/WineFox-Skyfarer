@@ -116,41 +116,6 @@ public sealed interface PlanningTask extends PlannerExecutor.Task<Object> {
         }
     }
     record RejoinResult(SweepingAttackPlanner.Selection selection,int duration) {}
-    record FunnelResult(AttackFunnelPlanner.Atlas atlas,java.util.Map<Long,CollisionSnapshot.Cell> coverage) {
-        public FunnelResult {coverage=java.util.Map.copyOf(coverage);}
-    }
-    record Funnel(FlightPrediction.State start,AttackFunnelPlanner.Input input) implements PlanningTask {
-        public boolean compatible(PlanningTask p){return p instanceof Funnel f&&PlanningTask.aim(input.aim(),f.input.aim())
-            &&input.target().subtract(f.input.target()).length()<=.75&&input.rate()==f.input.rate()
-            &&input.minimum()==f.input.minimum()&&input.exitLength()==f.input.exitLength();}
-        public Object compute(CollisionSnapshot.Space s){
-            var atlas=AttackFunnelPlanner.discover(input,s,(a,b,t)->s.ray(a.x(),a.y(),a.z(),b.x()+b.vx()*t,b.bottom()+b.height()*.5+b.vy()*t,b.z()+b.vz()*t));
-            var accepted=new java.util.ArrayList<AttackFunnelPlanner.Window>();
-            var coverage=new java.util.HashMap<Long,CollisionSnapshot.Cell>();
-            for(var w:atlas.windows()){
-                var proof=s.proofSpace();
-                boolean valid=true;
-                for(var seed:w.seeds()){
-                    var roll=SweepingAttackPlanner.simulate(seed,w.path(),input.aim(),w.rocket(),input.physics().gravity(),input.rate(),input.minimum(),false,proof,
-                        (a,b,t)->proof.ray(a.x(),a.y(),a.z(),b.x()+b.vx()*t,b.bottom()+b.height()*.5+b.vy()*t,b.z()+b.vz()*t),120);
-                    if(!roll.safe()||!roll.hit()){valid=false;break;}
-                }
-                if(!valid)continue;
-                var union=new java.util.HashMap<>(coverage);union.putAll(proof.coverage());
-                if(union.size()>640)continue;
-                accepted.add(w);coverage=union;
-            }
-            return new FunnelResult(new AttackFunnelPlanner.Atlas(accepted),coverage);
-        }
-    }
-    record Capture(FlightPrediction.State start,AttackFunnelPlanner.Atlas atlas,FlightPrediction.Aim aim,int rocket,
-                   double rate,double minimum,List<Integer> durations,boolean immediateOnly) implements PlanningTask {
-        public Capture {durations=List.copyOf(durations);}
-        public boolean compatible(PlanningTask p){return p instanceof Capture c&&atlas==c.atlas&&PlanningTask.aim(aim,c.aim)
-            &&PlanningTask.rocket(rocket,c.rocket,2)&&rate==c.rate&&minimum==c.minimum&&durations.equals(c.durations)&&immediateOnly==c.immediateOnly;}
-        public Object compute(CollisionSnapshot.Space s){return AttackFunnelPlanner.capture(start,atlas,aim,rocket,rate,minimum,durations,immediateOnly,s,
-            (a,b,t)->s.ray(a.x(),a.y(),a.z(),b.x()+b.vx()*t,b.bottom()+b.height()*.5+b.vy()*t,b.z()+b.vz()*t));}
-    }
     record Rejoin(FlightPrediction.State start,SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,double minimum,List<Integer> durations) implements PlanningTask {
         public Rejoin {durations=List.copyOf(durations);}
         public Slot slot(){return new Slot(getClass(),System.identityHashCode(path),0);}

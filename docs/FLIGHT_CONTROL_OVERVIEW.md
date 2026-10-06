@@ -1,12 +1,8 @@
 # 飞控系统总设计与当前实现
 
-核对日期：2026-10-05。源码基线：Gradle 项目版本 `0.6.3`。本文描述当前源码，不是未来设计提案；mapped 物理依据与完整路线认证详见 [VANILLA_PHYSICS.md](VANILLA_PHYSICS.md)。
+核对日期：2026-10-05。源码基线：Gradle 项目版本 `0.6.1.1`。本文描述当前源码，不是未来设计提案；mapped 物理依据与完整路线认证详见 [VANILLA_PHYSICS.md](VANILLA_PHYSICS.md)。
 
 本文面向修改飞控算法、状态机和路径规划，以及排查飞行行为的维护者。新会话先读 [PROJECT_INDEX.md](PROJECT_INDEX.md)，线程池、快照、缓存与结果有效性细节继续读 [ASYNC_PLANNING.md](ASYNC_PLANNING.md)。配置、HUD 和命令见 [CONFIG_DEBUG_REFERENCE.md](CONFIG_DEBUG_REFERENCE.md)，验证入口见 [VALIDATION.md](VALIDATION.md)。
-
-0.6.2 在原有路线族之上增加目标中心的 [Attack Funnel / Capture](ATTACK_FUNNELS.md)。目标已选定时即可异步搜索，APPROACH/REPOSITION 优先接入已知窗口；旧 Sweep/Lane 是有限地图的补充。以下当前姿态候选、Compact 和普通入口规则描述该补充分支，不再表示必须先随机飞到合适姿态才开始找攻击窗口。
-
-0.6.3 改为成功轨迹群的 17 截面包络，显式采样俯冲/上升切线及持续转弯；REPOSITION 比较前段截面并执行 Capture 认证首步。合法窗口跨后台补充保持，Capture 失败不再切回 FUNNEL_ALIGN 或被误判成局部碰撞。下降储备参考下一截面，coast 无法完成接入便异步评估库存烟花全部寿命，与谷底净空无关；承诺攻击仍要求当前 Rejoin。日志根因见 [FIELD_ANALYSIS_0.6.3](FIELD_ANALYSIS_0.6.3.md)。
 
 **本文属于实现的一部分。** 改动控制流程、状态条件、预测公式、Planner、线程边界或参数含义时同步更新。若本文与源码冲突，以源码为准并修正文档。历史迭代原因可查 [buildHistory.md](../buildHistory.md)，不要把旧版本描述套用于当前实现。
 
@@ -138,7 +134,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 - **目的/进入：** 闲置入口；构造时和 `release()` 后进入，把普通地面行为交还 TLM。
 - **输入：** 工作资格、主人/工作区域、装备、地面状态、`retryAt`、扫描节拍。
 - **规划/控制：** 不飞行、不向 Worker 请求全局路径。`acquire()` 满足条件后发起 `TARGET_ACQUIRE`；缺少装备等只写诊断原因。
-- **退出：** 普通扫描默认每 `scan_interval_ticks=10` ticks 尝试，释放后等待 `launch_retry_ticks=60`。合法明确指令重置旧 retry 并跳过下一次扫描节拍，进入 TARGET_ACQUIRE；仍检查主人/装备/AI/着地及完整起飞通道。入水且有可用鞘翅和燃料/活动火箭时可独立进入 WATER_ESCAPE。
+- **退出：** 默认每 `scan_interval_ticks=10` ticks 尝试，释放后的 `launch_retry_ticks=60` ticks 内不能重新起飞。入水且有可用鞘翅和燃料/仍活动的火箭时可独立进入 `WATER_ESCAPE`。
 - **失败：** 保持地面，不通过临时生成燃料或强制传送来制造可起飞条件。
 
 ### 4.2 `TARGET_ACQUIRE`
@@ -152,7 +148,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 - **目的：** 将取得目标和接管起飞分开，保留可观察状态。
 - **输入/控制：** 当前 `preferred`；下一次分支进入 `TAKEOFF_PREP`，该转移设置 `managed=true`、清零滞空计时和待返航原因。
-- **规划：** 控制器已可异步预热所选目标的 Funnel；目标再验证在准备阶段继续。
+- **规划：** 本状态无独立 Worker 任务；目标再验证在准备阶段进行。
 
 ### 4.4 `TAKEOFF_PREP`
 
@@ -191,7 +187,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 - **目的：** 根据当前动量竞争直线、竖向坡面/速降与持续转弯路线，选出可实际接触并安全离场的攻击。
 - **进入/输入：** 初次爬升完成、离场完成、返航途中恢复战斗、指挥镜交接或重定位完成。`startApproach()` 清掉旧 run/curve/recovery，保留合法 preferred，评估次要穿刺目标；同时记录本次是否从目标脚底以下开始进场。
-- **Worker：** `Funnel` 提前生成目标相对窗口；`Capture` 比较主动接入和全寿命烟花；`Rejoin` 用当前状态重新认证。`Sweep`、`Slope/Lane/Glide` 继续补充地图未覆盖的局部机会。
+- **Worker：** `Sweep` 生成两段三次曲线及动力学预测；`Rejoin` 用当前状态重新认证；`Slope/Lane/Glide` 生成与评估常规路线。
 - **主线程：** 首先请求曲线候选，曲线候选仅在目标距离 6–64 格且滑翔时搜索。尚待结果的前 8 ticks 面向目标引导，普通入口保持当前高度；从下方开始的入口以 `attackHeight-min(3,spear_vertical_expansion)` 为准备高度，并贯穿本轮接近、重定位与低能量恢复，避免准备过程中又切换到目标上方巡航。它只影响准备引导，不能代替完整攻击认证。
 - **地形例外：** 坡面采样至少 12 点且不满足原平地门槛时，取消上述低位空中准备并清除较低 Compact 目标，恢复已有地形爬升规则。连续上坡与孤立高处目标不能共用低位准备高度。
 - **常规承诺条件：** look 和真实动量都可在到达前对正，剩余距离覆盖原生前摇；稳定高度/垂直速度或相应坡面曲线误差满足容差；入口、接触、出口走廊合法。见 `AttackPolicy.minimumEntry/canEnter`。
@@ -199,8 +195,6 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 - **失败/特殊：** 目标失效重扫；太近、朝向大偏差或常规走廊堵塞 -> `REPOSITION`；总 setup 超过 `attack_timeout_ticks*4` -> 记一次失败、换目标。合法锁定目标可以暂时被山体遮挡；并不要求整个 APPROACH 持续直视目标。
 
 ### 4.9 `REPOSITION`
-
-**窗口优先：** 有有效地图时比较当前状态到各窗口前段截面的完整 Capture；先 coast，再验证最小足够库存 duration 的现在/延迟脉冲。位置、动量方向、速度、pitch/vy、活动火箭和启动延迟同时满足门槛，且最终 Rejoin 成功，才进入攻击。等待或无解时保持截面反馈与实时身体检查，不把完整攻击无解当作局部碰撞；已有局部 Sweep 结果仍可提交。只有无有效地图时才完整回到下面的 Compact 规则。详见 [窗口与捕获](ATTACK_FUNNELS.md)。
 
 - **目的：** 在固定局部区域内用爬升减速换取转向能力，恢复可用入口；不是继续向外高速飞到远端再绕圈。
 - **进入/输入：** 入口太近、未稳定、夹角过大、通道堵塞或低能量攻击恢复；目标、采样坡度、当前动量、前摇/触及距离。
@@ -331,9 +325,11 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 | 竖向速降/坡线/常规接触走廊 | `AttackLanePlanner`、`AttackLinePlanner`、`DiveProfile` | Lane 的 slope/flare/offset/entry/exit/梯度 |
 | 横向弧线与持续绕山攻击 | `SweepingAttackPlanner` | C1 拼接的 entry/exit 三次曲线、接触时刻、碰撞与命中预测 |
 
-曲线从当前实际速度方向构造起点切线；低速才退到目标方向。目标附近方向枚举直达和左右 `30/60/90/120°`，结合两档控制柄长度、两档高度和三档横向接触偏移，每个动力条件共 108 条几何候选。当前无动力候选不可用时，还可按真实库存 duration 生成拟点火候选（最大预测推进 ≤80 ticks）；这种候选不代表当前已有推力。它仍走当前状态 Rejoin、全部随机寿命与真实点火后才能承诺攻击。接触处 entry 末切线与 exit 起切线一致；出口继续顺着左/右趋势，而非强行回到旧直线。
+曲线从当前实际速度方向构造起点切线；低速才退到目标方向。保留原来的 108 条浅角候选，另将直达和左右 `30/60/90/120°` 与接触仰角 `±50/±60/±70°`、两档起始控制柄组合，增加 108 条竖向候选，每个动力条件上限 216。初始上升切线接下降接触可形成越脊俯冲，初始下降切线接上升接触可形成先降后攻；它们与转弯共同搜索，不设固定陡角姿态。当前无动力候选不可用时，还可按真实库存 duration 生成拟点火候选（最大预测推进 ≤80 ticks）；这种候选不代表当前已有推力。它仍走当前状态 Rejoin、全部随机寿命与真实点火后才能承诺攻击。接触处 entry 末切线与 exit 起切线一致；陡角出口缩短接触控制柄，随后可收平、抬升并侧向转出。
 
-`Path` 按控制多边形长度约每 `.75` 格采样，每段 8–160 步；先真实身体走廊过滤，再模拟原版动量/姿态/有限火箭。模拟在原生前摇之后检查最低攻击速度、长矛接触与逐步身体净空。成功必须完成有界出口行程、至少接触后 16 ticks、火箭及启动延迟结束后 16 次无动力移动，并满足末端速度；总时域上限 160 ticks，末尾接触会在此上限内延长恢复验证，耗尽时域则失败。此前文档保留了旧版“部分 safe/hit 可成功”的描述，与 0.6.1 源码不符，已修正。
+竖向曲线以三维速度和局部路径高度误差跟踪，接触附近同时修正 yaw/pitch 指向目标，姿态范围 ±75°；进攻 pitch 速率仍为 6°/tick，陡角离场允许 9°/tick。以上只是候选指令，`VanillaElytra` 与每步身体扫掠仍决定能否执行。只有完整命中、前摇及安全离场成立的路线进入成本比较；旧普通路线必须预测到实际接触（miss ≤1e-8）才能压过已认证曲线。
+
+`Path` 按控制多边形长度约每 `.75` 格采样，每段 8–160 步；先真实身体走廊过滤，再模拟原版动量/姿态/有限火箭。模拟在原生前摇之后检查最低攻击速度、长矛接触与逐步身体净空。命中后的提前成功退出条件要求至少再模拟 16 ticks，并达到火箭结束后 12 ticks；但总时域为 `min(160, max(budget, rocket + 16))`，达到上限时也会返回已模拟部分的 `safe/hit`。因此，接触发生在时域末尾时，当前实现不保证完整的上述恢复窗口；不能将有限预测写成整段离场安全的无条件证明。
 
 成本含时间、紧通道、姿态变化平方、与当前转向趋势反向的代价。直达几何 simplicity 为 0、弧线/绕山为 1.5，保留小的简单性优势；不是几何直线能通就强制放弃曲线。控制器还用实际预测 miss、能量亏空、净空和预计时间与已有常规路线竞争。
 
@@ -364,11 +360,13 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 ### 6.4 地形采样不按方块名称分类
 
-[SlopeSampler](../src/main/java/dev/winefox/skyfarer/flight/SlopeSampler.java) 以目标脚下高度为参考，在八个水平方向沿连通支撑面采样。默认半径 16、步长 .5 格；半径允许 3–32、步长 .25–1。相邻支撑高度从真实 collision shape 的顶面选择，包含雪层、半砖、楼梯等，不把整格方块占据当支撑高程。
+[SlopeSampler](../src/main/java/dev/winefox/skyfarer/flight/SlopeSampler.java) 以目标脚下高度为参考，在八个水平方向沿连通支撑面采样。默认半径 16、配置步长 .5 格；半径允许 3–32，实际采样步长限制 .25–.4 格，以免 70° 连续坡面相邻高度差超过支撑查询的 1.26 格窗口。相邻支撑高度从真实 collision shape 的顶面选择，包含雪层、半砖、楼梯等，不把整格方块占据当支撑高程。
 
 每条射线遇到洞口或未知空间即停止该方向，不终止其他方向；近场拟合用 3 格内样本，广域拟合用全半径，输出两组加权平面梯度及样本数。近、远梯度都 <.16 且样本 >=12 才被判为平地。控制器层通常每 5 ticks、目标位移超过 .25 格或设置变化重新请求；底层异步缓存还有自己的有效性限制。
 
-`AttackLinePlanner` 将沿路线的坡度和横坡梯度结合，候选包括地形坡度、当前直达坡度、水平以及坡度 ±.1/±.2；坡度限制 ±1.5。接触高度额外偏移按 .25 格采样，出口可侧向转弯并沿横坡变化高度。成本是实际接入/攻击/离场长度、转向、未来能量亏空和离场转角，没有“上升攻击类型本身更贵”的固定罚分。能量亏空只参与成本，不能以单点机械能代替真实可达性。普通进攻承诺前由 `AttackCertificate` 完整验证新前摇、接触速度/射线、身体通道及离场；曲线由候选回放和 `Rejoin` 认证。
+`AttackLinePlanner` 将沿路线的坡度和横坡梯度结合，候选包括地形坡度、当前直达坡度、水平、坡度 ±.1/±.2 及 ±50/60/70°；拟合与候选坡度限制为 ±tan(70°)。攻击段最短长度按坡度转换到水平投影，不把陡坡的水平距离当成整个三维长度。平坦地形上只要存在明显高差，也搜索有符号攻击线。接触高度额外偏移按 .25 格采样，出口可侧向转弯，抬升档为 0/3/6/10 格。成本是实际接入/攻击/离场长度、转向、未来能量亏空和离场转角，没有“上升攻击类型本身更贵”的固定罚分。能量亏空只参与成本，不能以单点机械能代替真实可达性。普通进攻承诺前由 `AttackCertificate` 完整验证新前摇、接触速度/射线、身体通道及离场；曲线由候选回放和 `Rejoin` 认证。
+
+`DiveProfile.minimumDistance` 仍只约束原来的平滑收底剖面。APPROACH、REPOSITION 和补能准备改用 `attackDistance` 搜索准入，允许高差按 70° 投影进入候选搜索，不再先强迫飞远收平；原有前摇距离和最终证书保留。连续坡面仍保持原有地形净空准备，孤立高处目标保留下方进场准备。
 
 局部坡面模型只能提出候选，不替代精确身体碰撞。绕山曲线不必与坡面拟合直线共线；陡坡或台阶没有一个全局单平面能代表全部通道。
 
@@ -502,6 +500,8 @@ expectedTicks(duration) = minimumTicks + 5.5
 
 创造指挥由 `CommandTickets` 管理当前和前向通道的 entity-ticking 区块票据；不是 Worker 执行世界加载。地面可等初始票据就绪最多 100 ticks，空中不能冻结等待。
 
+发现阶段由 `RemoteWakeScheduler` 保持每玩家每 10 ticks 最多 2 只、全服最多 8 个 wake、100 ticks 超时。未尝试者优先，已失败者在 200 ticks 冷却后按旧尝试顺序重试；上限不会把等待者永久标记为已尝试。generation 随标记增删、死亡和清理更新，旧 wake 被释放；成功后移交独立 Order/TransitFlight，其他同 owner 候选继续获得批次。registry 保存所有者和最近位置等事实，不保存 attempted；旧工作模式否定记录也允许醒来重新核实。完整日志和资格条件见 [配置调试参考](CONFIG_DEBUG_REFERENCE.md#42-发现与分配)。
+
 创造订单仍有存活且已加载的有效创造标记时，`holdHome()` 暂阻 TLM 落地 Home 回收。标记结束/失效后，取消订单，必要时保留女仆位置和 Home 的 recall 票据，最长 200 ticks 内周期调用 TLM `TeleportHelper.teleportToRestrictCenter`，成功/超时后释放票据。普通订单完成则给原版地面 Home 回收约 45 ticks 机会。真实票据激活时序、卸载与第三方传送事件并非离线夹具可全部证明。
 
 ## 11. 异步 Planner 与实际飞控之间的关系
@@ -518,8 +518,6 @@ expectedTicks(duration) = minimumTicks + 5.5
 `planningPhase()` 合并 `APPROACH/REPOSITION -> ENTRY`、`ATTACK_RUN/DIVE/SPEAR_CHARGE -> ATTACK`、`TAKEOFF_PREP/TAKEOFF -> LAUNCH`；其余按枚举名。阶段、目标、配置 revision 或维度变化会取消旧 generation。把中间状态拆成不同 generation 会使可复用任务不断失效；把真正互斥任务并在一起又会错误套用旧结果。
 
 当前结果有年龄、位置、姿态、速度、目标运动和请求兼容检查；曲线候选可以短暂保留为几何种子，但 `Rejoin` 的当前接入证书要求更严格。火箭预计/实际剩余寿命也属于请求有效性，不能使用无动力计划控制刚点燃的火箭。
-
-目标地图使用另一个固定阶段的 session；起飞/入口阶段变化只取消相应控制任务，地图依赖目标、配置、世界、物理及证明覆盖失效。两 session 共用同一个 Source、共享 Worker 和采集预算；Capture 与 Rejoin 都采用 ≤2 ticks 的严格姿态验收。详细限额见 [ASYNC_PLANNING](ASYNC_PLANNING.md)。
 
 等待规则不是所有函数都相同：
 

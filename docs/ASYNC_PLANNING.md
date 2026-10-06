@@ -1,14 +1,14 @@
 # 异步规划与线程边界
 
-核对日期：2026-10-05。实现基线：Gradle 项目版本 0.6.3。本文描述当前源码；物理快照依据见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)，构建证据见 [验证文档](VALIDATION.md#7-当前构建证据与已知缺口)。
+核对日期：2026-10-05。实现版本：0.6.1.1，沿用 0.6.1 异步架构，没有 Funnel。本文描述当前源码；物理快照依据见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)，构建证据见 [验证文档](VALIDATION.md#7-当前构建证据与已知缺口)。
+
+本次仅扩展现有 Lane/Sweep 内部候选和控制参数：Sweep 每动力条件最多 216 条，坡面采样步长上限 .4；任务类型、全服队列、每会话上限、快照预算和严格 AttackCertificate/Rejoin 验收保持。`RemoteWakeScheduler` 属于服务端指挥发现生命周期，与后台飞控 Worker 队列分开，仍在主线程申请/释放有界 chunk ticket。
 
 本文是工程实现的一部分。修改调度、快照、任务类型、缓存、线程边界或结果应用规则时，必须同步更新本文及 [项目索引](PROJECT_INDEX.md)。源码是最终权威，发现文档冲突须修正文档。飞行行为与状态转换见 [飞控总览](FLIGHT_CONTROL_OVERVIEW.md)，配置/调试入口见 [配置与调试参考](CONFIG_DEBUG_REFERENCE.md)。
 
 ## 1. 当前架构
 
 异步化的是预测和搜索，实体控制仍由服务端主线程拥有。不是把整个 `AirCombatController.tick()` 搬到后台，也不是给每位女仆创建线程。
-
-目标地图与控制任务分 session，共用同一个 MaidTerrainSource 和全服预算。固定 `TARGET_FUNNELS` 阶段跨地面/起飞/接近复用；目标/配置/Level/物理/generation 失效仍清除它。0.6.3 保留合法正地图及其证明 cells，后台补充不清空旧图；相同 Input 只补空槽，避免冷快照搜索子集互相替换。算法见 [ATTACK_FUNNELS](ATTACK_FUNNELS.md)。空战地图一个 Funnel slot，一个正地图；赶路 facade 不提交地图任务。
 
 ```text
 服务端主线程
@@ -63,8 +63,6 @@
 | `Sweep` | 无 path 时生成连续转弯候选；有 path 时回放当前曲线跟踪 | `Selection` 或 `Rollout`；命中段射线查询数值碰撞盒。`ignition` 冻结拟点火条件，Worker 内追加首 tick 等待；候选仍需 Rejoin 的完整寿命认证 |
 | `SweepPulse` | 将一枚火箭所有 12 种随机寿命在一个任务中评估 | 任一寿命不安全/不能命中则不可行，否则按平均成本及推进时长评分；避免每种寿命分别排队造成饥饿 |
 | `Rejoin` | 用当前运动状态重新验证候选曲线接入；可选择增加出口净空和经验证的库存火箭 | `RejoinResult`；`duration=-1` 表示不新增火箭；此后仍由主线程实际点火 |
-| `Funnel` | 目标相对几何/合成状态的正向物理认证，分别认证两个方向 | `FunnelResult`：最多四个 Window，加所选证明读取的数值 Cell 覆盖；不能直接攻击 |
-| `Capture` | 当前状态到既有窗口的 coast 优先/全 12 寿命烟花方案 | 最多 64 ticks 接入，再完整 Strike/Exit；延迟点火到时重新认证；使用 Rejoin 同级状态验收 |
 | `Bounded` | 给上述任务加数值水平导航范围 | 不含 live 世界 callback |
 
 任务 slot 不是单纯“女仆 UUID”：包含类型、变体及选项。`Pulse` 的出口位置、`Chain` 的目标位置、`Launch/Compact` 的火箭种类、`Sweep` 的候选/跟踪、活动推进/拟点火及拟用寿命区别参与区分，防止同轮多个候选互相取消。更改 slot 时要检查“同类多个合法请求并存”及重复提交是否受限。
@@ -74,9 +72,9 @@
 ## 4. 共享池、背压与取消
 
 - 总线程数为 `max(2, min(4, availableProcessors - 2))`。其中 1 个专门负责几何候选，余下 1–3 个处理控制预测；线程名 `WFS-Planner-N`，daemon，空闲 30 秒允许退出。池是惰性建立，不是每 tick 建线程。
-- 几何池接收 `Funnel`、`Slope`、`Lane` 和没有 path 的 `Sweep`；Capture/Rejoin 及其余任务进入控制池。两个池分别 `ArrayBlockingQueue(32)`，排队总上限 64；这不含正在执行的 2–4 个任务。
+- 几何池接收 `Slope`、`Lane` 和没有 path 的 `Sweep`；其余任务进入控制池。两个池分别 `ArrayBlockingQueue(32)`，排队总上限 64；这不含正在执行的 2–4 个任务。
 - 拒绝策略是 `AbortPolicy`。submit 捕获队列满异常并返回 null、累计 `rejected`；主线程走等待/回退，**不能改为 `CallerRunsPolicy` 或同步重算**。
-- 单 session 最多 24 个 pending slot。兼容的控制在途任务在 6 ticks 内继续复用（Funnel 为 40 ticks）；不兼容或太旧时取消并替换。没有为每次查询创建 Future。
+- 单 session 最多 24 个 pending slot。兼容的在途任务在 6 ticks 内继续复用；不兼容或太旧时取消并替换。没有为每次查询创建 Future。
 - `Ticket.cancel()` 设置 AtomicBoolean，移除仍排队的任务。运行中的计算在 `Space.get()` 查询碰撞 cell 时检查取消和中断并协作退出；不是任意 Java 指令处强制终止。
 - Worker 将完成结果写入 volatile outcome。取消结果不应用；计算的 RuntimeException 作为 failure 返回，由主线程丢弃并限频记录 `[WFS] Async planner failed; result discarded: ...`。相同错误至多每 200 个采集 epoch 重复报告，错误内容改变可立即报告。
 - 服务停止调用 `PlannerSession.stop()`，关闭所有 session 并 `shutdownNow()` 两个池、取消排队票据。下次提交可重新建池。
@@ -109,8 +107,8 @@
 | 全服每 `ServerTickEvent.Pre` 重置 | 256 cells、21,600 次方块读取、累计采集耗时 2 ms | 三者任一到限停止继续采集；时间是软上限，单元不可拆分 |
 | 活跃 session 公平份额 | 每 epoch 最多 `max(1,256/participants)` cells | 参与者为仍有 pending/requested 或最近 2 epochs 查询的 session；轮换处理起点 |
 | 待采集 cell | 每 session 最多 512 | 选中走廊优先，其次邻格/其他候选/刷新；近当前位置者先 |
-| 已缓存 cell | 每 session 最多 768 | 优先保留 Funnel 所引用的 ≤640 cells，其余按插入顺序淘汰；不是完整 LRU |
-| 刷新 | cell 年龄达 20 ticks，证明覆盖优先请求；其余每次 pump 最多加 8 个 | 待采集上限与全局预算不变，不保证第 20 tick 已刷新 |
+| 已缓存 cell | 每 session 最多 768 | 按 LinkedHashMap 插入顺序淘汰；不是完整 LRU |
+| 刷新 | cell 年龄达 20 ticks，每次 pump 最多加入 8 个刷新请求 | 受全局预算继续限制，不保证第 20 tick 已刷新 |
 | 过期 | enqueue 时移除年龄大于 80 ticks 的 cell | 已提交快照不可回写；当前真实位移仍需 live guard |
 | Worker 缺失记录 | 每个 Space 最多 192 个不同 cell | 单次缺失集有限；严格计算与发现计算可以分别产生集合 |
 
@@ -151,14 +149,10 @@
 | 候选几何 `Sweep(path=null)` | 最多 12 ticks；位置差 ≤16 格、航向差 ≤90°；作为几何候选，不能直接承诺攻击 |
 | 几何 seed | 在兼容的候选 slot 内固定最多 12 ticks |
 | `Rejoin` / `AttackCertificate` 接触认证 | 在一般门槛之上，年龄 ≤2 ticks，位置差 ≤2.5 格，yaw/pitch 差各 ≤8°，速度 L1 差 ≤0.35 |
-| `Capture` | 与 Rejoin 相同的严格姿态/年龄门槛；Atlas 身份、实际火箭、真实可用 duration 列表和点火时机选项也要匹配 |
-| `Funnel` | 合法正结果持续复用；未满四窗口每 40 ticks 后台补充，等待时旧图继续返回；同 Input 保持已有 Window，没有新增时保持 Atlas 身份。空结果 ≤8；目标位移 ≤.75 格及 Aim/参数/物理兼容，证明 cells 内容一致且 ≤80 ticks |
 | Pending 复用 | 6 ticks 内且兼容；否则取消并换新 |
 | Debug trace | 仅读 generation 相同、年龄 ≤8 ticks 的完成缓存，不新提交预测 |
 
 上述 age 从 **提交时刻** 算，不能从 Worker 完成时刻重新延长。还比较按年龄推进后的 PhysicsContext 和启动延迟；Glide 请求不能跨“仍有火箭/已无火箭”复用。cache 最多 96 条。普通 Glide 返回兼容缓存时会滚动提交下一次刷新，避免一个姿态僵持完整 4 ticks。
-
-Funnel 在途复用窗口为 40 ticks；控制任务仍是 6 ticks。地图证明覆盖最多 640 cells，地图 session 与控制 session 各至多 768 cells，但共用全服采集额度。已观测到的 Cell 内容/loaded 改变、驱逐/过龄/缺失都会否决旧地图；尚未分批刷新到的动态地形仍靠最终 Rejoin/live guard。地图 session 只使用一个 slot，因此一个使用 Funnel 的女仆最多合计 25 pending 和 1536 cells；不能继续按“每女仆总共 24/768”估计内存。
 
 `PlanningTask.compatible` 还比较目标位置、目标速度、前摇、攻击范围、重力/转向率/碰撞余量等相关字段。例如 Aim 位置容差 1 格、速度每轴 0.2、前摇 4 ticks；不是只看 UUID。Compact 的当前恢复原点允许 2 格小幅变化，避免每 tick 移动让补能结果永远失配；远距离传送仍被拒绝。
 
@@ -201,7 +195,7 @@ Funnel 在途复用窗口为 40 ticks；控制任务仍是 6 ticks。地图证�
 3. 定义 slot、兼容条件、generation 所属阶段、缓存年龄；有接触承诺的方案增加当前状态认证。
 4. 定义 Pending、队列满、取消、目标消失/移动、维度/配置改变时的主线程行为。
 5. 控制实际效果只从主线程应用，保留真实下一步/伤害检查；Debug 复用结果。
-6. 更新本文和 [验证体系](VALIDATION.md)，按改动范围运行边界检查及代表性生产控制器回放，不能只证明纯算法输出正确。本轮按用户要求不执行全量套件。
+6. 更新本文和 [验证体系](VALIDATION.md)，运行边界检查及完整控制器回放，不能只证明纯算法输出正确。
 
 ## 10. 诊断指标与验证入口
 

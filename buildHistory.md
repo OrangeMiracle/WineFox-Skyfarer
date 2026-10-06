@@ -2,33 +2,19 @@
 
 ## 当前交付状态
 
-0.6.3 先核对用户指定实机日志，再修复 Funnel 生命周期、轨迹群截面、垂直攻击、Capture 反馈、下降补能与标记起飞。仅编译、六项直接相关检查及打包；没有运行全量 build/check，没有安装或启动 Minecraft。
+当前交付为 **0.6.1.1**，基于用户明确指定的本地 0.6.1 提交。仅编译与针对性验证，不包含 Funnel；未启动 Minecraft。
 
-### 0.6.3 稳定立体窗口与捕获恢复（2026-10-05）
+### 0.6.1.1 竖向候选、女仆标记排除与公平唤醒（2026-10-05）
 
-- **先取证**：读取用户指定 latest.log / debug.log 和当前源码；[实机分析](docs/FIELD_ANALYSIS_0.6.3.md) 保存具体时间线与因果边界。20:58:46–51 可见下降、Capture/普通转向/出口往返，cooldown=0；20:56:44 的 10.232 格标记直到 20:56:47 才重选。也保留 JUMP_BODY_BLOCKED / NO_LAUNCH_CORRIDOR 的真实安全拒绝，不将其都归咎于异步。
-- **生命周期**：合法正地图不再 40 ticks 硬到期；未满四窗口才后台补充，旧合法地图持续返回。同 Input 只补空槽，已有 Window 保持身份，无新增时 Atlas 也保持身份，避免冷快照不同子集互换导致 Capture 取消。证明 cells 优先刷新/保留；目标或覆盖失效立即释放旧缓存占用，防止新地图被旧证明 footprint 饿死。世界/物理/配置/generation/目标及 80-tick cell 新鲜度验收仍保留。
-- **体积与竖向**：256 个固定目标相对几何，显式 Strike 坡度 ±.4/±.8、水平/斜向/左右弧；witness 具有对应 pitch/vy。最多四窗口，保留可行的俯冲/上升家族。每窗口最多 27 个相邻状态完整模拟，成功轨迹群对齐为 17 截面，记录 center、width/height、yaw/pitch 容差、vy/speed 范围。所有 seeds 重证并记录覆盖；经验包络不替代当前 Rejoin。
-- **捕获/能量**：Worker 按位置、动量、朝向、pitch 比较各窗口最多三个前段截面，执行选定 Capture.first；已知地图优先于旧 ascent staging 坡度查询。coast 不能完成接入便评估真实库存最小 duration 的 0/8/16 ticks 点火与全部 12 寿命，完整检查新前摇、Strike、Exit、过冲。reserve 参考截面高度，不使用谷底。失败保持廉价截面反馈与 live body guard，不因整次攻击无解切回普通对准或误触 ATTACK_EXIT；最终攻击仍由严格当前状态 Rejoin 授权。
-- **指挥与诊断**：服务端 pick 谓词直接排除全部 EntityMaid，普通/创造镜共用，Debug/遥控器未变。合法近距命令唤醒下一 tick 获取，跳过旧 retry/scan 并优先保留命令目标；资格、装备、主人、AI、起飞净空仍检查。新增 funnelGen/cancelled/submitted；Capture 无 flightRequest 时也输出 energy/pulse/CD，等待/无路线/冷却/无库存与 coast 明确区分。
-- **验证**：`verifyAttackFunnels`、`verifyFunnelAsync`、`verifyAsyncPlanning`、`verifyCommandDispatch`、`verifyDebugTools`、`verifySweepingReplay` 六项直接相关任务分阶段通过。数值检查覆盖面积、俯冲/上升及各自 >20° 持续转弯、山腰、下游截面、全部 12 寿命与前摇过冲拒绝。实际控制器覆盖 coast/pulse/持续下降 Capture→Rejoin→命中；下降案例在离地仍 >8 时、20 ticks 内点火，未等谷底接近；明确命令下一 tick TARGET_SELECTED 并完成异步起飞准备。静止 100 ticks 跨后台刷新保持已有合法窗口，空槽新增不伪装成闪烁。双侧山腰均第 53 tick 命中、第 143 tick 落地，无碰撞。
-- **构建证据**：[v063-targeted.log](tools/v063-targeted.log) 成功 42s；[v063-cache-final.log](tools/v063-cache-final.log) 成功 49s；最后缓存占用修复后的 [v063-delivery.log](tools/v063-delivery.log) 成功 1m 13s，编译、FunnelAsync、AsyncPlanning、双侧山腰与 jar 通过。`v063-first/regression/final.log` 含已修复的中间失败（容差过窄、竖向转弯出口、冷快照子集替换），不可将这些日志整体标为成功。未运行其余 20 项 verify。
-- **最终包**：Capture 优先于旧 ascent staging 查询的收尾改动后，[v063-capture-priority.log](tools/v063-capture-priority.log) 成功 41s：编译、实际控制器 FunnelAsync 回归及 jar。交付 `build/libs/winefox_skyfarer-1.21.1-0.6.3.jar`，**476,828 bytes**，SHA-256 `8885E677C301490D562010798F3259316D166D5C68D47D21762699568EE24817`。Gradle、Manifest、Mod 元数据均为 0.6.3；248 个条目，含 Section/Planner、Mixin 与中英文资源，不含离线夹具、verification 或依赖 Jar。`git diff --check` 通过。README、总索引、Funnel、异步、飞控、物理、配置/Debug、验证与本次实机分析同步更新。
-- **边界**：未启动 Minecraft；离线回放不能证明用户原存档首次攻击已经明显加快。经验截面不保证连续体积中任意状态可达；动态地形靠分批快照刷新及最终当前状态/实时身体防线，未宣称即时全世界感知。仍需用户复测静止目标、山腰下降、真实原生伤害时序与多女仆性能。
-
-### 0.6.2 目标攻击窗口与主动捕获（2026-10-05）
-
-- **根因**：旧 Sweep 把女仆当前坐标/速度切线作为几何起点，且只在距离 6–64 格、已经滑翔时搜索；Compact 缺少稳定的已知攻击入口。新层在目标选定后提前搜索，支持地面准备，以及已分配目标实体已加载时的指挥赶路预热。预热不接管 TransitFlight、不动库存，不为窗口额外加载世界。
-- **组织层**：新增 `AttackFunnelPlanner.Input/Window/Atlas/Capture`。目标相对的最多 160 条定向 C1 几何，采样速度/高度/弧度/侧偏接触和活动火箭状态；两端交换后逐个重新向前模拟，不能倒放轨迹。最多保留四个不同入场方向；容差是搜索门槛，不能声称整个连续状态域都获认证。
-- **复用**：提取既有 `SweepingAttackPlanner.candidate()` 原语，不改变局部 candidates 的数学。复用 VanillaElytra / PhysicsContext、CollisionSnapshot swept-body/接触射线、完整前摇、EnergyReserveEnvelope、Rejoin、FireworkManager 全寿命/真实库存及既有 ATTACK_EXIT / Spears 原生伤害。现有 Lane/局部 Sweep 继续补充有限地图遗漏的机会，战略目标排序没有改动。
-- **Capture 执行**：当前状态先尝试无新增烟花，随后按真实可用 duration 从小到大比较现在/8/16 ticks 后点火，每个方案验证 12 个寿命。最多 64 ticks 接入，接入后重新预留完整原生前摇并证明 Strike/Exit。延迟方案到时重新认证立即点火；实际生成/库存消耗失败则撤销 funded 证书。低速进入紫色空间不能直接承诺；最终当前状态 Rejoin 成功才开始新 charge session。
-- **异步/缓存**：新增封闭 `PlanningTask.Funnel/FunnelResult/Capture`。目标地图单独使用固定阶段 session，与控制 session 共用同一个 Source、共享 Worker 和全服采集预算；不新增线程池、join 或主线程同步 fallback。最多一个在途地图、一个完成地图、四个窗口；正缓存 40 ticks，空结果 8 ticks，证明覆盖最多 640 cells。目标位移/参数、Level/dimension、物理/config/generation/年龄和已观测到的 Cell 变化/驱逐/缺失均参与验收。Capture 使用 Rejoin 同级的 2-tick 严格姿态门槛。地图额外最多 768 cells / 一个 pending，女仆含控制 session 合计最多 1536 cells / 25 pending；全服 32+32 队列和采集额度保持。
-- **回放中修正**：仅保留反向远端窗口会让女仆追逐不能当前捕获的入口，因此补充目标相对的肩部绕行和侧偏接触，入口位置门槛覆盖曲线前段，最终仍须完整 Rejoin。冷启动时新地图先返回也不能饿死已经在途的局部曲线认证；保留两者的异步领取，防止结果先后顺序导致山腰绕行失败。
-- **Debug**：新增紫色 `attack_funnels` NBT，最多四条、每条十八个三维切向截面，四条纵边、不画连续网格。客户端只消费服务端完成结果；青绿已选攻击曲线、黄色身体、蓝/红/绿均保持。NBT 可扩展字段沿用协议 3；推荐服务端与客户端同时更新才能看到新图示。
-- **验证**：[v062-targeted.log](tools/v062-targeted.log) 成功（1m 5s）：编译、`verifyAttackFunnels`、`verifyFunnelAsync`、`verifyDebugTools`、`verifyAsyncPlanning`、`verifySweepingAttacks`、`verifySweepingReplay`、Jar。包含用户要求的七类反例；左右山腰均第 53 tick 命中，第 142/151 tick 落地，无身体碰撞。最终库存保护改动后，[v062-capture-final.log](tools/v062-capture-final.log) 成功（37s）：重新编译，扩展 `verifyFunnelAsync` 运行真实控制器无烟花/Flight 0 两种 Capture→Rejoin→命中，并核对实际库存消耗，再生成最终 Jar。未运行其他 20 项 verify / build / check，也未将旧版全量结果冒充本轮结果。
-- **文档**：新增 [ATTACK_FUNNELS](docs/ATTACK_FUNNELS.md)，同步总索引、飞控、异步、物理、Debug、验证与 README。修正飞控总览遗留的“达到时域上限仍可接受部分 safe/hit”说明；0.6.1 实际源码已要求完整离场，这次以源码校正文档。
-- **交付**：`build/libs/winefox_skyfarer-1.21.1-0.6.2.jar`，**468,617 bytes**；SHA-256 `E1F0636143538441184B5A847D8763AB58A81342C066885BBE73961EE64934C1`。Gradle、Manifest、Mod 元数据均为 0.6.2；247 个条目，新增 Planner/DTO、Mixin 与中英文资源已检查，不含回放/verification/模拟 Minecraft/TLM 类或嵌套依赖 Jar。`git diff --check` 通过。
-- **实机边界**：未启动 Minecraft。离线世界/API 是夹具，不能替代原生 Spears、引擎实体时序、活动目标、动态方块或第三方运动规则。有限窗口与 Capture 控制策略不保证任意山地可达；请观察起飞前窗口出现、主动接入是否减少绕圈、烟花时机、目标移动后的刷新、紫色截面与多女仆的 MSPT/内存/GC。地图 Cell 是分批刷新，不宣称动态地形立即失效。
+- **基线**：开始时 status/diff/stash 均为空，HEAD 实为 `6c5266d`（0.6.3），并非已准备的 0.6.1。向用户说明差异后，用户明确选择本地 `606f79d`；以该提交恢复工作区，再进行本轮修改。没有 fetch/pull、远程覆盖或重写提交历史。0.6.2/0.6.3 的 Funnel 代码、接入、检查与专属文档不再属于当前基线；原提交仍保留。
+- **飞控**：复用 VanillaElytra、AttackCertificate/Rejoin、Lane/slope、SweepingAttackPlanner、EnergyReserveEnvelope 与完整 Strike→Exit 认证。保留 108 条浅角曲线，新增 108 条 ±50/60/70° 与左右转弯组合；起点仍取三维实际动量，支持越脊后下刺与先降后上攻的几何搜索。曲线姿态允许 ±75°，陡角离场允许 9°/tick 收平/拉起；完整物理、身体通道、前摇和烟花寿命仍是硬条件。普通路线必须实际预测接触才能在评分中压过已认证曲线。
+- **坡线与准备**：拟合和候选坡度扩展到 ±tan(70°)，采样步长上限 .4 格，避免连续陡坡跨出支撑高度窗口；平地高差也可搜索有符号攻击线，最短攻击段按三维长度换算水平投影，出口增加 10 格抬升候选。APPROACH/REPOSITION/补能准备的搜索准入不再强制满足平滑收底俯冲距离；真正收底剖面保留原距离条件，所有进攻仍须最终证书。
+- **标记**：普通/创造镜共用的服务端 pick 谓词直接排除所有 EntityMaid，不看主人、工作模式、Home/Follow 或敌友；调试棒、女仆遥控器、远程调试的选取逻辑保持。
+- **远程调度**：原 Session.attempted 对一次失败永久封锁到下一次点击，且持久化的已知非骑空士记录会直接跳过；改为生产 RemoteWakeScheduler 管理有界 wake，未尝试者优先、按旧尝试顺序轮转，失败从发起起 200 ticks 后可再试。保留每玩家每 10 ticks 2 只、全服 8 个、100 ticks 超时。增删/死亡/自然清理标记刷新 generation；任务结束、创造目标卸载、登出、离开和关服释放，接单将票据交给独立 Order/TransitFlight，不阻断同 owner 其他候选。存档角色只作提示，加载后重查真实资格。回 Home 后下一任务可重新唤醒。
+- **票据与诊断**：尊重 forceChunk 返回值，不把失败的块记为持有；空或未完整创建的窗口不能 ready。增加 REMOTE_WAKE 的 discovered/rejected、queued、ticket、loaded、qualification、assignment、timeout/released 与 attempted/generation，COMMAND_TICKET 记录实际增减窗口。日志区分每只女仆 UUID、owner 与失败原因。
+- **限定验证**：`tools/baseline-delivery.log` 编译、verifyRemoteWake、verifyCommandDispatch 与 jar 成功；`tools/baseline-vertical-final.log` 的 verifyVerticalAttacks、verifyCombatEntries、verifySweepingReplay 成功。陡角实际接触约 61.14° 下刺和 −51.91° 转弯上攻，接触 tick 17/13；上攻覆盖全部 12 种剩余推进寿命，碰撞/射线拒绝保留。低能量/上升进场分别命中于 19/90 tick，128/139 tick 落地；左右遮挡山腰均 53 tick 命中，142/139 tick 落地。未跑 build/check 或全量 verify。
+- **唤醒覆盖与边界**：生产调度器与实际 registry NBT 往返覆盖两只卸载 Home、13 候选批次、第二次任务、存档重建含旧/未知角色、首批失败不饿死后续、同 generation 冷却重试、全局 cap、创建/资格失败、换代/关服释放。外部区块加载、接单和 Home 返回用夹具模拟；真实 NeoForge 读盘、TLM 传送落点和第三方交互仍由实机确认。中间测试反射触发未转换的 TLM 类错误，改为包内直接调用实际 NBT 入口，未修改依赖或启动游戏。
+- **交付**：[winefox_skyfarer-1.21.1-0.6.1.1.jar](build/libs/winefox_skyfarer-1.21.1-0.6.1.1.jar)，451,525 bytes，SHA-256：`F13490DD31B4914B01E6D798CBEB2EFCF50352647B11EA12324619177BE8A465`。243 个条目，Manifest/Mod 元数据统一 0.6.1.1；无 Funnel、验证/回放夹具或模拟 Minecraft/TLM 类。相关 README/docs 同步；客户端与服务端同时替换旧包。
 
 ### 0.6.1 原版物理预测与完整路线储备（2026-10-05）
 

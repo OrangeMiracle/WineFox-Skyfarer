@@ -92,17 +92,11 @@ public final class SweepingAttackPlanner {
     public static Point point(FlightPrediction.State s){return new Point(s.x(),s.y(),s.z());}
     private static FlightPrediction.State state(Point p){return new FlightPrediction.State(p.x,p.y,p.z,0,0,0,0,0);}
     public static List<Path> candidates(FlightPrediction.State start,Point target,double exitLength){
-        var paths=new ArrayList<Path>();
-        for(double angle:new double[]{0,-30,30,-60,60,-90,90,-120,120})for(double scale:new double[]{.55,.9})for(double lift:new double[]{0,1.2})for(double offset:new double[]{0,-1.2,1.2})
-            paths.add(candidate(start,target,exitLength,angle,scale,lift,offset));
-        return paths;
-    }
-    /** Shared geometric primitive; callers may supply a synthetic target-relative start. */
-    public static Path candidate(FlightPrediction.State start,Point target,double exitLength,double angle,double scale,double lift,double offset){
-        var origin=point(start);var delta=target.subtract(origin);double distance=delta.length();
+        var paths=new ArrayList<Path>();var origin=point(start);var delta=target.subtract(origin);double distance=delta.length();
         var velocity=new Point(start.vx(),start.vy(),start.vz());
         var tangent=velocity.length()>.15?velocity.unit():delta.unit();
         double direct=Math.atan2(delta.x,delta.z),horizontal=Math.hypot(delta.x,delta.z);
+        for(double angle:new double[]{0,-30,30,-60,60,-90,90,-120,120})for(double scale:new double[]{.55,.9})for(double lift:new double[]{0,1.2})for(double offset:new double[]{0,-1.2,1.2}){
             double a=direct+Math.toRadians(angle),sign=angle==0?0:Math.signum(angle);
             double slope=Math.clamp(delta.y/Math.max(8,horizontal),-.65,.65);
             var direction=new Point(Math.sin(a),slope*.35,Math.cos(a)).unit();
@@ -112,10 +106,27 @@ public final class SweepingAttackPlanner {
             var endDirection=new Point(Math.sin(a+sign*.65),.25,Math.cos(a+sign*.65)).unit();
             var end=contact.add(direction.scale(exitLength*.65)).add(endDirection.scale(exitLength*.65)).add(new Point(0,2,0));
             var exit=new Cubic(contact,contact.add(direction.scale(join)),end.subtract(endDirection.scale(exitLength*.45)),end);
-            return new Path(entry,exit,angle==0?"DIRECT":Math.abs(angle)<90?(angle<0?"LEFT_ARC":"RIGHT_ARC"):(angle<0?"LEFT_SWEEP":"RIGHT_SWEEP"),angle==0?0:1.5);
+            paths.add(new Path(entry,exit,angle==0?"DIRECT":Math.abs(angle)<90?(angle<0?"LEFT_ARC":"RIGHT_ARC"):(angle<0?"LEFT_SWEEP":"RIGHT_SWEEP"),angle==0?0:1.5));
+        }
+        // Add a bounded, symmetric vertical family. Keep the original 108 shallow candidates.
+        // A rising initial tangent plus a descending strike naturally crests; the inverse dips.
+        for(double angle:new double[]{0,-30,30,-60,60,-90,90,-120,120})
+            for(double elevation:new double[]{-70,-60,-50,50,60,70})for(double scale:new double[]{.55,.9}) {
+                double a=direct+Math.toRadians(angle),e=Math.toRadians(elevation),sign=Math.signum(angle);
+                var direction=new Point(Math.sin(a)*Math.cos(e),Math.sin(e),Math.cos(a)*Math.cos(e));
+                double handle=Math.clamp(distance*scale,5,36),join=Math.clamp(distance*.18,2.5,5);
+                var entry=new Cubic(origin,origin.add(tangent.scale(handle)),target.subtract(direction.scale(join)),target);
+                // The exit can flatten and turn immediately after the C1 join; physics certifies the pullout.
+                var endDirection=new Point(Math.sin(a+sign*.85),.2,Math.cos(a+sign*.85)).unit();
+                var end=target.add(endDirection.scale(exitLength)).add(new Point(0,2,0));
+                var exit=new Cubic(target,target.add(direction.scale(join)),end.subtract(endDirection.scale(exitLength*.45)),end);
+                paths.add(new Path(entry,exit,"VERTICAL_"+(elevation<0?"DIVE":"CLIMB")+(angle==0?"":angle<0?"_LEFT":"_RIGHT"),angle==0?0:1.5));
+            }
+        return paths;
     }
     public static Command command(FlightPrediction.State s,Path path,FlightPrediction.Aim aim,boolean exiting,int rocket,double gravity,double rate){
-        Point here=point(s);double along=path.nearest(here,exiting),speed=Math.hypot(s.vx(),s.vz());
+        Point here=point(s);double along=path.nearest(here,exiting),speed=path.style.startsWith("VERTICAL_")
+            ?Math.sqrt(s.vx()*s.vx()+s.vy()*s.vy()+s.vz()*s.vz()):Math.hypot(s.vx(),s.vz());
         Point goal=path.atDistance(along+Math.clamp(speed*7,3,10));
         // Track the moving body, not just its look direction: compensate for elytra turn lag.
         var tangent=path.atDistance(along+1).subtract(path.atDistance(Math.max(0,along-1))).unit();
@@ -125,13 +136,21 @@ public final class SweepingAttackPlanner {
         double yaw=Math.toDegrees(Math.atan2(-dx,dz));
         double vy=tangent.y*speed;
         double pitch=GlidePlanner.feedbackPitch(s,goal.y,vy,gravity,rocket>0);
-        return new Command(yaw,Math.clamp(pitch,-65,55),rate,6);
+        if(path.style.startsWith("VERTICAL_")) {
+            double horizontal=Math.max(.2,Math.hypot(goal.x-s.x(),goal.z-s.z()));
+            pitch=-Math.toDegrees(Math.atan2(goal.y-s.y()+(vy-s.vy())*2,horizontal));
+            if(!exiting&&aim!=null&&Math.hypot(aim.x()-s.x(),aim.z()-s.z())<aim.maxReach()+.75){
+                double center=aim.bottom()+aim.height()*.5;
+                pitch=-Math.toDegrees(Math.atan2(center-s.y(),Math.max(.05,Math.hypot(aim.x()-s.x(),aim.z()-s.z()))));
+            }
+        }
+        return new Command(yaw,Math.clamp(pitch,-75,75),rate,exiting&&path.style.startsWith("VERTICAL_")?9:6);
     }
     public static Rollout simulate(FlightPrediction.State start,Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,
         double minSpeed,boolean exiting,GlidePlanner.Corridor space,Contact contact,int budget){
         return simulate(start,path,aim,rocket,gravity,rate,minSpeed,exiting,space,contact,budget,true);
     }
-    static Rollout simulate(FlightPrediction.State start,Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,
+    private static Rollout simulate(FlightPrediction.State start,Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,
         double minSpeed,boolean exiting,GlidePlanner.Corridor space,Contact contact,int budget,boolean recordTrace){
         var s=start;boolean hit=exiting;int hitTick=exiting?0:-1;double miss=Double.POSITIVE_INFINITY,cost=path.simplicity;Command first=null;
         var trace=new ArrayList<GlidePlanner.TracePoint>();if(recordTrace)trace.add(new GlidePlanner.TracePoint(s,.15,.12));
