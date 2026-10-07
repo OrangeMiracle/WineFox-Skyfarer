@@ -2,7 +2,16 @@
 
 ## 当前交付状态
 
-当前交付为 **0.6.2.5**，在本地 0.6.2.4 工作区之上修复，保留已有未提交内容。仅编译与针对性验证，不包含 Funnel；未启动 Minecraft。
+当前交付为 **0.6.2.6**，在当前本地 0.6.2.5 源码之上修复。仅编译与针对性验证，不包含 Funnel；未启动 Minecraft。
+
+### 0.6.2.6 副手激流真实蓄力与释放入口（2026-10-07）
+
+- **实机证据**：指定实例 latest.log/debug.log 确认 0.6.2.5。28 次 RIPTIDE_NO_SAFE_PATH 尚未开始使用；唯一一次 LAUNCH_WINDUP 于 12:15:15.902，16.401 跳跃、16.454 已 RELEASED 且 vy≈3.152，16.852 路径重验失败后返航。不能把它解释成始终点按右键。旧日志缺少手与使用剩余计时，也不能区分所有路径拒绝细因。摘录 [riptide-release-evidence.txt](tools/riptide-release-evidence.txt)，保留安全拒绝，不凭表象降低门槛。
+- **真实源码缺口**：旧执行器 stopUsingItem 后直接施加冲量/spin，没有走物品 releaseUsing 入口。现调用 LivingEntity.releaseUsingItem，经过 NeoForge onUseItemStop 与 ItemStack.releaseUsing；TridentItem 原版仅处理 Player，因此通过 MaidRiptideReleaseMixin 为同步授权且重新核对身份/环境/charge 的女仆适配同样冲量。无授权、事件否决、回调缺失都不补发推进；不创建假玩家。授权 finally 清理、实际释放只执行一次。
+- **副手与计时**：显式 OFF_HAND，检查 useItem、used hand、实际副手一致；跳跃与释放采用 getTicksUsingItem，不再使用世界时间精确命中第 10 tick 的假设。持续蓄力直到至少 10 ticks，停滞超过 40 ticks 取消；保留正常跳跃→滑翔→完整路径重验。主手长矛原有使用保护不变，结束后可开始独立主手会话。
+- **诊断与状态**：输出 item/hand、开始 tick、累计/剩余 charge、同一堆栈、环境、附魔等级/强度、释放回调、实际 impulse/spin。CHARGING 每 5 ticks；取消写明原因，stopUsingItem 的只读审计记录有界调用栈，状态切换单独记录。修复路径中断也标为 LAUNCH_COMPLETE 的误导，只有 spin 正常结束才进入成功分支。
+- **验证**：[riptide-release-acceptance.log](tools/riptide-release-acceptance.log) 的 compileJava、verifyRiptideRelease、verifyEquipmentPropulsion、verifyRiptidePriority、verifyEquipmentLifecycle、verifyLaunchAttackReplay、jar 成功。覆盖完整主矛副戟起飞与释放、真实使用计时延迟、主手不覆盖、副手结束后长矛恢复、开始/释放事件否决、失雨与手被覆盖取消、重复/无授权回调拒绝；保留 1500 原版冲量差分、优先级、环境/碰撞拒绝与普通 Launch Attack 回归。外部事件/实体 tick/JumpControl 用夹具，生产 Mixin 与原版入口用编译/字节码核对；不声称验证了实机 Mixin 应用和第三方事件交互。未全量 verify 或启动 Minecraft。
+- **交付**：[winefox_skyfarer-1.21.1-0.6.2.6.jar](build/libs/winefox_skyfarer-1.21.1-0.6.2.6.jar)，524,792 bytes，SHA-256 `48EC41A0B4910545955D3B8D87619C02FDEFD924E8C06F078A2B543EF1517176`。版本元数据与 README/docs 同步；未安装到测试实例。
 
 ### 0.6.2.5 激流优先、独立生命周期与起飞推进（2026-10-07）
 

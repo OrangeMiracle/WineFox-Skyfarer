@@ -269,15 +269,16 @@ public final class AirCombatController {
         if(maid.isInWaterOrBubble() && state!=AirCombatState.WATER_ESCAPE && (managed || maid.level().getGameTime()>=retryAt)
             && SkyfarerRuntime.isSkyfarer(maid) && workBlockReason().isEmpty() && SkyfarerEquipment.elytra(maid)
             && (SkyfarerEquipment.fireworks(maid) || fireworks.active() || dev.winefox.skyfarer.compat.tlm.RiptidePropulsion.available(maid)>0)) beginWaterEscape();
+        riptide.context(state.name());
         if(riptide.active()) {
-            if(earlyAvoidance()){riptide.cancel(maid);return;}
-            if(!workBlockReason().isEmpty()||equipmentRetreat||!SkyfarerRuntime.isSkyfarer(maid))riptide.cancel(maid);
+            if(earlyAvoidance()){riptide.cancel(maid,"EARLY_AVOIDANCE:"+diagnostic);return;}
+            if(!workBlockReason().isEmpty()||equipmentRetreat||!SkyfarerRuntime.isSkyfarer(maid))riptide.cancel(maid,"WORK_OR_EQUIPMENT_BLOCK:"+workBlockReason());
             else if(riptide.tick(maid,predictionStart(),planning,heading)){TlmFollowCompat.clearGroundMovement(maid);diagnostic="RIPTIDE_PROPULSION";return;}
             else if(state!=AirCombatState.WATER_ESCAPE) {
                 planning.invalidate();
                 if(state==AirCombatState.TAKEOFF) {
                     if(maid.onGround()){riptideLaunchFailed=true;transition(AirCombatState.TAKEOFF_PREP,"RIPTIDE_LAUNCH_FALLBACK");}
-                    else {riptideLaunchAttack=true;transition(AirCombatState.CLIMB,"RIPTIDE_LAUNCH_COMPLETE");}
+                    else {riptideLaunchAttack=riptide.completed();transition(AirCombatState.CLIMB,riptide.completed()?"RIPTIDE_LAUNCH_COMPLETE":"RIPTIDE_LAUNCH_INTERRUPTED");}
                 } else if(!returning())startApproach();
             }
         }
@@ -1210,7 +1211,7 @@ public final class AirCombatController {
         heading.steerAngles(maid,flightPlan.yaw(),flightPlan.pitch(),flightPlan.yawRate(),flightPlan.pitchRate());
     }
     private void beginReturn(String reason) {
-        riptide.cancel(maid);
+        riptide.cancel(maid,reason);
         sweepPath=null;sweepTrace=List.of();
         compactGoal=null; chainCandidate=null; chainTarget=null;
         returnReason=reason;
@@ -1419,6 +1420,7 @@ public final class AirCombatController {
         waypoint = point; route = new AirRoute(List.of(new AirRoute.Waypoint(name, point))); heading.steer(maid, point, attack, pullUp);
     }
     private void transition(AirCombatState next, String reason) {
+        riptide.transition(maid,state.name(),next.name(),reason);
         diagnostic = reason;
         if (state == next) return;
         boolean idleScan = state == AirCombatState.GROUNDED && next == AirCombatState.TARGET_ACQUIRE || state == AirCombatState.TARGET_ACQUIRE && next == AirCombatState.GROUNDED;
@@ -1428,6 +1430,8 @@ public final class AirCombatController {
         if(changeContext&&managed&&next!=AirCombatState.GROUNDED)planningContext();
         if (next == AirCombatState.TAKEOFF_PREP) { managed = true; airborneTicks = 0; pendingReturn = ""; }
     }
+    public boolean riptideActive(){return riptide.active();}
+    public void riptideUseStopped(String caller){riptide.observedStop(maid,caller);}
     public void release() {
         release(diagnostic);
     }
@@ -1444,7 +1448,7 @@ public final class AirCombatController {
     /** Transfer/unload cleanup cannot revoke the wings of a still airborne entity. */
     public void handoffToTransit(){dispose("COMBAT_TO_TRANSIT",true);}
     public void dispose(String reason,boolean preserveGlide) {
-        riptide.cancel(maid);
+        riptide.cancel(maid,reason);
         lifecycle("CONTROL_DISPOSE",reason+" preserveGlide="+preserveGlide);
         planning.close();
         emergencyPlanning.close();emergencyPlan=null;dangerUntil=0;emergencyTicks=0;

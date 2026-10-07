@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 group = 'dev.winefox.skyfarer'
-version = '0.6.2.5'
+version = '0.6.2.6'
 base { archivesName = 'winefox_skyfarer-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
@@ -271,3 +271,9 @@ tasks.register('verifyRiptidePriority', JavaExec) {
     mainClass = 'dev.winefox.skyfarer.replay.RiptidePriorityChecks'
 }
 tasks.named('check') { dependsOn verifyRiptidePriority }
+tasks.register('verifyRiptideRelease', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.RiptideReleaseChecks'
+}
+tasks.named('check') { dependsOn verifyRiptideRelease }

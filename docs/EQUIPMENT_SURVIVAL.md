@@ -1,6 +1,18 @@
 # 装备、生存与激流推进
 
-源码版本 **0.6.2.5**，核对日期 2026-10-07。沿用 0.6.2.1 飞控，不引入 Funnel。源码为最终事实。
+源码版本 **0.6.2.6**，核对日期 2026-10-07。沿用 0.6.2.1 飞控，不引入 Funnel。源码为最终事实。
+
+## 0.6.2.6 激流使用与释放审计
+
+读取指定实例最新 latest.log/debug.log（加载 0.6.2.5），两者记录同一批事件：28 次 RIPTIDE_NO_SAFE_PATH，只有一次进入 LAUNCH_WINDUP。latest.log 819/824/825 行显示 12:15:15.902 开始、16.401 跳跃、16.454 已 RELEASED，向上速度约 3.152；826 行随后路径重验失败并返航。因此不能将这份日志解释为“始终没有蓄力或冲量”。此前日志没有 hand/remainingUseTicks，不能追认全部使用细节，也不能从 PATH_REJECTED 区分碰撞、快照或生物扫掠。摘录：[riptide-release-evidence.txt](../tools/riptide-release-evidence.txt)。没有放宽安全拒绝以强行释放。
+
+源码确认旧执行器通过 stopUsingItem 后直接 push/spin，遗漏了 LivingEntity.releaseUsingItem → NeoForge onUseItemStop → ItemStack.releaseUsing → TridentItem.releaseUsing。0.6.2.6 改走这条实际释放链；原版 TridentItem 的冲刺分支只接受 Player，新增 MaidRiptideReleaseMixin 仅为当前已认证、同步授权的女仆释放适配同样冲量/耐久/spin，普通三叉戟或外部直接释放不获得推进。ThreadLocal 授权在 finally 移除，事件否决或回调未到达不会事后补冲量，不创建假玩家。
+
+明确 startUsingItem(OFF_HAND)，开始后检查实际 used hand、useItem 与副手堆栈身份；蓄力全程保持同一会话。跳跃/释放读取 getTicksUsingItem（use duration−remaining），不以世界时间替代使用计时；停滞超过 40 ticks 才取消本次请求。至少 10 ticks 后正常跳跃，离地滑翔、路径重验后释放。主手 Spear startCharge 原有“不在使用物品”门槛与 stopCharge 的长矛身份门槛保留，不能覆盖或终止副手激流。释放后 spin 计时独立，正常结束与路径中断分开记录，中断不能标为 LAUNCH_COMPLETE。
+
+debuglog 的 RIPTIDE 记录 selectedHand/item、usedHand、startTick/tick、charge/remaining、sameUse、using、wet、enchantLevel/strength、released/spin/velocity。CHARGING 每 5 ticks 一次；RELEASE_REQUEST 记录完整蓄力和环境，RELEASE_CALLBACK 记录实际速度增量及 spinStarted，之后才有 RELEASED。END 带具体取消原因；STATE_TRANSITION 记录前后状态与原因。RiptideUseAuditMixin 只观察 stopUsingItem，输出有界调用栈及 releaseScope，以定位本 Mod、原版或外部取消者，不拦截取消。日志关闭时不采集调用栈。
+
+定向证据：`tools/riptide-release-acceptance.log`。verifyRiptideRelease 使用实际控制器/异步规划/释放适配与外部生命周期夹具，覆盖主手矛＋副手激流、真实计时延迟 4 ticks 仍持续蓄力、开始/释放事件否决、错误 hand 与失雨取消、冲量仅一次、spin 正常结束后重新开始主手长矛会话；verifyEquipmentPropulsion 核对真实依赖调用链及 1500 冲量差分；verifyRiptidePriority、verifyEquipmentLifecycle、verifyLaunchAttackReplay 保持通过。编译与 jar 成功。实际游戏的 Mixin 应用、第三方事件和网络表现仍需实机确认；夹具不等同于 Minecraft 启动测试。
 
 ## 0.6.2.4 日志定位
 
@@ -54,7 +66,7 @@ extra_elytra_items = ["cataclysm:ignitium_elytra_chestplate"]
 - 需至少 **10 tick** 使用时间，三叉戟耐久不能到 `maxDamage−1`。开始和释放时均重新检查湿润环境。
 - `isInWaterOrRain()` 使用实际水中状态或脚部/头部位置的 `isRainingAt`；后者检查天空可见、降水高度图及生物群系降水。全局下雨但有屋顶、或落雪，都不会冒充可激流的雨水。
 - `EnchantmentHelper.getTridentSpinAttackStrength(stack, maid)` 读取真实附魔效果，原版 I/II/III 为 **1.5 / 2.25 / 3.0**。按原版 float `Mth` 查表、归一化 look 和乘法顺序，将推进向量**加到**当前速度，不替换动量。
-- 消耗 1 耐久，停止使用物品，设置原版 LivingEntity 的 **20 tick** spin 字段/标志，播放附魔对应声音。原版 `releaseUsing` 仅接受 Player，故以小型 accessor 适配女仆，不创建假玩家、不生成三叉戟投射物、不另造激流伤害。
+- 达到使用时间并通过释放事件后，在三叉戟 releaseUsing 回调内消耗 1 耐久，设置原版 LivingEntity 的 **20 tick** spin 字段/标志并叠加冲量、播放声音；原生 releaseUsingItem 最后停止使用物品。原版冲刺分支仅接受 Player，故以受控释放 Mixin 和小型 accessor 适配女仆，不创建假玩家、不生成三叉戟投射物、不另造激流伤害。
 - 原版触碰生物会终止 spin 并反转速度，碰墙也终止。候选及每 tick 重验排除 spin 段内现有生物的扫掠箱（含主人/友军）；外界后来移动导致碰撞，下一 tick 用真实速度恢复，不能保证动态环境永不改变。
 
 `RiptidePlanner` 最多采样 3 种背包/副手推进强度、每种 3 个俯仰候选，认证 **10 前摇 + 20 spin + 12 恢复 tick** 的身体扫掠、受限转向、原版滑翔/水中移动、目的地余量和末段速度。空中 coast 足够时不补能；需要推进时，**安全可执行 Riptide 优先于 Firework**，取消激流与火箭成本比较及火箭专用航向门槛。激流自身完整模拟负责转弯安全。活动烟花仍会排除激流，因为未认证两种推进同时叠加；火箭 cooldown 不影响激流。

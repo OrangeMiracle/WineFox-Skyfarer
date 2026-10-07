@@ -30,8 +30,14 @@ public class EntityMaid extends LivingEntity implements dev.winefox.skyfarer.mix
  public boolean isInWaterOrRain(){return water||rain;}public ItemStack getOffhandItem(){return offhand;}
  public Backpack getAvailableBackpackInv(){return backpack;}
  public void setItemSlot(Object slot,ItemStack stack){offhand=stack;}
- public void startUsingItem(Object hand){using=true;usedTicks=0;}public void stopUsingItem(){using=false;}
- @Override public ItemStack getUseItem(){return using&&offhand!=ItemStack.EMPTY?offhand:weapon;}
+ public net.minecraft.world.InteractionHand useHand=net.minecraft.world.InteractionHand.MAIN_HAND;
+ public ItemStack activeUse=ItemStack.EMPTY;public boolean vetoUseStart,vetoRelease;public int releaseCalls,releaseCallbacks,mainStarts,offhandStarts;
+ public void startUsingItem(Object hand){if(using||vetoUseStart)return;useHand=(net.minecraft.world.InteractionHand)hand;activeUse=useHand==net.minecraft.world.InteractionHand.OFF_HAND?offhand:weapon;using=true;usedTicks=0;if(useHand==net.minecraft.world.InteractionHand.OFF_HAND)offhandStarts++;else mainStarts++;}
+ public void stopUsingItem(){using=false;activeUse=ItemStack.EMPTY;usedTicks=0;}
+ @Override public ItemStack getUseItem(){return using?activeUse:ItemStack.EMPTY;}
+ public net.minecraft.world.InteractionHand getUsedItemHand(){return useHand;}
+ public int getUseItemRemainingTicks(){return using?activeUse.getUseDuration(this)-usedTicks:0;}
+ public void releaseUsingItem(){releaseCalls++;if(using&&!vetoRelease){releaseCallbacks++;dev.winefox.skyfarer.compat.tlm.RiptidePropulsion.releaseAuthorized(this,activeUse,getUseItemRemainingTicks());}stopUsingItem();}
  public void push(double x,double y,double z){velocity=velocity.add(x,y,z);}public Object getSoundSource(){return this;}
  public void wfs$spinTicks(int ticks){spinTicks=ticks;}public void wfs$spinDamage(float damage){}public void wfs$spinItem(ItemStack item){}public void wfs$livingFlag(int flag,boolean value){}
  public static class Backpack {public ItemStack stack=ItemStack.EMPTY;public int getSlots(){return 1;}public ItemStack getStackInSlot(int i){return stack;}public ItemStack extractItem(int i,int n,boolean sim){return stack;}public void setStackInSlot(int i,ItemStack s){stack=s;}public boolean isItemValid(int i,ItemStack s){return true;}public int getSlotLimit(int i){return 64;}}

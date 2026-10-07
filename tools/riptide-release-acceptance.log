@@ -1,0 +1,53 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+注: 某些输入文件使用或覆盖了已过时的 API。
+> Task :compileJava
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :compileControllerReplay
+
+> Task :verifyRiptideRelease
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+release scenario=SUCCESS starts=1 releases=1 callbacks=1
+release scenario=RAIN_LOST starts=1 releases=0 callbacks=0
+release scenario=WRONG_HAND starts=1 releases=0 callbacks=0
+release scenario=RELEASE_VETO starts=1 releases=1 callbacks=0
+release scenario=START_VETO starts=0 releases=0 callbacks=0
+Riptide release checks passed: explicit offhand, delayed real charge, takeoff persistence, release callback/impulse exactly once, start/stop event veto, weather/hand cancellation, spear restoration.
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava UP-TO-DATE
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses UP-TO-DATE
+
+> Task :verifyEquipmentPropulsion
+1500 native impulse vectors, full Riptide collision/overshoot and native environment/melee integration checks passed
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyRiptidePriority
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+[[WFS debug] PROPULSION maid=b0a5b065-a43b-4383-8c8f-adb735ff5508 reason=RIPTIDE_WAITING_CERTIFICATE launch=true wet=true strengths=[3.0] rocketCooldown=0 rocketActive=false, [WFS debug] RIPTIDE maid=b0a5b065-a43b-4383-8c8f-adb735ff5508 event=LAUNCH_WINDUP state=TAKEOFF_PREP selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=5 charge=0 remaining=72000 sameUse=true using=true wet=true enchantLevel=3 strength=3.0 released=false spin=false velocity=(0.0,0.0,0.0), [WFS debug] PROPULSION maid=b0a5b065-a43b-4383-8c8f-adb735ff5508 reason=RIPTIDE_SELECTED launch=true wet=true strengths=[3.0] rocketCooldown=0 rocketActive=false, [WFS debug] RIPTIDE maid=b0a5b065-a43b-4383-8c8f-adb735ff5508 event=STATE_TRANSITION TAKEOFF_PREP->TAKEOFF:RIPTIDE_LAUNCH_WINDUP state=TAKEOFF_PREP selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=5 charge=0 remaining=72000 sameUse=true using=true wet=true enchantLevel=3 strength=3.0 released=false spin=false velocity=(0.0,0.0,0.0), [WFS debug] maid=b0a5b065-a43b-4383-8c8f-adb735ff5508 TAKEOFF_PREP -> TAKEOFF; reason=RIPTIDE_LAUNCH_WINDUP; run=none, [WFS debug] RIPTIDE maid=b0a5b065-a43b-4383-8c8f-adb735ff5508 event=CHARGING state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=10 charge=5 remaining=71995 sameUse=true using=true wet=true enchantLevel=3 strength=3.0 released=false spin=false velocity=(0.0,0.0,0.0), [WFS debug] RIPTIDE maid=b0a5b065-a43b-4383-8c8f-adb735ff5508 event=CHARGING state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=15 charge=10 remaining=71990 sameUse=true using=true wet=true enchantLevel=3 strength=3.0 released=false spin=false velocity=(0.0,0.0,0.0), [WFS debug] RIPTIDE maid=b0a5b065-a43b-4383-8c8f-adb735ff5508 event=LAUNCH_JUMP state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=15 charge=10 remaining=71990 sameUse=true using=true wet=true enchantLevel=3 strength=3.0 released=false spin=false velocity=(0.0,0.42,0.0), [WFS debug] RIPTIDE maid=b0a5b065-a43b-4383-8c8f-adb735ff5508 event=RELEASE_REQUEST:CERTIFIED_CHARGE_COMPLETE state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=16 charge=11 remaining=71989 sameUse=true using=true wet=true enchantLevel=3 strength=3.0 released=false spin=false velocity=(0.0,0.33319999999999994,0.0), [WFS debug] RIPTIDE maid=b0a5b065-a43b-4383-8c8f-adb735ff5508 event=RELEASE_CALLBACK impulse=(0.0,2.8191537857055664,1.025851845741272) spinStarted=true state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=16 charge=11 remaining=71989 sameUse=true using=true wet=true enchantLevel=3 strength=3.0 released=true spin=true velocity=(0.0,3.152353785705566,1.025851845741272), [WFS debug] RIPTIDE maid=b0a5b065-a43b-4383-8c8f-adb735ff5508 event=RELEASED state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=16 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 released=true spin=true velocity=(0.0,3.152353785705566,1.025851845741272)]
+[[WFS debug] PROPULSION maid=1ac676f7-4320-4f8c-a37a-0a0d8eda0754 reason=RIPTIDE_WAITING_CERTIFICATE launch=true wet=true strengths=[3.0] rocketCooldown=0 rocketActive=false, [WFS debug] RIPTIDE maid=1ac676f7-4320-4f8c-a37a-0a0d8eda0754 event=LAUNCH_WINDUP state=TAKEOFF_PREP selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=5 charge=0 remaining=72000 sameUse=true using=true wet=true enchantLevel=3 strength=3.0 released=false spin=false velocity=(0.0,0.0,0.0), [WFS debug] PROPULSION maid=1ac676f7-4320-4f8c-a37a-0a0d8eda0754 reason=RIPTIDE_SELECTED launch=true wet=true strengths=[3.0] rocketCooldown=0 rocketActive=false, [WFS debug] RIPTIDE maid=1ac676f7-4320-4f8c-a37a-0a0d8eda0754 event=STATE_TRANSITION TAKEOFF_PREP->TAKEOFF:RIPTIDE_LAUNCH_WINDUP state=TAKEOFF_PREP selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=5 charge=0 remaining=72000 sameUse=true using=true wet=true enchantLevel=3 strength=3.0 released=false spin=false velocity=(0.0,0.0,0.0), [WFS debug] maid=1ac676f7-4320-4f8c-a37a-0a0d8eda0754 TAKEOFF_PREP -> TAKEOFF; reason=RIPTIDE_LAUNCH_WINDUP; run=none, [WFS debug] RIPTIDE maid=1ac676f7-4320-4f8c-a37a-0a0d8eda0754 event=CHARGING state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=10 charge=5 remaining=71995 sameUse=true using=true wet=true enchantLevel=3 strength=3.0 released=false spin=false velocity=(0.0,0.0,0.0), [WFS debug] RIPTIDE maid=1ac676f7-4320-4f8c-a37a-0a0d8eda0754 event=CHARGING state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=15 charge=10 remaining=71990 sameUse=true using=true wet=true enchantLevel=3 strength=3.0 released=false spin=false velocity=(0.0,0.0,0.0), [WFS debug] RIPTIDE maid=1ac676f7-4320-4f8c-a37a-0a0d8eda0754 event=LAUNCH_JUMP state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=15 charge=10 remaining=71990 sameUse=true using=true wet=true enchantLevel=3 strength=3.0 released=false spin=false velocity=(0.0,0.42,0.0), [WFS debug] RIPTIDE maid=1ac676f7-4320-4f8c-a37a-0a0d8eda0754 event=RELEASE_REQUEST:CERTIFIED_CHARGE_COMPLETE state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=16 charge=11 remaining=71989 sameUse=true using=true wet=true enchantLevel=3 strength=3.0 released=false spin=false velocity=(0.0,0.33319999999999994,0.0), [WFS debug] RIPTIDE maid=1ac676f7-4320-4f8c-a37a-0a0d8eda0754 event=RELEASE_CALLBACK impulse=(0.0,2.8191537857055664,1.025851845741272) spinStarted=true state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=16 charge=11 remaining=71989 sameUse=true using=true wet=true enchantLevel=3 strength=3.0 released=true spin=true velocity=(0.0,3.152353785705566,1.025851845741272), [WFS debug] RIPTIDE maid=1ac676f7-4320-4f8c-a37a-0a0d8eda0754 event=RELEASED state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=OFF_HAND startTick=5 tick=16 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 released=true spin=true velocity=(0.0,3.152353785705566,1.025851845741272)]
+Riptide priority passed: real async selection with rocket cooldown; inventory rain launch with/without fireworks; charge/jump/glide/native impulse; invalid environment rejection; default equivalent list.
+
+> Task :verifyEquipmentLifecycle
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Actual controller low-wing ground/air/land/spare lifecycle and actual Riptide item-use lifecycle passed
+
+> Task :verifyLaunchAttackReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Launch replay opportunity=true launch=true nativeHit=true exit=true normalFallback=false
+Launch replay opportunity=false launch=false nativeHit=false exit=false normalFallback=true
+
+> Task :jarJar NO-SOURCE
+> Task :jar
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 12s
+11 actionable tasks: 8 executed, 3 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

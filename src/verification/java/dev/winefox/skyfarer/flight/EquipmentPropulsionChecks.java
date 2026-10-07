@@ -38,6 +38,14 @@ public final class EquipmentPropulsionChecks {
         checkCalls("dev/winefox/skyfarer/ai/AirCombatController.class","prepare","tryRiptide");
         checkCalls("dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.class","strength","getTridentSpinAttackStrength");
         checkCalls("dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.class","tick","startGliding");
+        checkCalls("dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.class","tick","releaseUsingItem");
+        checkCalls("dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.class","ownsUse","getUsedItemHand");
+        checkCalls("dev/winefox/skyfarer/mixin/MaidRiptideReleaseMixin.class","wfs$release","releaseAuthorized");
+        checkCalls("dev/winefox/skyfarer/mixin/RiptideUseAuditMixin.class","wfs$auditStop","riptideUseStopped");
+        checkCalls("net/minecraft/world/entity/LivingEntity.class","releaseUsingItem","onUseItemStop");
+        checkCalls("net/minecraft/world/entity/LivingEntity.class","releaseUsingItem","releaseUsing");
+        checkCalls("net/minecraft/world/item/TridentItem.class","releaseUsing","getUseDuration");
+        checkCalls("dev/winefox/skyfarer/compat/spears/SpearCompat.class","stopCharge","getUseItem");
         System.out.println(vectors+" native impulse vectors, full Riptide collision/overshoot and native environment/melee integration checks passed");
     }
     private static void checkCalls(String path,String method,String call) throws Exception {

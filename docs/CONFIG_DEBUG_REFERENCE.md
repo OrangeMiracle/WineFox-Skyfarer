@@ -1,7 +1,9 @@
 # 配置、指挥、调试与兼容接口
 
+0.6.2.6 的 RIPTIDE 诊断增加 selectedHand/item、usedHand、startTick、charge/remaining、sameUse、wet、enchantLevel、实际 RELEASE_CALLBACK impulse/spinStarted，以及明确的 END 拒因。CHARGING 每 5 ticks 采样；STATE_TRANSITION 与 USE_STOP 的有界调用栈说明切换和取消来源。原生事件否决或回调缺失记录 RELEASE_VETOED_OR_CALLBACK_MISSING，不静默补发冲量。详见 [释放审计](EQUIPMENT_SURVIVAL.md#0626-激流使用与释放审计)。
+
 0.6.2.2 新增 equipment.extra_elytra_items（字符串列表，0.6.2.5 默认含 Cataclysm 胸甲 ID），示例：["cataclysm:ignitium_elytra_chestplate"]。只识别身份，仍要求物品自己的 canElytraFly；未安装或拼错的 ID 忽略。SERVER 配置 reload 生效，reset all 恢复默认列表，数值 set 命令不编辑列表。WINGS_REPLACED 与 RIPTIDE 生命周期事件加入 debuglog。0.6.2.3 明确 UNBREAKABLE 优先，装备提示按持久事件去重及双层冷却限频。0.6.2.4 用独立的 EQUIPMENT_CHECK / EQUIPMENT_SPARE / EQUIPMENT_RESULT 代替受对话去重影响的 WINGS_UNFIT；首次、变化、每 200 ticks 记录实际列表、item ID、listMatch/equivalent、damage/maxDamage、damageable、UNBREAKABLE/MAX_DAMAGE/DAMAGE component、remaining、canFly、备用槽拒因和最终 equipmentQualified/reason。兼容 ID 必须填写日志实际加载的文件，不是仅保留注释示例。完整用法见 [装备与生存](EQUIPMENT_SURVIVAL.md)。
-核对版本：**0.6.2.5，2026-10-07**，飞控基于 0.6.1。本文面向维护者，描述当前源码事实；源码变化时必须同步维护。总入口见 [PROJECT_INDEX.md](PROJECT_INDEX.md)，飞控细节见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)。本文中的 tick 是游戏逻辑 tick，20 TPS 时 20 ticks = 1 秒；格/tick 不是格/秒。
+核对版本：**0.6.2.6，2026-10-07**，飞控基于 0.6.1。本文面向维护者，描述当前源码事实；源码变化时必须同步维护。总入口见 [PROJECT_INDEX.md](PROJECT_INDEX.md)，飞控细节见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)。本文中的 tick 是游戏逻辑 tick，20 TPS 时 20 ticks = 1 秒；格/tick 不是格/秒。
 
 0.6.2.5 将额外鞘翅列表默认值设为 `["cataclysm:ignitium_elytra_chestplate"]`，没有 Cataclysm 时安全忽略，不提供额外飞行能力；已有配置中的显式列表（包括空列表）继续保留，`reset all` 恢复此默认列表。新增 `PROPULSION` 日志记录候选选择、证书等待/拒绝、实际湿润条件、可用强度、火箭冷却与 active 状态；`RIPTIDE` 记录地面前摇、跳跃、实际释放及路径重验拒绝，可区分环境、库存、规划和执行阶段。
 

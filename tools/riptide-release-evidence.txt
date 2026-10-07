@@ -1,0 +1,27 @@
+0.6.2.6 source/log audit, 2026-10-07. Logs copied as selected evidence only; Minecraft not started.
+latest.log lines=985
+reason=RIPTIDE_NO_SAFE_PATH count=28
+event=LAUNCH_WINDUP count=1
+event=LAUNCH_JUMP count=1
+event=RELEASED count=1
+event=PATH_REJECTED count=1
+latest.log:819: [0710月2026 12:15:15.902] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] RIPTIDE maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e event=LAUNCH_WINDUP velocity=(0.0, -0.0784000015258789, 0.0) wet=true
+latest.log:824: [0710月2026 12:15:16.401] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] RIPTIDE maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e event=LAUNCH_JUMP velocity=(0.0, -0.0784000015258789, 0.0) wet=true
+latest.log:825: [0710月2026 12:15:16.454] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] RIPTIDE maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e event=RELEASED velocity=(-1.0197949409484863, 3.15235377933979, -0.11131193488836288) wet=true
+latest.log:826: [0710月2026 12:15:16.852] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] RIPTIDE maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e event=PATH_REJECTED velocity=(-0.7817629289216586, 2.879544631074017, -0.08533043387628872) wet=true
+latest.log:828: [0710月2026 12:15:16.852] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e TAKEOFF -> CLIMB; reason=RIPTIDE_LAUNCH_COMPLETE; run=none
+latest.log:829: [0710月2026 12:15:16.852] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e CLIMB -> RETURN_TO_OWNER; reason=RIPTIDE_INTERRUPTED_RECOVERY; run=none
+latest.log:830: [0710月2026 12:15:16.852] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e state=RETURN_TO_OWNER reason=RIPTIDE_INTERRUPTED_RECOVERY scan=[nearby=8, in_range=6, valid=1, protected_radius=16.0] pos=(-16.48799194958193, 108.66639936799665, 23.66774170700938) velocity=(-0.7817629289216583, 2.879544631074012, -0.08533043387629036) ground=false glide=true clearance=33.66639936799665 preferred=none run=none using=false chargeTicks=0 spearReach=2.25
+debug.log lines=8196
+reason=RIPTIDE_NO_SAFE_PATH count=28
+event=LAUNCH_WINDUP count=1
+event=LAUNCH_JUMP count=1
+event=RELEASED count=1
+event=PATH_REJECTED count=1
+debug.log:8027: [0710月2026 12:15:15.902] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] RIPTIDE maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e event=LAUNCH_WINDUP velocity=(0.0, -0.0784000015258789, 0.0) wet=true
+debug.log:8032: [0710月2026 12:15:16.401] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] RIPTIDE maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e event=LAUNCH_JUMP velocity=(0.0, -0.0784000015258789, 0.0) wet=true
+debug.log:8033: [0710月2026 12:15:16.454] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] RIPTIDE maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e event=RELEASED velocity=(-1.0197949409484863, 3.15235377933979, -0.11131193488836288) wet=true
+debug.log:8034: [0710月2026 12:15:16.852] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] RIPTIDE maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e event=PATH_REJECTED velocity=(-0.7817629289216586, 2.879544631074017, -0.08533043387628872) wet=true
+debug.log:8036: [0710月2026 12:15:16.852] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e TAKEOFF -> CLIMB; reason=RIPTIDE_LAUNCH_COMPLETE; run=none
+debug.log:8037: [0710月2026 12:15:16.852] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e CLIMB -> RETURN_TO_OWNER; reason=RIPTIDE_INTERRUPTED_RECOVERY; run=none
+debug.log:8038: [0710月2026 12:15:16.852] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e state=RETURN_TO_OWNER reason=RIPTIDE_INTERRUPTED_RECOVERY scan=[nearby=8, in_range=6, valid=1, protected_radius=16.0] pos=(-16.48799194958193, 108.66639936799665, 23.66774170700938) velocity=(-0.7817629289216583, 2.879544631074012, -0.08533043387629036) ground=false glide=true clearance=33.66639936799665 preferred=none run=none using=false chargeTicks=0 spearReach=2.25

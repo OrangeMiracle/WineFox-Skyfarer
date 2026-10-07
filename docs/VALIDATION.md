@@ -1,8 +1,10 @@
 # 验证、离线回放与构建
 
-核对日期：2026-10-07。实现版本 0.6.2.5，基于本地 0.6.2.4 工作区继续修改。本轮只做编译、激流与受影响起飞路径定向检查和打包，未执行 build/check 或全量 verify，未启动 Minecraft。
+核对日期：2026-10-07。实现版本 0.6.2.6，基于本地 0.6.2.5 工作区继续修改。本轮只做编译、激流与受影响起飞路径定向检查和打包，未执行 build/check 或全量 verify，未启动 Minecraft。
 
-0.6.2.5 当前证据：`tools/riptide-priority-acceptance.log` 的 compileJava、verifyRiptidePriority、verifyEquipmentPropulsion、verifyEquipmentLifecycle、jar 通过；`tools/riptide-launch-regression.log` 的 verifyStabilityLaunch、verifyLaunchAttackReplay 通过。新回放使用实际异步选择器、控制器和物品生命周期，覆盖雨中背包激流在有/无烟花时起飞并实际释放、火箭冷却不阻断激流、环境/原生 spin 门槛和默认兼容列表；保持 1500 组原版速度差分、碰撞/越过目标拒绝。普通 Launch Attack 的机会目标、接触、完整 Exit 和无解普通起飞仍通过。外部 JumpControl/实体 tick/库存使用夹具，真实雨遮挡与 API 连接用本地原版源码/字节码检查，不声称完成实机验证。
+0.6.2.6 当前证据：`tools/riptide-release-acceptance.log` 中 compileJava、verifyRiptideRelease、verifyEquipmentPropulsion、verifyRiptidePriority、verifyEquipmentLifecycle、verifyLaunchAttackReplay、jar 通过。新增主矛副戟、明确 OFF_HAND、实际 charge 延迟 4 ticks、释放回调仅一次、原生 spin 结束后的主手使用恢复，以及开始/释放事件否决、失雨、手被覆盖取消。真实原版 releaseUsingItem→onUseItemStop→releaseUsing 与新增 Mixin 回调连接用依赖字节码核对；外部物品事件与 JumpControl 为夹具，未启动实际 Mixin 游戏环境。当前实例日志的 28 次规划拒绝和一次实际释放后路径中断另见 [证据摘录](../tools/riptide-release-evidence.txt)，不将其误报为“均未蓄力”。
+
+0.6.2.5 历史证据：`tools/riptide-priority-acceptance.log` 的 compileJava、verifyRiptidePriority、verifyEquipmentPropulsion、verifyEquipmentLifecycle、jar 通过；`tools/riptide-launch-regression.log` 的 verifyStabilityLaunch、verifyLaunchAttackReplay 通过。新回放使用实际异步选择器、控制器和物品生命周期，覆盖雨中背包激流在有/无烟花时起飞并实际释放、火箭冷却不阻断激流、环境/原生 spin 门槛和默认兼容列表；保持 1500 组原版速度差分、碰撞/越过目标拒绝。普通 Launch Attack 的机会目标、接触、完整 Exit 和无解普通起飞仍通过。外部 JumpControl/实体 tick/库存使用夹具，真实雨遮挡与 API 连接用本地原版源码/字节码检查，不声称完成实机验证。
 
 0.6.2.4 历史证据：`tools/equipment-qualification-acceptance.log` 的 compileJava、verifyEquipmentFixes、verifyGroundMelee、jar 通过。新增具体资格拒因、Unbreakable 配置身份/能力、备用诊断及持续故障记录；实际控制器贯穿普通一格台阶跳跃、下降和落地，保留导航动量与相同 WalkTarget，落地后接近并普通攻击。真实 TLM 注册/跳跃调用由依赖字节码校核，台阶和跳跃运动由离线外部夹具提供，不声称运行了完整 Minecraft 寻路。日志证据及实例配置补正详见 [装备与生存](EQUIPMENT_SURVIVAL.md#0624-日志定位)。
 
@@ -40,7 +42,7 @@
 在仓库根目录用 PowerShell：
 
 ```powershell
-# 完整发布检查：build → check → 所有 35 项 verify 任务
+# 完整发布检查：build → check → 所有 36 项 verify 任务
 & .\tools\build.ps1 -Stage maintenance-release -Tasks @('build', '--continue')
 
 # 有针对性的并发、几何和生命周期检查
@@ -57,7 +59,7 @@
 
 [tools/build.ps1](../tools/build.ps1) 只有 `-Stage` 与 `-Tasks` 两个参数，没有 `-ExtraArgs`。它在已安装路径存在时设置 JDK 21.0.10；为本机 Windows 的 AF_UNIX 限制设置 `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir`，让 JDK 回退 TCP；调用根目录 wrapper，日志写入 `tools/<Stage>.log`，显示尾部 65 行并保留 Gradle 返回码。移植到其他机器需核对本地 JDK/该环境专用设置，不把此路径当作项目必装目录。
 
-`build` 同时构建 Jar 和检查；仅 `assemble` 或 `jar` 成功不代表回归通过。`test` 目前是 `NO-SOURCE`，真正检查是 35 个 `JavaExec` 任务，它们的 `main()` 抛 `AssertionError` 判失败，不依赖 Java `-ea`。需要强制复跑时按 Gradle 方式传 `--rerun-tasks`；不要同时启动多个构建去争用相同的 `build/classes/controllerReplay` 和报告文件。
+`build` 同时构建 Jar 和检查；仅 `assemble` 或 `jar` 成功不代表回归通过。`test` 目前是 `NO-SOURCE`，真正检查是 36 个 `JavaExec` 任务，它们的 `main()` 抛 `AssertionError` 判失败，不依赖 Java `-ea`。需要强制复跑时按 Gradle 方式传 `--rerun-tasks`；不要同时启动多个构建去争用相同的 `build/classes/controllerReplay` 和报告文件。
 
 ## 2. 三类证据必须区分
 

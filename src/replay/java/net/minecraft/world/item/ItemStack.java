@@ -4,6 +4,10 @@ public class ItemStack {
  public Object type=Items.FIREWORK_ROCKET;public float strength;public int damage,maxDamage=250;
  public boolean unbreakable;public boolean has(Object component){return component==net.minecraft.core.component.DataComponents.UNBREAKABLE&&unbreakable;}
  public Object getItem(){return type;}public boolean isDamageableItem(){return type!=Items.STONE;}public void setDamageValue(int d){damage=d;}
+ public int getUseDuration(Object user){return 72000;}public Enchantments getEnchantments(){return new Enchantments(Math.max(0,(int)(strength/0.75f-1)));}
+ public record Enchantments(int level){public java.util.Set<Entry> entrySet(){return java.util.Set.of(new Entry(level));}}
+ public record Entry(int level){public Key getKey(){return new Key();}public int getIntValue(){return level;}}
+ public record Key(){public boolean is(Object key){return key==net.minecraft.world.item.enchantment.Enchantments.RIPTIDE;}}
  public boolean canElytraFly(Object maid){return type==Items.ELYTRA&&damage<maxDamage-1;}
  public ItemStack(Object item){this(1,1,false);type=item;}
  public int getDamageValue(){return damage;}public int getMaxDamage(){return maxDamage;}public int getCount(){return count;}
