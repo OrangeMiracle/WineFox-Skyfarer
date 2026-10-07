@@ -1,0 +1,39 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :compileControllerReplay
+
+> Task :verifyRiptidePriority
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+[[WFS debug] PROPULSION maid=8fbb14e9-a794-4b9a-8e8f-05564f0e96c0 reason=RIPTIDE_WAITING_CERTIFICATE launch=true wet=true strengths=[3.0] rocketCooldown=0 rocketActive=false, [WFS debug] RIPTIDE maid=8fbb14e9-a794-4b9a-8e8f-05564f0e96c0 event=LAUNCH_WINDUP velocity=(0.0,0.0,0.0) wet=true, [WFS debug] PROPULSION maid=8fbb14e9-a794-4b9a-8e8f-05564f0e96c0 reason=RIPTIDE_SELECTED launch=true wet=true strengths=[3.0] rocketCooldown=0 rocketActive=false, [WFS debug] maid=8fbb14e9-a794-4b9a-8e8f-05564f0e96c0 TAKEOFF_PREP -> TAKEOFF; reason=RIPTIDE_LAUNCH_WINDUP; run=none, [WFS debug] RIPTIDE maid=8fbb14e9-a794-4b9a-8e8f-05564f0e96c0 event=LAUNCH_JUMP velocity=(0.0,0.42,0.0) wet=true, [WFS debug] RIPTIDE maid=8fbb14e9-a794-4b9a-8e8f-05564f0e96c0 event=RELEASED velocity=(0.0,3.152353785705566,1.025851845741272) wet=true]
+[[WFS debug] PROPULSION maid=8efeb518-1243-4383-b8ac-ab5ec12d8cb0 reason=RIPTIDE_WAITING_CERTIFICATE launch=true wet=true strengths=[3.0] rocketCooldown=0 rocketActive=false, [WFS debug] RIPTIDE maid=8efeb518-1243-4383-b8ac-ab5ec12d8cb0 event=LAUNCH_WINDUP velocity=(0.0,0.0,0.0) wet=true, [WFS debug] PROPULSION maid=8efeb518-1243-4383-b8ac-ab5ec12d8cb0 reason=RIPTIDE_SELECTED launch=true wet=true strengths=[3.0] rocketCooldown=0 rocketActive=false, [WFS debug] maid=8efeb518-1243-4383-b8ac-ab5ec12d8cb0 TAKEOFF_PREP -> TAKEOFF; reason=RIPTIDE_LAUNCH_WINDUP; run=none, [WFS debug] RIPTIDE maid=8efeb518-1243-4383-b8ac-ab5ec12d8cb0 event=LAUNCH_JUMP velocity=(0.0,0.42,0.0) wet=true, [WFS debug] RIPTIDE maid=8efeb518-1243-4383-b8ac-ab5ec12d8cb0 event=RELEASED velocity=(0.0,3.152353785705566,1.025851845741272) wet=true]
+Riptide priority passed: real async selection with rocket cooldown; inventory rain launch with/without fireworks; charge/jump/glide/native impulse; invalid environment rejection; default equivalent list.
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyEquipmentPropulsion
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+1500 native impulse vectors, full Riptide collision/overshoot and native environment/melee integration checks passed
+
+> Task :verifyEquipmentLifecycle
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Actual controller low-wing ground/air/land/spare lifecycle and actual Riptide item-use lifecycle passed
+
+> Task :jarJar NO-SOURCE
+> Task :jar
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 8s
+9 actionable tasks: 7 executed, 2 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

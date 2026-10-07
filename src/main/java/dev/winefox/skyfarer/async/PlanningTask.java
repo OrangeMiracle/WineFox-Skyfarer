@@ -16,6 +16,11 @@ public sealed interface PlanningTask extends PlannerExecutor.Task<Object> {
             &&near(bounds.x(),b.bounds.x(),2)&&near(bounds.z(),b.bounds.z(),2)&&near(bounds.radius(),b.bounds.radius(),2);}
     }
     record Slot(Class<?> type,int variant,long option) {}
+    record Riptide(FlightPrediction.State start,double x,double y,double z,float strength,double gravity,boolean wet,boolean launch) implements PlanningTask {
+        public Slot slot(){return new Slot(getClass(),Float.floatToIntBits(strength),(wet?1:0)+(launch?2:0));}
+        public Object compute(CollisionSnapshot.Space s){return RiptidePlanner.choose(start,x,y,z,strength,gravity,s,wet?s:SurfaceLaunchPlanner.DRY,launch?RiptidePlanner.WINDUP:0);}
+        public boolean compatible(PlanningTask p){return p instanceof Riptide r&&near(x,r.x,1)&&near(y,r.y,1)&&near(z,r.z,1)&&strength==r.strength&&gravity==r.gravity&&wet==r.wet&&launch==r.launch;}
+    }
     record Emergency(FlightPrediction.State start,int active,List<Integer> durations,double gravity) implements PlanningTask {
         public Emergency {durations=List.copyOf(durations);}
         public Object compute(CollisionSnapshot.Space s){return EmergencyAvoidancePlanner.choose(start,active,durations,gravity,s);}
@@ -87,6 +92,7 @@ public sealed interface PlanningTask extends PlannerExecutor.Task<Object> {
     }
     record Launch(FlightPrediction.State start,double yaw,double height,double gravity,int duration,boolean remaining,SurfaceLaunchPlanner.Plan plan,boolean wet) implements PlanningTask {
         public Object compute(CollisionSnapshot.Space s){var water=wet?(SurfaceLaunchPlanner.Water)s:SurfaceLaunchPlanner.DRY;
+            if(duration<0)return SurfaceLaunchPlanner.chooseCoast(start,yaw,height,gravity,s,water);
             if(plan!=null)return SurfaceLaunchPlanner.pulseCost(start,plan,gravity,duration,s,water);
             return remaining?SurfaceLaunchPlanner.chooseRemaining(start,yaw,height,gravity,duration,s,water):SurfaceLaunchPlanner.choose(start,yaw,height,gravity,duration,s,water);}
         public boolean compatible(PlanningTask p){return p instanceof Launch g&&duration==g.duration&&remaining==g.remaining&&wet==g.wet&&near(yaw,g.yaw,6)&&near(height,g.height,1)&&java.util.Objects.equals(plan,g.plan);}

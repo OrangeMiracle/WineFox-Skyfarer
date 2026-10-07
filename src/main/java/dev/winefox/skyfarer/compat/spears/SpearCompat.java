@@ -44,4 +44,37 @@ public final class SpearCompat {
     public static void stopCharge(LivingEntity maid) {
         if (maid.isUsingItem() && isChargeWeapon(maid.getUseItem())) maid.stopUsingItem();
     }
+    /** PiercingWeapon.stab uses the ordinary attack-range component, NOT KineticWeapon's mob half-range. */
+    public static double groundMinimum(ItemStack stack) {
+        var range=stack.get(Spears.ATTACK_RANGE);return range==null?0:range.minReach();
+    }
+    /** Shared by the pre-swing check and the actual native PiercingWeapon.stab collector. */
+    public static float groundMaximum(LivingEntity user,float nativeMaximum) {
+        if(user instanceof com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid maid
+            &&!maid.level().isClientSide&&maid.onGround()&&!maid.isFallFlying()
+            &&maid.getTask().getUid().equals(dev.winefox.skyfarer.compat.tlm.SkyfarerTask.ID)) {
+            return (float)GroundMeleeReach.maximum(nativeMaximum,
+                maid.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ENTITY_INTERACTION_RANGE),
+                maid.getFavorabilityManager().getAttackDistancePlusByPoint(maid.getFavorability()));
+        }
+        return nativeMaximum;
+    }
+    public static double groundMaximum(LivingEntity user) {
+        var range=user.getMainHandItem().get(Spears.ATTACK_RANGE);
+        return GroundMeleeReach.stoppingMaximum(groundMaximum(user,range==null?3:range.maxReach()));
+    }
+    public static boolean groundContact(LivingEntity maid,LivingEntity target) {
+        var stack=maid.getMainHandItem();var range=stack.get(Spears.ATTACK_RANGE);
+        float min=range==null?0:range.minReach();
+        double max=groundMaximum(maid);
+        var direction=maid.calculateViewVector(maid.getXRot(),maid.getYHeadRot());
+        if(!GroundMeleeReach.contact(maid.getEyePosition(),direction,target.getBoundingBox(),min,max))return false;
+        var piercing=stack.get(Spears.PIERCING_WEAPON);
+        if(piercing==null)return maid.hasLineOfSight(target);
+        // Cancel the collector's movement extension: stopping must leave a stationary attack in range.
+        float queryMax=(float)(max-Math.max(0,maid.getKnownMovement().dot(direction)));
+        if(queryMax<min)return false;
+        return Spears.collectPiercingCollisions(maid,min,queryMax,0,
+            e->e==target&&com.notunanancyowen.spears.components.PiercingWeapon.canHit(maid,e)).stream().anyMatch(hit->hit.getEntity()==target);
+    }
 }

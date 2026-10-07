@@ -25,10 +25,10 @@ public final class SkyfarerTask implements IAttackTask {
     }
     @Override public boolean enableLookAndRandomWalk(EntityMaid maid) { return !dev.winefox.skyfarer.runtime.SkyfarerRuntime.isAirControlActive(maid); }
     @Override public boolean enableEating(EntityMaid maid) { return !dev.winefox.skyfarer.runtime.SkyfarerRuntime.isAirControlActive(maid); }
-    @Override public boolean isEnable(EntityMaid maid) { return SkyfarerEquipment.ready(maid); }
+    @Override public boolean isEnable(EntityMaid maid) { return SkyfarerEquipment.spear(maid); }
     @Override public boolean isWeapon(EntityMaid maid, ItemStack stack) { return SpearCompat.isChargeWeapon(stack); }
     @Override public List<Pair<String, Predicate<EntityMaid>>> getEnableConditionDesc(EntityMaid maid) {
-        return List.of(Pair.of("spear", SkyfarerEquipment::spear), Pair.of("elytra", SkyfarerEquipment::elytra), Pair.of("fireworks", SkyfarerEquipment::fireworks));
+        return List.of(Pair.of("spear", SkyfarerEquipment::spear));
     }
     @Override public List<Pair<String, Predicate<EntityMaid>>> getConditionDescription(EntityMaid maid) { return getEnableConditionDesc(maid); }
 }

@@ -1,6 +1,10 @@
 # 异步规划与线程边界
 
-核对日期：2026-10-05。实现版本：0.6.2.1，沿用 0.6.1 异步架构，没有 Funnel。本文描述当前源码；物理快照依据见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)，构建证据见 [验证文档](VALIDATION.md#7-当前构建证据与已知缺口)。
+0.6.2.2 新增数值 `PlanningTask.Riptide`，按推进强度和湿润路径分离 slot；Worker 认证 10 tick 前摇 + 20 tick spin + 12 tick 恢复，最多 3 种强度 × 3 姿态。执行阶段从当前速度用已捕获 cells 重验选中路线；缺失/过期数据拒绝。天气、物品、副手交换、spin 生命周期和生物扫掠查询只在主线程。详见 [装备与生存](EQUIPMENT_SURVIVAL.md)。
+
+核对日期：2026-10-07。实现版本：0.6.2.5，沿用 0.6.1 异步架构，没有 Funnel。本文描述当前源码；物理快照依据见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)，构建证据见 [验证文档](VALIDATION.md#7-当前构建证据与已知缺口)。
+
+0.6.2.5 为 Riptide slot 加入 launch 维度，起飞捕获滑翔身体，并按地面已预先转向、完成前摇后的普通跳跃状态认证 20 tick spin + 12 tick 恢复；离地后再用实际速度重验。空中候选最多等待 11 次、地面最多 39 次，届时无可执行证书则允许次级方案，避免 optional 冷请求每次都直接输给已有烟花结果。普通无烟花起飞仍由 Launch Worker 预测；激流后 Launch Attack 用非阻塞候选与实际当前状态 Rejoin，等待不暂停空中引导。Worker 仍只接收数值 DTO，不持有 Entity/Level，原队列和采集上限不变。
 
 0.6.2.1 新增 Emergency 与 LaunchAttack 数值任务、起飞 Rejoin 的 launchBody 维度标志。每个控制器另持一个只使用一个请求 slot 的紧急 mailbox，固定 phase 防止攻击阶段切换取消已发现危险；共享原有线程池、全服队列/采集预算和每 session 上限。最后手段执行前，用已捕获的不可变 cells 重验当前滑翔替代与所选烟花姿态，缺数据拒绝；这是有界执行认证，不是队列满时同步搜索。详情见 [稳定性说明](STABILITY_LAUNCH_0621.md)。
 

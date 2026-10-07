@@ -198,6 +198,15 @@ public final class PlannerSession {
         for(long key:space.missing())request(key,0);
         return result;
     }
+    public RiptidePlanner.Plan recertifyRiptide(FlightPrediction.State start,RiptidePlanner.Plan plan,int elapsed,boolean wet){
+        check();if(plan==null)return null;
+        var map=new HashMap<Long,CollisionSnapshot.Cell>();
+        cells.forEach((k,v)->{if(now-v.tick<=20)map.put(k,v.cell);});
+        var space=source.snapshot(Map.copyOf(map),wet,true).space(new java.util.concurrent.atomic.AtomicBoolean());
+        var result=RiptidePlanner.certify(start,plan,elapsed,physics().gravity(),space,wet?space:SurfaceLaunchPlanner.DRY);
+        for(long key:space.missing())request(key,0);
+        return result;
+    }
     private void enqueue(PlanningTask task){
         if(task.unbound() instanceof PlanningTask.Sweep sweep&&sweep.path()==null){
             var seed=seeds.get(task.slot());
@@ -210,8 +219,8 @@ public final class PlannerSession {
         // Expired shapes are absent, not silently considered empty. Fetch only cells actually queried.
         if(cells.values().removeIf(c->now-c.tick>80))dirty=true;
         if(dirty){var map=new HashMap<Long,CollisionSnapshot.Cell>();cells.forEach((k,v)->map.put(k,v.cell));frozen=Map.copyOf(map);dirty=false;}
-        var unbound=task.unbound();boolean wet=unbound instanceof PlanningTask.Launch l&&l.wet();
-        var snapshot=source.snapshot(frozen,wet,unbound instanceof PlanningTask.Launch||unbound instanceof PlanningTask.LaunchAttack||unbound instanceof PlanningTask.Rejoin r&&r.launchBody());
+        var unbound=task.unbound();boolean wet=unbound instanceof PlanningTask.Launch l&&l.wet()||unbound instanceof PlanningTask.Riptide r&&r.wet();
+        var snapshot=source.snapshot(frozen,wet,unbound instanceof PlanningTask.Launch||unbound instanceof PlanningTask.LaunchAttack||unbound instanceof PlanningTask.Riptide riptide&&riptide.launch()||unbound instanceof PlanningTask.Rejoin r&&r.launchBody());
         if(pending.size()>=24)return;
         var ticket=PlannerExecutor.submit(task,snapshot,horizon);
         if(ticket!=null)pending.put(task.slot(),new Work(task,ticket,now,generation));

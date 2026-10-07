@@ -2,7 +2,49 @@
 
 ## 当前交付状态
 
-当前交付为 **0.6.2.1**，基于本地 0.6.1.1（deaebca）。仅编译与针对性验证，不包含 Funnel；未启动 Minecraft。
+当前交付为 **0.6.2.5**，在本地 0.6.2.4 工作区之上修复，保留已有未提交内容。仅编译与针对性验证，不包含 Funnel；未启动 Minecraft。
+
+### 0.6.2.5 激流优先、独立生命周期与起飞推进（2026-10-07）
+
+- **源码定位**：雨环境已使用原版 isInWaterOrRain，含屋顶/高度图/生物群系条件；强度读取 EnchantmentHelper，副手和可用背包均可发现三叉戟。真正阻断在后续链路：起飞资格硬要求烟花，激流 begin 排除地面，空中选择还受火箭对齐和代价竞争压制，optional 冷请求可直接落到烟花，取消后另加 20 tick 人为冷却。本次修复这些入口与执行条件，没有将原因归咎于雨判断或仅调高评分。
+- **候选与执行**：coast 足够时不推进；需补能且无活跃火箭时，先在最多三种可用强度中选择安全激流，再考虑烟花。激流不读取火箭 cooldown，不保留额外 pulse cooldown，遵守至少 10 tick 前摇和原生 20 tick spin；12 tick 恢复只用于完整预测。空中/地面异步等待分别有 12/40 次边界，无证书仍退让。主线程按实际堆栈、环境、身体/生物扫掠和最新速度重验，拒绝碰撞、越过目标及原生接触反转风险；已承诺 Strike/Exit 不插入激流。
+- **起飞与攻击**：地面完整预转向→三叉戟前摇→正常 JumpControl 跳跃→离地开启滑翔→重验并叠加原版激流冲量。没有伪造地面释放的抬升。水中走现有 WATER_ESCAPE，优先同一激流选择器。spin 后从当前状态重新选合法机会目标，并通过 Rejoin 与 Strike→Exit 才进入起飞攻击，否则继续普通飞控；无激流解则烟花、再到经过预测的普通起飞。
+- **配置与诊断**：默认额外 Elytra 列表包含 cataclysm:ignitium_elytra_chestplate，reset all 恢复该列表，已保存显式列表仍保留。纯 ID 兼容，无硬前置或赋予普通胸甲飞行能力。PROPULSION 记录实际湿润、强度、火箭状态及选中/等待/拒因，RIPTIDE 记录前摇、跳跃、释放及执行重验失败。
+- **定向验证**：[riptide-priority-acceptance.log](tools/riptide-priority-acceptance.log) 中 compileJava、verifyRiptidePriority、verifyEquipmentPropulsion、verifyEquipmentLifecycle、jar 通过；[riptide-launch-regression.log](tools/riptide-launch-regression.log) 中 verifyStabilityLaunch、verifyLaunchAttackReplay 通过。实际选择器在火箭 cooldown 内选中激流；雨中背包三叉戟在有/无烟花两种完整起飞均跳跃、滑翔、实际释放且未耗烟花；1500 原生冲量差分、环境与 spin 门槛、墙体/overshoot 拒绝和默认 ID 识别通过。普通机会目标起飞命中、Exit、无解回退也通过。
+- **测试发现与边界**：初轮回放目标超出已有战略半径，修正场景而未放宽规则；随后发现起飞预测未计入地面可先完成转向，加入 ground aim 后保持原碰撞断言通过。此前失败日志不是通过证据。外部跳跃、实体 tick、库存由离线夹具提供，雨条件与使用机制核对本地 Minecraft 1.21.1 源码/字节码；未运行真实游戏或第三方 Mod 堆栈。
+- **交付**：[winefox_skyfarer-1.21.1-0.6.2.5.jar](build/libs/winefox_skyfarer-1.21.1-0.6.2.5.jar)，518,177 bytes，SHA-256 `C8B3289E89FCD6DF999EB514C1CE0404172BEE241528776654EC2C94F3CD7E7E`。README、装备/配置/物理/异步/飞控/验证文档和项目索引同步；未自动安装或启动 Minecraft。
+
+### 0.6.2.4 装备拒因与地面导航接管修复（2026-10-07）
+
+- **日志事实**：读取指定实例 latest.log/debug.log。debug.log 确认加载 0.6.2.3，第 6818 行指定实际配置为实例 config/winefox_skyfarer-server.toml；本轮该配置第 237 行为 extra_elytra_items=[]。指定胸甲按当前配置会先被身份门拒绝，不是 Unbreakable 失效。未记录历史堆栈，未推测配置为何为空。此前 WINGS_UNFIT 日志被持久对话事件去重挡住，打开 debug 后仍没有完整资格证据。见 [日志摘录](tools/equipment-qualification-evidence.txt)。
+- **统一资格**：WingInventory.qualification 返回 READY / EMPTY_CHEST / NOT_ELYTRA_EQUIVALENT / LOW_DURABILITY / ITEM_CANNOT_GLIDE；当前胸甲、备用搜索、起飞与远程调度共用。移除笼统 ELYTRA_LOW_DURABILITY 标签；换装后重验实际胸甲，非耐久失败采用通用装备提示。未增加 Cataclysm 特例或改变耐久阈值。
+- **诊断**：独立 EQUIPMENT_CHECK/SPARE/RESULT，输出 ID、实际列表与匹配、damage/maxDamage、damageable、组件存在性、remaining、canFly、备用槽拒因、替换与最终资格、长矛/烟花和地面/滑翔状态。首次、变化、每 200 ticks 采样，不依赖气泡去重；地面拒绝输出具体 reason。
+- **导航根因**：此前装备失败后的任何离地状态都会接管飞控，日志多次 GROUNDED→RETURN_TO_OWNER、glide=false 与其吻合；已有 Mixin 随后暂停导航/MoveControl 并清除路径。现在普通跳跃/下台阶不接管，保留 TLM MoveToTargetSink、Navigation、MaidMoveControl、JumpControl；只有托管飞行或真实滑翔进入安全返航。追同一目标保留动态 WalkTarget，后撤小幅变动不重设，不直接写地面 velocity。
+- **实例配置**：仅把用户指定 cataclysm:ignitium_elytra_chestplate 加到实际加载配置，原文件备份在 build/diagnostics/winefox_skyfarer-server.before-0624.toml。逐字对比确认其余内容未改；未安装新 Jar 或启动 Minecraft。
+- **定向验证**：[equipment-qualification-acceptance.log](tools/equipment-qualification-acceptance.log) 中 compileJava、verifyEquipmentFixes、verifyGroundMelee、jar 通过。覆盖空列表准确拒因、列表内 Unbreakable、普通低耐久、备用诊断、限频、高空保旗；实际控制器/地面行为执行一格台阶回放，不接管、不清目标、不覆盖动量，落地后继续接近命中；真实 TLM 导航注册和 JumpControl 调用检查。没有全量 verify。首轮夹具在落地碰撞钳位前检测高度而失败，修正夹具顺序后通过，未放宽飞控/导航断言。
+- **边界与交付**：外部跳跃/台阶碰撞由夹具提供，未运行完整 Minecraft/TLM 寻路或真实第三方堆栈；不足部分由新版诊断补齐。产物 [winefox_skyfarer-1.21.1-0.6.2.4.jar](build/libs/winefox_skyfarer-1.21.1-0.6.2.4.jar)，514,799 bytes，SHA-256 `A912EFF83E9921E23D6A2777C25F6DA3FBBE45982B0BD58CD9E19D24D145FED8`。README、装备/配置/验证说明及当前版本索引同步。
+
+### 0.6.2.3 兼容翼耐久、普通长矛距离与克制提示（2026-10-07）
+
+- **范围**：核对本地源码、docs、Minecraft 1.21.1、TLM 1.5.3、Spears 1.8.0 与实例 Cataclysm 3.33；没有覆盖本地工作、拉取远程、添加第三方硬依赖或修改依赖 Jar。
+- **耐久**：显式优先 UNBREAKABLE component；不可损坏或 maxDamage≤0 的非空兼容装备免除 20 阈值，普通可损坏装备仍执行 19/20 边界。身份列表和物品自身 canElytraFly 始终独立校验。Cataclysm 正常默认组件本应设置 UNBREAKABLE，旧标准 isDamageableItem 路径也应放行，因此不能声称已复现真实胸甲误判根因；新增事件级 WINGS_UNFIT 记录 ID、识别/飞行能力和实际组件/耐久，便于后续定位实机堆栈差异。
+- **普通长矛**：按原生 PiercingWeapon.stab 的完整 ATTACK_RANGE 认证普通接触，放弃笼统 TLM 距离判断；瞄准、身体相交、原生遮挡通过后才挥矛。按用户补充，将交互属性高于 TLM 默认 2 的部分及 TLM 好感度距离档位，加入服务端地面骑空士的实际 stab 最大范围。新增 MaidSpearMeleeMixin 只修改普通左键 collector 的最大值，预测用同一加成，保留最小盲区、伤害、友军过滤与遮挡；普通标准矛 2–4.5 格，停止检查预留 0.2 格，不依赖移动延伸。敌人逼近时以 WalkTarget 后撤，仍在有效范围时可边退边打，盲区内不空挥；未增加 charge 或地面冲刺。
+- **提示**：每个故障的禁止起飞/返航/落地事件保存到女仆 NBT，实体/飞控重建不重置；装备恢复正常持续 40 ticks 后才允许下一故障重新提示。每只 200 ticks 冷却，同 owner 同维度 40 ticks 间隔，UUID 分散首次提示；只保留当前待发事件，取消过时提示，不在玩家聊天刷屏。
+- **限定验证**：[equipment-fixes-acceptance.log](tools/equipment-fixes-acceptance.log) 的 compileJava、verifyEquipmentFixes、verifyGroundMelee、jar 全部成功。覆盖不可损坏极小内部耐久/无耐久/普通低耐久、备用交换、空中返航或降落保持滑翔、实际地面行为接近/后撤/好感度与交互加成/盲区，以及持久故障去重、修复后新事件、20 只同 owner 错峰且最终全部提示。真实 MC AABB 几何与依赖字节码检查普通 stab/collector 描述符和加成调用连接。未执行全量 verify、build/check 或启动 Minecraft。
+- **验证修正与边界**：早期回放夹具缺少 ATTACK_SPEED；修正后高空测试把主人正上方立即进入 LANDING 误当成失败，改为接受既有 RETURN_TO_OWNER 或 LANDING，同时仍强制滑翔和飞控保持。最终日志才是通过证据。外部实体/库存/原生伤害使用夹具，Mixin 在真实游戏中的应用、第三方堆栈、TLM 寻路及气泡显示仍需实机确认。
+- **交付**：[winefox_skyfarer-1.21.1-0.6.2.3.jar](build/libs/winefox_skyfarer-1.21.1-0.6.2.3.jar)，508,413 bytes、263 条目，SHA-256 `19A00F2E105061F14EBF2E7750CC2687D3BA6CE226D2F8E320F6C70171FBAF8D`。Manifest/Mod 元数据均为 0.6.2.3，新普通长矛 Mixin 已列入配置；无测试/回放/模拟依赖类及嵌套 Jar。README、装备/配置/验证文档、项目索引同步，git diff --check 通过。未自动安装。
+
+### 0.6.2.2 装备生存、地面 fallback 与激流辅助推进（2026-10-07）
+
+- **本地基线**：开始时工作区干净，HEAD bdea091（0.6.2.1）。阅读当前 docs 并核对源码与本地 TLM/原版依赖；未从远程覆盖文件，没有修改依赖 Jar。
+- **装备**：剩余耐久 <20 时，从当前可用库存交换真正可滑翔且耐久至少 20 的备用，旧装备回原槽；不合适/拒收旧装备的槽跳过。空中无备用立即终止主动空战并返航，保留 FALL_FLYING；地面禁止起飞并使用现有长矛普通近战。指挥赶路也执行检查并安全移交。工作模式启用只要求长矛，地面 fallback 不被缺翼资格挡住。
+- **对话**：TLM 原生头顶文字气泡提示地面装备故障、空中返航和落地转地战，同一故障去重；中英本地化同步。
+- **兼容配置**：新增 SERVER equipment.extra_elytra_items，默认 []，按注册 ID 识别，如 cataclysm:ignitium_elytra_chestplate；未知/未安装 ID 忽略，无第三方硬依赖。物品自身 canElytraFly 仍是硬条件，普通胸甲入列表也不能飞。
+- **激流**：核对 MC 1.21.1 TridentItem、Enchantments、Entity/Level 环境条件和 LivingEntity spin；10 tick 前摇，I/II/III 真实强度 1.5/2.25/3，float 查表归一化后叠加当前速度，1 耐久、20 tick spin。副手/背包选取，使用环境在开始/释放重新检查，屋顶下不能借全局雨天发动。原版释放仅支持 Player，采用小型 LivingEntity accessor 适配女仆，不生成投射物或额外伤害。
+- **预测与范围**：coast 足够时不补能；未锁定攻击阶段可比较安全激流和原有全寿命烟花。最多 3 强度 × 3 姿态，完整认证 10+20+12 ticks，墙体、转向、越过目标、生物触碰与活动火箭约束保留。真实执行前/期间从当前状态重验已捕获快照，过期/缺数据拒绝；后台无 Entity/Level/物品引用。激流不插入已承诺 Strike/Exit，完成后重新认证；普通地面起飞仍沿用烟花，激流是雨中空中与水面恢复的辅助方式。
+- **定向验证**：tools/equipment-acceptance-final.log 的 compileJava、verifyEquipmentPropulsion、verifyEquipmentLifecycle、verifyHandoffStability 和 jar 成功。包含 1,500 组独立 Mth 向量差分、42 tick 完整路径、碰撞/越过目标拒绝；实际库存交换算法、配置身份/能力分离、19/20 边界；实际控制器空中换装/无备用返航保旗/落地地战/气泡去重；实际激流管理器湿润资格、前摇失雨取消、冷却和过期快照拒绝/重建、释放推进/耐久/spin。
+- **证据边界**：库存、TLM、世界由隔离夹具提供，实际近战/雨水环境调用另检查真实类字节码。首次尝试离线注册物品触发未初始化 NeoForge LoadingModList，改用隔离物品夹具，未启动游戏或修改依赖。真实第三方装备、气泡/动画/网络及 TLM 寻路留待实机。未跑 build/check 或全量 verify。
+- **文档与交付**：README、项目索引、飞控/异步/物理/配置/验证文档与 EQUIPMENT_SURVIVAL.md 同步。产物 [winefox_skyfarer-1.21.1-0.6.2.2.jar](build/libs/winefox_skyfarer-1.21.1-0.6.2.2.jar)，499,111 bytes、259 条目，SHA-256 `5519BA48356F14F64D82EBE3E7A025ED79B5AC3D5FB5C07A962FE646D4FA45E6`；Manifest/Mod 元数据一致，包含 LivingRiptideAccessor，无测试/回放/模拟依赖类；客户端/服务端同时更新，未自动安装或启动 Minecraft。
 
 ### 0.6.2.1 提前避障、高空交接与 Launch Attack（2026-10-05）
 

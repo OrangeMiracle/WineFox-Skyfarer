@@ -37,5 +37,10 @@
   "task.winefox_skyfarer.skyfarer.enable_condition.elytra": "Requires usable Elytra in chest slot",
   "task.winefox_skyfarer.skyfarer.condition.elytra": "Requires usable Elytra in chest slot",
   "task.winefox_skyfarer.skyfarer.enable_condition.fireworks": "Requires Firework Rockets in accessible inventory",
-  "task.winefox_skyfarer.skyfarer.condition.fireworks": "Requires Firework Rockets in accessible inventory"
+  "task.winefox_skyfarer.skyfarer.condition.fireworks": "Requires Firework Rockets in accessible inventory",
+  "message.winefox_skyfarer.wings_ground_equipment": "Master, this chest equipment is not ready for flight. I will fight on foot!",
+  "message.winefox_skyfarer.wings_return_equipment": "My flight equipment is not suitable. I will find a safe landing spot!",
+  "message.winefox_skyfarer.wings_ground": "Master, these wings are falling apart... I'll fight on foot for now.",
+  "message.winefox_skyfarer.wings_return": "Master, my wings are giving out! I'm coming back to land!",
+  "message.winefox_skyfarer.wings_landed": "Wings off duty. Time for the spear!"
 }

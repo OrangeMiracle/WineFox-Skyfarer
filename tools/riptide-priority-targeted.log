@@ -1,0 +1,34 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :compileControllerReplay
+
+> Task :verifyRiptidePriority FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: legal rain takeoff did not actually release Riptide; state=GROUNDED recent=[[WFS debug] RIPTIDE maid=76a9aa8a-cf6c-4bc1-a322-2095c42c4ab1 event=WINDUP velocity=(0.0,-0.1,0.7) wet=true, [WFS debug] PROPULSION maid=76a9aa8a-cf6c-4bc1-a322-2095c42c4ab1 reason=RIPTIDE_SELECTED launch=false wet=true strengths=[3.0] rocketCooldown=30 rocketActive=false, [WFS debug] RIPTIDE maid=76a9aa8a-cf6c-4bc1-a322-2095c42c4ab1 event=END velocity=(0.0,-0.1,0.7) wet=true, [WFS debug] FLIGHT_LIFECYCLE maid=76a9aa8a-cf6c-4bc1-a322-2095c42c4ab1 action=CONTROL_DISPOSE reason=TEST preserveGlide=false state=GROUNDED managed=false glide=true velocity=(0.0,-0.1,0.7) altitude=80.0 clearance=NaN target=null order=none, [WFS debug] maid=a2a08694-aa7e-4393-82ad-6824697999d4 state=GROUNDED reason=NO_LEGAL_TARGET scan=[nearby=2, in_range=1, valid=0, protected_radius=16.0] pos=(0.0,0.0,0.0) velocity=(0.0,0.0,0.0) ground=true glide=false clearance=NaN preferred=none run=none using=false chargeTicks=0 spearReach=2.25, [WFS debug] async gen=2 cells=0 requested=0 jobs=0 cache=0 queue=0 cache=1 stale=0 failed=0 captureMs=0 workerMs=25, [WFS debug] maid=a2a08694-aa7e-4393-82ad-6824697999d4 state=GROUNDED reason=NO_LEGAL_TARGET scan=[nearby=2, in_range=1, valid=0, protected_radius=16.0] pos=(0.0,0.0,0.0) velocity=(0.0,0.0,0.0) ground=true glide=false clearance=NaN preferred=none run=none using=false chargeTicks=0 spearReach=2.25, [WFS debug] async gen=2 cells=0 requested=0 jobs=0 cache=0 queue=0 cache=1 stale=0 failed=0 captureMs=0 workerMs=25, [WFS debug] maid=a2a08694-aa7e-4393-82ad-6824697999d4 state=GROUNDED reason=NO_LEGAL_TARGET scan=[nearby=2, in_range=1, valid=0, protected_radius=16.0] pos=(0.0,0.0,0.0) velocity=(0.0,0.0,0.0) ground=true glide=false clearance=NaN preferred=none run=none using=false chargeTicks=0 spearReach=2.25, [WFS debug] async gen=2 cells=0 requested=0 jobs=0 cache=0 queue=0 cache=1 stale=0 failed=0 captureMs=0 workerMs=25]
+	at dev.winefox.skyfarer.replay.RiptidePriorityChecks.require(RiptidePriorityChecks.java:15)
+	at dev.winefox.skyfarer.replay.RiptidePriorityChecks.launch(RiptidePriorityChecks.java:54)
+	at dev.winefox.skyfarer.replay.RiptidePriorityChecks.main(RiptidePriorityChecks.java:20)
+
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyRiptidePriority'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 11s
+4 actionable tasks: 3 executed, 1 up-to-date

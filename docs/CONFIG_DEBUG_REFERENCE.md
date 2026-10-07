@@ -1,6 +1,9 @@
 # 配置、指挥、调试与兼容接口
 
-核对版本：**0.6.2.1，2026-10-05**，飞控基于 0.6.1。本文面向维护者，描述当前源码事实；源码变化时必须同步维护。总入口见 [PROJECT_INDEX.md](PROJECT_INDEX.md)，飞控细节见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)。本文中的 tick 是游戏逻辑 tick，20 TPS 时 20 ticks = 1 秒；格/tick 不是格/秒。
+0.6.2.2 新增 equipment.extra_elytra_items（字符串列表，0.6.2.5 默认含 Cataclysm 胸甲 ID），示例：["cataclysm:ignitium_elytra_chestplate"]。只识别身份，仍要求物品自己的 canElytraFly；未安装或拼错的 ID 忽略。SERVER 配置 reload 生效，reset all 恢复默认列表，数值 set 命令不编辑列表。WINGS_REPLACED 与 RIPTIDE 生命周期事件加入 debuglog。0.6.2.3 明确 UNBREAKABLE 优先，装备提示按持久事件去重及双层冷却限频。0.6.2.4 用独立的 EQUIPMENT_CHECK / EQUIPMENT_SPARE / EQUIPMENT_RESULT 代替受对话去重影响的 WINGS_UNFIT；首次、变化、每 200 ticks 记录实际列表、item ID、listMatch/equivalent、damage/maxDamage、damageable、UNBREAKABLE/MAX_DAMAGE/DAMAGE component、remaining、canFly、备用槽拒因和最终 equipmentQualified/reason。兼容 ID 必须填写日志实际加载的文件，不是仅保留注释示例。完整用法见 [装备与生存](EQUIPMENT_SURVIVAL.md)。
+核对版本：**0.6.2.5，2026-10-07**，飞控基于 0.6.1。本文面向维护者，描述当前源码事实；源码变化时必须同步维护。总入口见 [PROJECT_INDEX.md](PROJECT_INDEX.md)，飞控细节见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)。本文中的 tick 是游戏逻辑 tick，20 TPS 时 20 ticks = 1 秒；格/tick 不是格/秒。
+
+0.6.2.5 将额外鞘翅列表默认值设为 `["cataclysm:ignitium_elytra_chestplate"]`，没有 Cataclysm 时安全忽略，不提供额外飞行能力；已有配置中的显式列表（包括空列表）继续保留，`reset all` 恢复此默认列表。新增 `PROPULSION` 日志记录候选选择、证书等待/拒绝、实际湿润条件、可用强度、火箭冷却与 active 状态；`RIPTIDE` 记录地面前摇、跳跃、实际释放及路径重验拒绝，可区分环境、库存、规划和执行阶段。
 
 0.6.1 未新增可调物理伪属性：gravity/缓降从实体冻结，滑翔阻力使用 1.21.1 常量。`energy_reserve` / `attack_energy_reserve` 是路线最差预测储备的补能门槛，不是轨迹可达性开关。HUD `energyReserve` 在普通攻击证书/曲线回放返回后显示最差 reserve；`ATTACK_PHYSICS_VETO:<reason>` 表示完整物理认证拒绝，需结合 `contact_missed`、`exit_incomplete`、`sweep_<tick>` 与异步等待判断。详细每步 envelope 目前是 Worker 结果 DTO，未新增网络包或 HUD 曲线。
 
@@ -10,12 +13,12 @@
 
 定义源为 [SkyfarerConfig](../src/main/java/dev/winefox/skyfarer/config/SkyfarerConfig.java)，统一读取与写入入口为 [SkyfarerSettings](../src/main/java/dev/winefox/skyfarer/config/SkyfarerSettings.java)。[WineFoxSkyfarer](../src/main/java/dev/winefox/skyfarer/WineFoxSkyfarer.java) 注册的是 NeoForge **SERVER** 配置；没有单独的客户端飞控配置。常规服务端配置文件名为 `winefox_skyfarer-server.toml`，由 NeoForge 管理其存档配置位置。
 
-- TOML 使用 `flight`、`targeting`、`combat`、`safety`、`command`、`debug` 分组；命令使用不带组名的键，例如 `turn_rate`。
+- TOML 使用 `flight`、`targeting`、`combat`、`safety`、`command`、`debug`、`equipment` 分组；命令使用不带组名的键，例如 `turn_rate`。
 - 数值都声明为 `DoubleValue`。`ticks`、`attempts` 单位的键在 `/wfs config set` 中额外要求整数；其余值允许小数。运行时 `ticks()` 转为 int，因此不要把手工文件中的小数 tick 当作受支持的细粒度调度。
 - 未载入配置时读取定义的默认值；写入要求配置已载入，并校验有限数、上下限及整数要求。
 - 数值 `set` / `reset`、全量 reset、配置 reload 会提升 settings revision，让异步 session 淘汰旧参数任务。`debuglog` 单独开关只影响日志并保存，不递增规划配置版本。
 - 命令修改会校验 `combat_range <= hard_combat_range < emergency_teleport_range`；扩大范围时先调整外层。配置读取还有钳制：Settings 的 combat 不大于 hard，hard 不大于 emergency−1。**实际 Home 范围另会扩大**，见后文，不能将这条设置约束理解成所有实际路径的绝对边界。
-- `reset all` 恢复所有数值默认值并关闭 debuglog。旧存档已设置的数值不会因为新版本默认值变化自动被改写。
+- `reset all` 恢复所有数值默认值、默认额外鞘翅列表并关闭 debuglog。旧存档已设置的数值和列表不会因为新版本默认值变化自动被改写。
 - 工作线程不直接读取 Settings/NeoForge 配置；主线程构造数值任务，`PredictionHorizon` 在 worker 中使用任务冻结的倍率上下文。
 
 ### 1.1 完整数值配置表

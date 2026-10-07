@@ -1,0 +1,27 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :compileControllerReplay
+
+> Task :verifyEquipmentFixes
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Equipment fixes passed: Unbreakable/tiny/zero durability + vanilla 19/20, airborne return, real ground behavior approach/contact/dead-zone, persistent notices and 20-maid throttling.
+
+> Task :processResources
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyGroundMelee
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Ground melee passed: real AABB geometry, bonus/blind-zone, native stab collector descriptor and actual bonus linkage.
+
+> Task :jarJar NO-SOURCE
+> Task :jar
+
+BUILD SUCCESSFUL in 7s
+8 actionable tasks: 6 executed, 2 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

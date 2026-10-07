@@ -6,6 +6,7 @@ public class AABB {
  public AABB(Vec3 a,Vec3 b){this(Math.min(a.x,b.x),Math.min(a.y,b.y),Math.min(a.z,b.z),Math.max(a.x,b.x),Math.max(a.y,b.y),Math.max(a.z,b.z));}
  public AABB inflate(double n){return inflate(n,n,n);} public AABB inflate(double x,double y,double z){return new AABB(minX-x,minY-y,minZ-z,maxX+x,maxY+y,maxZ+z);}
  public Vec3 getCenter(){return new Vec3((minX+maxX)/2,(minY+maxY)/2,(minZ+maxZ)/2);}
+ public boolean contains(Vec3 p){return p.x>=minX&&p.x<maxX&&p.y>=minY&&p.y<maxY&&p.z>=minZ&&p.z<maxZ;}
  public boolean intersects(AABB b){return maxX>=b.minX&&minX<=b.maxX&&maxY>=b.minY&&minY<=b.maxY&&maxZ>=b.minZ&&minZ<=b.maxZ;}
  public Optional<Vec3> clip(Vec3 a,Vec3 b){
   double lo=0,hi=1; double[] from={a.x,a.y,a.z},to={b.x,b.y,b.z},mn={minX,minY,minZ},mx={maxX,maxY,maxZ};

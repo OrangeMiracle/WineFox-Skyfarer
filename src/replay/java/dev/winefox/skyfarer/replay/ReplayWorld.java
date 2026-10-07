@@ -5,6 +5,7 @@ import dev.winefox.skyfarer.flight.FlightCorridor;
 import java.util.*;
 /** Offline external-world adapter: loaded bounds, exact boxes, clocks and inventories only. */
 public class ReplayWorld {
+ public void playSound(Object player,Object entity,Object sound,Object source,float volume,float pitch){}
  public static final List<String> events=new ArrayList<>();
  public final List<LivingEntity> entities=new ArrayList<>();public final List<FireworkRocketEntity> rockets=new ArrayList<>();
  public final List<FlightCorridor.Box> boxes=new ArrayList<>();public long time;public int rocketJitter=5;public double loadedRadius=128;

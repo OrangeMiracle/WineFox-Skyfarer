@@ -1,6 +1,9 @@
 # 1.21.1 物理预测与路线能量包络
 
-核对环境：Minecraft 1.21.1、NeoForge 21.1.250，2026-10-05。本文属于当前实现；修改预测器、实体采集或版本时同步核对。入口见 [PROJECT_INDEX](PROJECT_INDEX.md)，线程协议见 [ASYNC_PLANNING](ASYNC_PLANNING.md)。
+0.6.2.2 激流新增依据：TridentItem.releaseUsing/use 的至少 10 tick 前摇、EnchantmentHelper 的真实强度、float Mth 向量归一化后叠加速度、1 耐久及 LivingEntity 20 tick spin。原版强度 I/II/III 为 1.5/2.25/3.0。开始和释放都检查 Entity.isInWaterOrRain（含 isRainingAt 的天空/高度图/生物群系条件）。女仆仅使用空中/水面辅助推进，不执行玩家地面抬升，不生成投射物/附加伤害。42 tick 完整路径、执行重验、原版生物触碰反转限制见 [装备与生存](EQUIPMENT_SURVIVAL.md)。
+0.6.2.5 起飞扩展：允许地面转向并完成至少 10 tick 三叉戟前摇，使用普通 JumpControl 跳离地面，再开启滑翔、重验当前轨迹并执行原版空中激流速度叠加。没有伪造地面释放的 1.2 格抬升。spin 的 20 ticks 由原生生命周期控制，12 tick 恢复只是安全预测区间，不能当作额外使用冷却；仍拒绝活跃烟花叠加与生物接触反转风险。
+
+核对环境：Minecraft 1.21.1、NeoForge 21.1.250，2026-10-07。本文属于当前实现；修改预测器、实体采集或版本时同步核对。入口见 [PROJECT_INDEX](PROJECT_INDEX.md)，线程协议见 [ASYNC_PLANNING](ASYNC_PLANNING.md)。
 
 ## 源码来源
 

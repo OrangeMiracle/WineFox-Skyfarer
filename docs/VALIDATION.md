@@ -1,6 +1,14 @@
 # 验证、离线回放与构建
 
-核对日期：2026-10-05。实现版本 0.6.2.1，基于本地 deaebca（0.6.1.1）。本轮只做编译、指定回放与最小复现，未执行 build/check 或全量 verify，未启动 Minecraft。
+核对日期：2026-10-07。实现版本 0.6.2.5，基于本地 0.6.2.4 工作区继续修改。本轮只做编译、激流与受影响起飞路径定向检查和打包，未执行 build/check 或全量 verify，未启动 Minecraft。
+
+0.6.2.5 当前证据：`tools/riptide-priority-acceptance.log` 的 compileJava、verifyRiptidePriority、verifyEquipmentPropulsion、verifyEquipmentLifecycle、jar 通过；`tools/riptide-launch-regression.log` 的 verifyStabilityLaunch、verifyLaunchAttackReplay 通过。新回放使用实际异步选择器、控制器和物品生命周期，覆盖雨中背包激流在有/无烟花时起飞并实际释放、火箭冷却不阻断激流、环境/原生 spin 门槛和默认兼容列表；保持 1500 组原版速度差分、碰撞/越过目标拒绝。普通 Launch Attack 的机会目标、接触、完整 Exit 和无解普通起飞仍通过。外部 JumpControl/实体 tick/库存使用夹具，真实雨遮挡与 API 连接用本地原版源码/字节码检查，不声称完成实机验证。
+
+0.6.2.4 历史证据：`tools/equipment-qualification-acceptance.log` 的 compileJava、verifyEquipmentFixes、verifyGroundMelee、jar 通过。新增具体资格拒因、Unbreakable 配置身份/能力、备用诊断及持续故障记录；实际控制器贯穿普通一格台阶跳跃、下降和落地，保留导航动量与相同 WalkTarget，落地后接近并普通攻击。真实 TLM 注册/跳跃调用由依赖字节码校核，台阶和跳跃运动由离线外部夹具提供，不声称运行了完整 Minecraft 寻路。日志证据及实例配置补正详见 [装备与生存](EQUIPMENT_SURVIVAL.md#0624-日志定位)。
+
+0.6.2.3 历史证据：`tools/equipment-fixes-acceptance.log`，compileJava、verifyEquipmentFixes、verifyGroundMelee、jar 全部通过。覆盖不可损坏兼容装备、低耐久边界/备用/空中返航、地面接触/盲区/好感度加成/后撤，以及持久事件去重与多女仆错峰；另以真实 MC 几何和 Spears 字节码核对连接。覆盖内容和夹具边界见 [装备与生存](EQUIPMENT_SURVIVAL.md#定向验证与边界)。
+
+0.6.2.2 历史证据：`tools/equipment-acceptance-final.log`，compileJava、verifyEquipmentPropulsion、verifyEquipmentLifecycle、verifyHandoffStability 与 jar 全部通过。本轮未重跑此范围；中间 bootstrap/断言失败日志不作通过证据。
 
 0.6.1.1 历史证据（本轮没有重跑该范围）：`tools/baseline-vertical-final.log` 的陡角回放验证约 61.14° 俯冲和 −51.91° 转弯上升接触、完整离场、12 种上升剩余烟花寿命，以及身体/射线拒绝；低能量/上升进场与左右遮挡山腰共 4 个真实控制器生命周期完成命中和落地。`tools/baseline-delivery.log` 记录编译、标记排除、远程 wake 生命周期与打包。中间失败日志不是交付证据。
 
@@ -32,7 +40,7 @@
 在仓库根目录用 PowerShell：
 
 ```powershell
-# 完整发布检查：build → check → 所有 30 项 verify 任务
+# 完整发布检查：build → check → 所有 35 项 verify 任务
 & .\tools\build.ps1 -Stage maintenance-release -Tasks @('build', '--continue')
 
 # 有针对性的并发、几何和生命周期检查
@@ -49,7 +57,7 @@
 
 [tools/build.ps1](../tools/build.ps1) 只有 `-Stage` 与 `-Tasks` 两个参数，没有 `-ExtraArgs`。它在已安装路径存在时设置 JDK 21.0.10；为本机 Windows 的 AF_UNIX 限制设置 `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir`，让 JDK 回退 TCP；调用根目录 wrapper，日志写入 `tools/<Stage>.log`，显示尾部 65 行并保留 Gradle 返回码。移植到其他机器需核对本地 JDK/该环境专用设置，不把此路径当作项目必装目录。
 
-`build` 同时构建 Jar 和检查；仅 `assemble` 或 `jar` 成功不代表回归通过。`test` 目前是 `NO-SOURCE`，真正检查是 30 个 `JavaExec` 任务，它们的 `main()` 抛 `AssertionError` 判失败，不依赖 Java `-ea`。需要强制复跑时按 Gradle 方式传 `--rerun-tasks`；不要同时启动多个构建去争用相同的 `build/classes/controllerReplay` 和报告文件。
+`build` 同时构建 Jar 和检查；仅 `assemble` 或 `jar` 成功不代表回归通过。`test` 目前是 `NO-SOURCE`，真正检查是 35 个 `JavaExec` 任务，它们的 `main()` 抛 `AssertionError` 判失败，不依赖 Java `-ea`。需要强制复跑时按 Gradle 方式传 `--rerun-tasks`；不要同时启动多个构建去争用相同的 `build/classes/controllerReplay` 和报告文件。
 
 ## 2. 三类证据必须区分
 

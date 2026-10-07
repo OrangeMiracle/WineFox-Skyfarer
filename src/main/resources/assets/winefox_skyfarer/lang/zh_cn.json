@@ -37,5 +37,10 @@
   "task.winefox_skyfarer.skyfarer.enable_condition.elytra": "胸甲栏需要可用鞘翅",
   "task.winefox_skyfarer.skyfarer.condition.elytra": "胸甲栏需要可用鞘翅",
   "task.winefox_skyfarer.skyfarer.enable_condition.fireworks": "可用库存需要烟花火箭",
-  "task.winefox_skyfarer.skyfarer.condition.fireworks": "可用库存需要烟花火箭"
+  "task.winefox_skyfarer.skyfarer.condition.fireworks": "可用库存需要烟花火箭",
+  "message.winefox_skyfarer.wings_ground_equipment": "主人，这件胸甲还不能用于飞行，我先在地面作战！",
+  "message.winefox_skyfarer.wings_return_equipment": "飞行装备不合适，我先找地方安全落地！",
+  "message.winefox_skyfarer.wings_ground": "主人，这副翅膀快散架啦……今天还是老老实实走地面吧。",
+  "message.winefox_skyfarer.wings_return": "主人，翅膀在报警！我先撤回来！",
+  "message.winefox_skyfarer.wings_landed": "好啦，翅膀休息，接下来轮到长矛！"
 }

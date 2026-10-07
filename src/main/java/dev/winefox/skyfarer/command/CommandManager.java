@@ -220,7 +220,7 @@ public final class CommandManager {
         if(maid.isPassenger())return "passenger";
         if(maid.isLeashed())return "leashed";
         if(maid.guiOpening)return "gui_open";
-        if(!SkyfarerEquipment.elytra(maid))return "elytra";
+        if(!SkyfarerEquipment.ensureWings(maid))return "wings_"+SkyfarerEquipment.wingQualification(maid);
         if(!SkyfarerEquipment.spear(maid))return "spear";
         return SkyfarerEquipment.fireworks(maid)?null:"fireworks";
     }
@@ -233,6 +233,10 @@ public final class CommandManager {
     }
     private static boolean eligible(ServerPlayer owner,EntityMaid maid){return !owner.isSpectator()&&owner.getUUID().equals(maid.getOwnerUUID())&&SkyfarerRuntime.isSkyfarer(maid)&&maid.isAlive()&&!maid.isNoAi()&&!maid.isMaidInSittingPose()&&!maid.isSleeping()&&!maid.isPassenger()&&!maid.isLeashed()&&!maid.guiOpening;}
     public static boolean beforeMaidTick(EntityMaid maid) {
+        if(SkyfarerRuntime.isSkyfarer(maid)&&!SkyfarerEquipment.ensureWings(maid)) {
+            // Cancel transit/tickets first, then let the air controller land without clearing glide.
+            cancel(maid.getUUID());return false;
+        }
         if(recalling(maid))return maid.onGround();
         var o=ORDERS.get(maid.getUUID());
         if(o==null){

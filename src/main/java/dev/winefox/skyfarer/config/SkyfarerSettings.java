@@ -9,6 +9,9 @@ public final class SkyfarerSettings {
     private static final java.util.concurrent.atomic.AtomicLong revision=new java.util.concurrent.atomic.AtomicLong();
     public static long revision(){return revision.get();}
     public static void reloaded(){revision.incrementAndGet();}
+    public static java.util.List<? extends String> extraElytraItems() {
+        return SkyfarerConfig.SPEC.isLoaded() ? SkyfarerConfig.EXTRA_ELYTRA_ITEMS.get() : SkyfarerConfig.DEFAULT_ELYTRA_ITEMS;
+    }
     public static double get(String name) {
         var p = SkyfarerConfig.PARAMETERS.get(name);
         if (p == null) throw new IllegalArgumentException("Unknown parameter: " + name);
@@ -40,6 +43,7 @@ public final class SkyfarerSettings {
             revision.incrementAndGet();
             SkyfarerConfig.PARAMETERS.forEach((key, p) -> SkyfarerConfig.VALUES.get(key).set(p.initial()));
             SkyfarerConfig.DEBUG_LOGGING.set(false);
+            SkyfarerConfig.EXTRA_ELYTRA_ITEMS.set(SkyfarerConfig.DEFAULT_ELYTRA_ITEMS);
             SkyfarerConfig.SPEC.save();
         } else {
             var p = SkyfarerConfig.PARAMETERS.get(name);

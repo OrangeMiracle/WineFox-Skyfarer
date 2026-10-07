@@ -47,5 +47,5 @@ public final class SkyfarerRuntime {
         }
     }
     public static void onSafetyTeleport(EntityMaid maid) { var controller = get(maid); if (controller != null) controller.release("SAFETY_TELEPORT"); }
-    public static void clear() { for(var controller:CONTROLLERS.values())controller.dispose("SERVER_STOP",true);CONTROLLERS.clear(); }
+    public static void clear() { for(var controller:CONTROLLERS.values())controller.dispose("SERVER_STOP",true);CONTROLLERS.clear();dev.winefox.skyfarer.compat.tlm.EquipmentNotices.clear();dev.winefox.skyfarer.compat.tlm.EquipmentDiagnostics.clear(); }
 }

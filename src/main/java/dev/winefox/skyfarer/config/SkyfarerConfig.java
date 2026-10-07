@@ -70,6 +70,8 @@ public final class SkyfarerConfig {
     public static final Map<String, ModConfigSpec.DoubleValue> VALUES = new LinkedHashMap<>();
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.BooleanValue DEBUG_LOGGING;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> EXTRA_ELYTRA_ITEMS;
+    public static final java.util.List<String> DEFAULT_ELYTRA_ITEMS=java.util.List.of("cataclysm:ignitium_elytra_chestplate");
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         for (Parameter p : PARAMETERS.values()) {
@@ -81,6 +83,10 @@ public final class SkyfarerConfig {
         DEBUG_LOGGING = builder.push("debug")
             .comment("Diagnostic logging for target scans, blocked takeoff and state transitions. /wfs debuglog on|off|status. Disabled by default.")
             .define("debuglog", false);
+        builder.pop();
+        EXTRA_ELYTRA_ITEMS = builder.push("equipment")
+            .comment("Additional Elytra-equivalent item IDs, e.g. cataclysm:ignitium_elytra_chestplate. Does not grant flight; item.canElytraFly must also allow it. Missing IDs are ignored.")
+            .defineListAllowEmpty("extra_elytra_items", DEFAULT_ELYTRA_ITEMS, () -> "minecraft:elytra", value -> value instanceof String);
         builder.pop();
         SPEC = builder.build();
     }

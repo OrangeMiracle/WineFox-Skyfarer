@@ -9,8 +9,8 @@ public final class VanillaElytra {
     private VanillaElytra() {}
     private static final float[] SIN = new float[65536];
     static { for (int i=0; i<SIN.length; i++) SIN[i]=(float)Math.sin((double)i*Math.PI*2.0/65536.0); }
-    private static float sin(float a) { return SIN[(int)(a*10430.378F)&65535]; }
-    private static float cos(float a) { return SIN[(int)(a*10430.378F+16384.0F)&65535]; }
+    static float sin(float a) { return SIN[(int)(a*10430.378F)&65535]; }
+    static float cos(float a) { return SIN[(int)(a*10430.378F+16384.0F)&65535]; }
     public record Look(double x,double y,double z) {}
     public static Look look(double yaw,double pitch) {
         float p=(float)pitch*(float)(Math.PI/180.0), a=-(float)yaw*(float)(Math.PI/180.0);

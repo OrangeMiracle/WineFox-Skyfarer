@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 group = 'dev.winefox.skyfarer'
-version = '0.6.2.1'
+version = '0.6.2.5'
 base { archivesName = 'winefox_skyfarer-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
@@ -112,6 +112,11 @@ def replayProduction = fileTree('src/main/java') {
     include 'dev/winefox/skyfarer/runtime/DebugSnapshot.java'
     include 'dev/winefox/skyfarer/command/TransitFlight.java', 'dev/winefox/skyfarer/command/DispatchPolicy.java'
     include 'dev/winefox/skyfarer/command/CreativeTransitPlanner.java'
+    include 'dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.java'
+    include 'dev/winefox/skyfarer/compat/tlm/WingInventory.java'
+    include 'dev/winefox/skyfarer/compat/tlm/EquipmentNoticePolicy.java', 'dev/winefox/skyfarer/compat/tlm/EquipmentNotices.java'
+    include 'dev/winefox/skyfarer/compat/tlm/EquipmentDiagnostics.java'
+    include 'dev/winefox/skyfarer/compat/tlm/GroundSpearCombat.java', 'dev/winefox/skyfarer/compat/spears/GroundMeleeReach.java'
     exclude 'dev/winefox/skyfarer/flight/ElytraFlightController.java'
 }
 tasks.register('compileControllerReplay', JavaCompile) {
@@ -233,3 +238,36 @@ tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
 tasks.named('jar') {
     manifest { attributes('Implementation-Version': project.version) }
 }
+
+tasks.register('verifyEquipmentPropulsion', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.EquipmentPropulsionChecks'
+    systemProperty 'log4j.configurationFile', file('tools/offline-log4j2.xml').toURI().toString()
+}
+tasks.register('verifyEquipmentLifecycle', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.EquipmentLifecycleChecks'
+}
+tasks.named('check') { dependsOn verifyEquipmentPropulsion, verifyEquipmentLifecycle }
+
+tasks.register('verifyEquipmentFixes', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.EquipmentFixChecks'
+}
+tasks.named('check') { dependsOn verifyEquipmentFixes }
+tasks.register('verifyGroundMelee', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.GroundMeleeChecks'
+    systemProperty 'log4j.configurationFile', file('tools/offline-log4j2.xml').toURI().toString()
+}
+tasks.named('check') { dependsOn verifyGroundMelee }
+tasks.register('verifyRiptidePriority', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.RiptidePriorityChecks'
+}
+tasks.named('check') { dependsOn verifyRiptidePriority }

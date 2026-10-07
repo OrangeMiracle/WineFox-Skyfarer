@@ -31,7 +31,19 @@ public final class AsyncPlanning {
     public LaunchAttackPlanner.Plan launchAttack(FlightPrediction.State s,List<LaunchAttackPlanner.Target> targets,List<Integer> durations,double gravity,double rate,double minimum,double exit){
         return (LaunchAttackPlanner.Plan)call(new PlanningTask.LaunchAttack(s,targets,durations,gravity,rate,minimum,exit));
     }
+    public LaunchAttackPlanner.Plan optionalLaunchAttack(FlightPrediction.State s,List<LaunchAttackPlanner.Target> targets,double gravity,double rate,double minimum,double exit){
+        return (LaunchAttackPlanner.Plan)optional(new PlanningTask.LaunchAttack(s,targets,List.of(),gravity,rate,minimum,exit),null);
+    }
     public int pending(){return session.pendingCount();}
+    public RiptidePlanner.Plan riptide(FlightPrediction.State s,double x,double y,double z,float strength,boolean wet) {
+        return riptide(s,x,y,z,strength,wet,false);
+    }
+    public RiptidePlanner.Plan riptide(FlightPrediction.State s,double x,double y,double z,float strength,boolean wet,boolean launch) {
+        return (RiptidePlanner.Plan)optional(new PlanningTask.Riptide(s,x,y,z,strength,physics().gravity(),wet,launch),null);
+    }
+    public RiptidePlanner.Plan certifyRiptide(FlightPrediction.State s,RiptidePlanner.Plan p,int elapsed,boolean wet) {
+        return session.recertifyRiptide(s,p,elapsed,wet);
+    }
     public int cells(){return session.cellCount();}
     public String detail(){return session.detail();}
     public List<GlidePlanner.TracePoint> trace(){return session.trace();}
@@ -74,6 +86,7 @@ public final class AsyncPlanning {
     }
     public double compactPulse(FlightPrediction.State s,CompactTurnPlanner.Goal goal,int duration,double gravity,double rate,GlidePlanner.Corridor ignored){return (Double)optional(bounded(new PlanningTask.Compact(s,goal,0,gravity,rate,duration),ignored),Double.POSITIVE_INFINITY);}
     public SurfaceLaunchPlanner.Plan launch(FlightPrediction.State s,double yaw,double height,double gravity,int duration,GlidePlanner.Corridor ignored,SurfaceLaunchPlanner.Water water){return (SurfaceLaunchPlanner.Plan)call(new PlanningTask.Launch(s,yaw,height,gravity,duration,false,null,water!=SurfaceLaunchPlanner.DRY));}
+    public SurfaceLaunchPlanner.Plan coastLaunch(FlightPrediction.State s,double yaw,double height,double gravity,SurfaceLaunchPlanner.Water water){return (SurfaceLaunchPlanner.Plan)call(new PlanningTask.Launch(s,yaw,height,gravity,-1,false,null,water!=SurfaceLaunchPlanner.DRY));}
     public SurfaceLaunchPlanner.Plan launchRemaining(FlightPrediction.State s,double yaw,double height,double gravity,int ticks,GlidePlanner.Corridor ignored,SurfaceLaunchPlanner.Water water){return (SurfaceLaunchPlanner.Plan)call(new PlanningTask.Launch(s,yaw,height,gravity,ticks,true,null,water!=SurfaceLaunchPlanner.DRY));}
     public double launchPulse(FlightPrediction.State s,SurfaceLaunchPlanner.Plan p,double gravity,int duration,GlidePlanner.Corridor ignored,SurfaceLaunchPlanner.Water water){return (Double)call(new PlanningTask.Launch(s,p.yaw(),p.height(),gravity,duration,false,p,water!=SurfaceLaunchPlanner.DRY));}
     public SlopeSampler.Estimate slope(double x,double y,double z,double radius,double step,SlopeSampler.Support ignored){return (SlopeSampler.Estimate)optional(new PlanningTask.Slope(CollisionSnapshot.point(x,y,z),x,y,z,radius,step),new SlopeSampler.Estimate(0,0,0,0,0));}

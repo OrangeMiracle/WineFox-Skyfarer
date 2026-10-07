@@ -1,0 +1,29 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileVerificationJava UP-TO-DATE
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses UP-TO-DATE
+
+> Task :verifyStabilityLaunch
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+side wall ttc=6 margin=31 glide=null boost=EMERGENCY_BOOST_TURN
+launch height=6 distance=10 pitch=-50.0 duration=0 contact=10
+launch height=10 distance=10 pitch=-30.0 duration=0 contact=10
+launch height=14 distance=10 pitch=-30.0 duration=0 contact=10
+Stability/launch targeted physics checks passed
+
+> Task :compileControllerReplay UP-TO-DATE
+
+> Task :verifyLaunchAttackReplay
+Launch replay opportunity=true launch=true nativeHit=true exit=true normalFallback=false
+Launch replay opportunity=false launch=false nativeHit=false exit=false normalFallback=true
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+BUILD SUCCESSFUL in 6s
+7 actionable tasks: 2 executed, 5 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

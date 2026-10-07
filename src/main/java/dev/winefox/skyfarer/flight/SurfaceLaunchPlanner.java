@@ -5,6 +5,14 @@ public final class SurfaceLaunchPlanner {
     private SurfaceLaunchPlanner() {}
     public static final int DEPARTURE_TICKS = 6;
     public record Plan(double yaw, double pitch, double height, double cost) {}
+    public static Plan chooseCoast(FlightPrediction.State start,double yaw,double height,double gravity,GlidePlanner.Corridor space,Water water) {
+        Plan best=null;
+        for(double pitch:new double[]{-25,0,15}) {
+            var plan=new Plan(yaw,pitch,height,0);double cost=forecast(start,plan,gravity,0,space,water);
+            if(Double.isFinite(cost)&&(best==null||cost<best.cost()))best=new Plan(yaw,pitch,height,cost);
+        }
+        return best;
+    }
     @FunctionalInterface public interface Water { boolean wet(FlightPrediction.State state); }
     public static final Water DRY = state -> false;
 
