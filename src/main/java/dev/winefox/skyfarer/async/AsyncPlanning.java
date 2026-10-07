@@ -44,6 +44,7 @@ public final class AsyncPlanning {
     public RiptidePlanner.Plan certifyRiptide(FlightPrediction.State s,RiptidePlanner.Plan p,int elapsed,boolean wet) {
         return session.recertifyRiptide(s,p,elapsed,wet);
     }
+    public String riptideRejection(){return session.riptideRejection();}
     public int cells(){return session.cellCount();}
     public String detail(){return session.detail();}
     public List<GlidePlanner.TracePoint> trace(){return session.trace();}

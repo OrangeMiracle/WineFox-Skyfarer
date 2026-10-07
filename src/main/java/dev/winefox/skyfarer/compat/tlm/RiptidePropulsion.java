@@ -11,13 +11,14 @@ import net.minecraft.world.item.*;
 import net.minecraft.world.item.enchantment.*;
 import net.minecraft.world.phys.AABB;
 
-/** Server-only item lifecycle. TridentItem itself only releases for Player, so adapt its
- * native additive impulse and LivingEntity spin lifecycle to the maid. No projectile/extra damage. */
+/** Server-only WineFox extension: native OFF_HAND charge/release, then a certified metered burst.
+ * Only this maid's owned thrust/spin is controlled. Player tridents and Spears are untouched. */
 public final class RiptidePropulsion {
     private RiptidePlanner.Plan plan;
     private ItemStack used=ItemStack.EMPTY;
     private long started;
     private long releasedAt=-1;
+    private long lastThrustAt=-1;
     private boolean released;
     private String context="NONE";
     // Only the synchronous, certified release call may activate the non-player adapter.
@@ -25,12 +26,13 @@ public final class RiptidePropulsion {
     private static final ThreadLocal<Release> RELEASING=new ThreadLocal<>();
     private boolean launchCharging,jumpRequested;
     public boolean active(){return plan!=null;}
+    public int selectedDuration(){return plan==null?0:plan.duration();}
     public boolean completed(){return released&&"COMPLETED".equals(endReason);}
     private String endReason="";
     public void context(String state){context=state;}
     private boolean ownsUse(EntityMaid m){return m.isUsingItem()&&m.getUsedItemHand()==InteractionHand.OFF_HAND&&m.getUseItem()==used&&m.getOffhandItem()==used;}
     private boolean startUse(EntityMaid m,String event) {
-        released=false;releasedAt=-1;endReason="";started=m.level().getGameTime();
+        released=false;releasedAt=-1;lastThrustAt=-1;endReason="";started=m.level().getGameTime();
         m.startUsingItem(InteractionHand.OFF_HAND);
         if(!ownsUse(m)){cancel(m,"START_USE_REJECTED");return false;}
         log(m,event);return true;
@@ -65,7 +67,7 @@ public final class RiptidePropulsion {
         double radius=Math.max(dev.winefox.skyfarer.ai.TargetEvaluator.hardRange(m)+12,m.position().subtract(anchor).horizontalDistance()+6);
         for(int i=1;i<p.trace().size();i++) {
             var point=p.trace().get(i);if(Math.hypot(point.x()-anchor.x,point.z()-anchor.z)>radius)return false;
-            int tick=elapsed+i-1;if(tick<RiptidePlanner.WINDUP||tick>=RiptidePlanner.WINDUP+RiptidePlanner.SPIN)continue;
+            int tick=elapsed+i-1;if(tick<RiptidePlanner.WINDUP||tick>=p.end())continue;
             var a=p.trace().get(i-1);var b=p.trace().get(i);double r=m.getBbWidth()*.5+.3;
             var box=new AABB(Math.min(a.x(),b.x())-r,Math.min(a.y(),b.y())-m.getEyeHeight()-.2,Math.min(a.z(),b.z())-r,
                 Math.max(a.x(),b.x())+r,Math.max(a.y(),b.y())+m.getBbHeight()-m.getEyeHeight()+.2,Math.max(a.z(),b.z())+r);
@@ -112,7 +114,8 @@ public final class RiptidePropulsion {
             if(m.onGround()) {
                 if(jumpRequested||!jumpClear(m)){cancel(m,"LAUNCH_JUMP_BLOCKED");return false;}
                 var proof=planning.certifyRiptide(jumpStart(m,planning.physics()),plan,RiptidePlanner.WINDUP,false);
-                if(proof==null||!entitiesClear(m,proof,RiptidePlanner.WINDUP)){cancel(m,"LAUNCH_PATH_REJECTED");return false;}
+                if(proof==null){cancel(m,"LAUNCH_"+planning.riptideRejection());return false;}
+                if(!entitiesClear(m,proof,RiptidePlanner.WINDUP)){cancel(m,"LAUNCH_ENTITY_OR_ANCHOR_REJECTED");return false;}
                 heading.steerAngles(m,plan.yaw(),plan.pitch(),180,90);
                 if(elapsed>=RiptidePlanner.WINDUP){m.getJumpControl().jump();jumpRequested=true;log(m,"LAUNCH_JUMP");}
                 return true;
@@ -121,12 +124,13 @@ public final class RiptidePropulsion {
             s=new FlightPrediction.State(m.getX(),m.getEyeY(),m.getZ(),m.getDeltaMovement().x,m.getDeltaMovement().y,m.getDeltaMovement().z,m.getYRot(),m.getXRot(),planning.physics());
             launchCharging=false;elapsed=RiptidePlanner.WINDUP;
         }
-        // Recovery is a prediction horizon, not an extra use cooldown. Native spin owns its 20 ticks.
-        if(released&&elapsed>=RiptidePlanner.WINDUP+RiptidePlanner.SPIN&&!m.isAutoSpinAttack()){cancel(m,"COMPLETED");return false;}
+        // Only WineFox's owned spin/thrust is shortened. Momentum and FALL_FLYING survive cutoff.
+        if(released&&elapsed>=plan.end()){cancel(m,"COMPLETED");return false;}
+        if(released&&(!m.isInWaterOrRain()||strength(m,used)!=plan.strength()||!m.isAutoSpinAttack())){cancel(m,"THRUST_ENVIRONMENT_ITEM_OR_SPIN_LOST");return false;}
         if(m.onGround()||!m.isFallFlying()||m.getOffhandItem()!=used
             ){cancel(m,"GROUND_GLIDE_OR_STACK_CHANGED");return false;}
         var proof=planning.certifyRiptide(s,plan,elapsed,m.isInWaterOrBubble());
-        if(proof==null){cancel(m,"PATH_OR_SNAPSHOT_REJECTED");return false;}
+        if(proof==null){cancel(m,planning.riptideRejection());return false;}
         if(!entitiesClear(m,proof,elapsed)){cancel(m,"ENTITY_OR_ANCHOR_REJECTED");return false;}
         double pitch=RiptidePlanner.pitch(s,plan,elapsed,planning.physics().gravity());
         heading.steerAngles(m,plan.yaw(),pitch,8,8);
@@ -136,6 +140,8 @@ public final class RiptidePropulsion {
             try {m.releaseUsingItem();} finally {RELEASING.remove();}
             if(!released){cancel(m,"RELEASE_VETOED_OR_CALLBACK_MISSING");return false;}
             log(m,"RELEASED");
+        } else if(released&&lastThrustAt!=m.level().getGameTime()) {
+            thrust(m);if((elapsed-RiptidePlanner.WINDUP)%5==0)log(m,"THRUST");
         }
         return true;
     }
@@ -145,14 +151,17 @@ public final class RiptidePropulsion {
         var self=call.owner();
         if(self.released||self.plan==null||!self.ownsUse(m)||stack!=self.used||!m.isInWaterOrRain()
             ||stack.getUseDuration(m)-remaining<RiptidePlanner.WINDUP||strength(m,stack)!=self.plan.strength())return;
-        var impulse=RiptidePlanner.impulse(m.getYRot(),m.getXRot(),self.plan.strength());
         var before=m.getDeltaMovement();
-        stack.hurtAndBreak(1,m,EquipmentSlot.OFFHAND);m.push(impulse.x(),impulse.y(),impulse.z());
-        var spin=(LivingRiptideAccessor)m;spin.wfs$spinTicks(RiptidePlanner.SPIN);spin.wfs$spinDamage(8);spin.wfs$spinItem(stack);spin.wfs$livingFlag(4,true);
+        stack.hurtAndBreak(1,m,EquipmentSlot.OFFHAND);self.thrust(m);
+        var spin=(LivingRiptideAccessor)m;spin.wfs$spinTicks(self.plan.duration());spin.wfs$spinDamage(8);spin.wfs$spinItem(stack);spin.wfs$livingFlag(4,true);
         self.released=true;self.releasedAt=m.level().getGameTime();
         var sound=EnchantmentHelper.pickHighestLevel(stack,EnchantmentEffectComponents.TRIDENT_SOUND).orElse(net.minecraft.sounds.SoundEvents.TRIDENT_THROW);
         m.level().playSound(null,m,sound.value(),m.getSoundSource(),1,1);
         self.log(m,"RELEASE_CALLBACK impulse="+m.getDeltaMovement().subtract(before)+" spinStarted="+m.isAutoSpinAttack());
+    }
+    private void thrust(EntityMaid m) {
+        var impulse=RiptidePlanner.impulse(m.getYRot(),m.getXRot(),RiptidePlanner.THRUST);
+        m.push(impulse.x(),impulse.y(),impulse.z());lastThrustAt=m.level().getGameTime();
     }
     public void observedStop(EntityMaid m,String caller){if(active()&&ownsUse(m))log(m,"USE_STOP caller="+caller+" releaseScope="+(RELEASING.get()!=null));}
     public void cancel(EntityMaid m){cancel(m,"CALLER_CANCEL");}
@@ -160,12 +169,13 @@ public final class RiptidePropulsion {
         if(plan==null)return;
         endReason=reason;log(m,"END:"+reason);
         if(ownsUse(m))m.stopUsingItem();
-        // Native spin is allowed to expire; velocity and FALL_FLYING are never reset here.
+        if(released){var spin=(LivingRiptideAccessor)m;spin.wfs$spinTicks(0);spin.wfs$spinDamage(0);spin.wfs$spinItem(ItemStack.EMPTY);spin.wfs$livingFlag(4,false);}
+        // Stop owned WineFox propulsion only. Velocity and FALL_FLYING are never reset here.
         plan=null;used=ItemStack.EMPTY;launchCharging=false;jumpRequested=false;
     }
     public void transition(EntityMaid m,String from,String to,String reason){if(active())log(m,"STATE_TRANSITION "+from+"->"+to+":"+reason);context=to;}
     private static int level(ItemStack stack){return stack.getEnchantments().entrySet().stream().filter(e->e.getKey().is(Enchantments.RIPTIDE)).mapToInt(e->e.getIntValue()).max().orElse(0);}
     private void log(EntityMaid m,String event){if(dev.winefox.skyfarer.config.SkyfarerSettings.debugLogging())
-        dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] RIPTIDE maid={} event={} state={} selectedHand=OFF_HAND item={} usedHand={} startTick={} tick={} charge={} remaining={} sameUse={} using={} wet={} enchantLevel={} strength={} released={} spin={} velocity={}",
-            m.getUUID(),event,context,net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(used.getItem()),m.getUsedItemHand(),started,m.level().getGameTime(),m.getTicksUsingItem(),m.getUseItemRemainingTicks(),ownsUse(m),m.isUsingItem(),m.isInWaterOrRain(),level(used),plan==null?0:plan.strength(),released,m.isAutoSpinAttack(),m.getDeltaMovement());}
+        dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] RIPTIDE maid={} event={} state={} selectedHand=OFF_HAND item={} usedHand={} startTick={} tick={} charge={} remaining={} sameUse={} using={} wet={} enchantLevel={} strength={} duration={} maxDuration={} departure={} thrustElapsed={} released={} spin={} velocity={}",
+            m.getUUID(),event,context,net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(used.getItem()),m.getUsedItemHand(),started,m.level().getGameTime(),m.getTicksUsingItem(),m.getUseItemRemainingTicks(),ownsUse(m),m.isUsingItem(),m.isInWaterOrRain(),level(used),plan==null?0:plan.strength(),selectedDuration(),plan==null?0:RiptidePlanner.maximumTicks(plan.strength()),plan!=null&&plan.departure(),released?m.level().getGameTime()-releasedAt:0,released,m.isAutoSpinAttack(),m.getDeltaMovement());}
 }

@@ -58,7 +58,7 @@ public final class EquipmentLifecycleChecks {
             world.advance(began+t);planning.begin(began+t,"RIPTIDE_TEST",null,0);heading.beginTick(m);
             require(manager.tick(m,state(m),planning,heading),"windup/release aborted at "+t);
         }
-        require(m.offhand.damage==1&&!m.using&&m.spinTicks==20&&m.velocity.length()>2,"release did not add native impulse/spin/wear");
+        require(m.offhand.damage==1&&!m.using&&m.spinTicks>0&&m.pushCalls==1,"release did not add native impulse/spin/wear");
         manager.cancel(m);require(m.glide,"propulsion cancel cleared glide");planning.close();
     }
     static FlightPrediction.State state(EntityMaid m){return new FlightPrediction.State(m.getX(),m.getEyeY(),m.getZ(),m.velocity.x,m.velocity.y,m.velocity.z,m.yaw,m.pitch,PhysicsContext.VANILLA);}

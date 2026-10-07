@@ -1,6 +1,30 @@
 # 装备、生存与激流推进
 
-源码版本 **0.6.2.6**，核对日期 2026-10-07。沿用 0.6.2.1 飞控，不引入 Funnel。源码为最终事实。
+源码版本 **0.6.2.7**，核对日期 2026-10-07。沿用 0.6.2.1 飞控，不引入 Funnel。源码为最终事实。
+
+## 0.6.2.7 近目标起飞与可控时长推进
+
+**日志因果。** 指定实例 latest.log/debug.log 为同一 0.6.2.6 会话，不能重复累计：8 次 RIPTIDE_NO_SAFE_PATH、3 次 NO_LAUNCH_PLAN；另有成功蓄力和真实释放的记录。latest.log 855–863、884–889 显示先拒绝激流候选，再 CORRIDOR_JUMP，刚滑翔即 NO_LAUNCH_PLAN 并进入安全返航。“约 10 格”来自用户复现，旧日志未记数值距离；新版 PROPULSION 补记 targetDistance。摘录：[riptide-metered-evidence.txt](../tools/riptide-metered-evidence.txt)。
+
+源码中普通激流起飞误用了接近目标的约束：整段预测必须在敌人前方留 6 格，因此近目标在开始蓄力前就无解。普通起飞现在使用独立 departure 认证：地面净空、完整扫掠、爬升与末段可继续滑翔的状态，不把敌人位置当刹停平面，也不要求起飞立即达到敌人高度。取现有起飞高度 eye+6，支持有限的前/侧/后方向搜索；接近目标的非起飞推进仍保留目标余量检查。不是把 10 格换成另一个拒飞阈值。
+
+无动力起飞原先只按未碰撞与代价判断，短暂跳起也可能通过；现在必须在预测末端保持高度、水平速度和下降余量。离地重验失败直接记录 LAUNCH_REVALIDATION_FAILED 并安全恢复，不再把失效计划留到下一 tick 报笼统 NO_LAUNCH_PLAN。激流起飞结束后，从当前真实动量重新搜索合法机会目标并认证 Rejoin / Strike→Exit；没有攻击证书就继续普通 CLIMB/APPROACH，推进期间不穿插长矛攻击。
+
+**WineFox 扩展物理。** 主手长矛、副手三叉戟、至少 10 tick 真实蓄力、OFF_HAND 释放事件、雨/水资格、每次释放 1 耐久全部保留。区别在释放后的推进：不再一次叠加完整原版等级冲量，而是每个选定推进 tick 沿受限转向后的 look 叠加 **0.2 格/tick 的速度增量**，随后按原有 Vanilla Elytra / 水中 travel 模拟。预测与执行共用 float Mth 向量算法。仅同步授权的女仆释放进入此控制层，玩家三叉戟和普通 Spears 不受影响。
+
+| 原版激流等级 | 最大推进 ticks | 20 TPS 下最大时长 |
+| --- | --- | --- |
+| I（原版效果强度 1.5） | 10 | 0.5 秒 |
+| II（2.25） | 20 | 1 秒 |
+| III（3.0） | 30 | 1.5 秒 |
+
+以游戏最小时间步 **1 tick / 0.05 秒** 搜索 1 到上限的每个整数时长，不使用几个固定档位。上限由当前原版激流效果强度映射并限于 30 ticks；未承诺任意数据包自定义强度的等级语义。逐时长搜索，先选最短安全且满足高度/速度要求者，再在同一时长比较姿态代价；高等级不提高每 tick 推力。每个提案认证剩余前摇、所有推进 ticks、之后 12 ticks 无推进恢复、身体扫掠与目标余量。起飞最多 4 个方向×3 个俯仰×30 个时长/强度，空中 3 个俯仰；全部搜索在现有有界 Worker，主线程只重验选定轨迹。
+
+推进只在真实释放回调开始，后续每个游戏 tick 至多施加一次，不补发漏掉的历史冲量。选定时长到期（或环境/物品/spin/路径失效）停止本次 WineFox 推力并清除其拥有的 spin；**不归零速度、不清 FALL_FLYING**。12 tick 恢复只是预测窗口，不是冷却；激流仍不读取火箭 cooldown，安全激流优先，无可用解再走烟花/普通飞控。活跃烟花与已承诺 Strike/Exit 仍排除插入激流。
+
+**快照与诊断。** 实机还记录两次起飞释放后第 8 tick 的 PATH_OR_SNAPSHOT_REJECTED，旧日志不足以确认具体是轨迹还是快照。源码存在蓄力期间消耗快照有效期、执行走廊未提前刷新的风险；现在仅为选定路线触及的 cells 提前排队刷新，沿用全服/会话采集与队列上限，仍拒绝缺失/超过 20 tick 的快照。新拒因区分 SNAPSHOT_MISSING 与 TRAJECTORY_REJECTED；生物/作战范围拒绝另列。PROPULSION/RIPTIDE 补记 purpose、目标距离、duration/maxDuration、thrustElapsed；持续推进每 5 ticks 采样。
+
+**限定验证。** `tools/riptide-metered-acceptance.log` 记录 compileJava、verifyRiptideDuration、verifyRiptideDeparture、verifyRiptideRelease、verifyRiptidePriority、verifyEquipmentLifecycle、verifyEquipmentPropulsion、verifyLaunchAttackReplay 与 jar。回放覆盖 6/10/32 格目标普通激流起飞，5 ticks 实际推进且后续仍飞行；不适合上升 Launch Attack 的近目标仍可普通起飞；干燥时使用烟花。III 在不同需求下选出 1/2/3/4/12/19 ticks；逐一验证不存在更短可行候选，较长方案撞墙/overshoot 时选择较短方案。19 tick 连续实际推进跨越前摇后的快照刷新周期，推进次数等于 duration，截止保留动量。保留副手、事件否决、失雨/换手取消与攻击回归。外部实体 tick、雨状态、JumpControl 和物品事件由离线夹具提供，不等同于实际游戏与第三方 Mod 联调；未启动 Minecraft、未全量 verify。
 
 ## 0.6.2.6 激流使用与释放审计
 
@@ -59,7 +83,7 @@ extra_elytra_items = ["cataclysm:ignitium_elytra_chestplate"]
 
 0.6.2.5 默认包含 `cataclysm:ignitium_elytra_chestplate`。已有配置（包括用户主动设置的空列表）不会强制覆盖；`/wfs config reset all` 恢复含此 ID 的默认列表，用户仍可增删。配置只按注册 ID 识别身份；没有反射、第三方类引用或硬前置。拼错、无效或未安装 Mod 的 ID 不匹配物品，安全忽略；仍必须通过该物品自己的 `ItemStack.canElytraFly(maid)`，普通胸甲入列表不会获得飞行能力。修改文件并重载 SERVER 配置生效，数值 `set` 命令不编辑列表。
 
-## 激流的原版依据与接入
+## 0.6.2.2–0.6.2.6 激流的原版依据与接入（历史行为）
 
 对照本地 Minecraft 1.21.1 / NeoForge 21.1.250 mapped 源码的 `TridentItem.releaseUsing/use`、`Enchantments`、`EnchantmentHelper`、`Entity.isInRain`、`Level.isRainingAt`、`Player.startAutoSpinAttack` 和 `LivingEntity.checkAutoSpinAttack`。来源归档与 SHA 见 [物理说明](VANILLA_PHYSICS.md)。TLM 1.5.3 的三叉戟任务没有可复用的激流释放流程。
 

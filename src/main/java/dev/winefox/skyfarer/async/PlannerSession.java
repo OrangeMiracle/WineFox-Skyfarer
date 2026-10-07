@@ -203,10 +203,17 @@ public final class PlannerSession {
         var map=new HashMap<Long,CollisionSnapshot.Cell>();
         cells.forEach((k,v)->{if(now-v.tick<=20)map.put(k,v.cell);});
         var space=source.snapshot(Map.copyOf(map),wet,true).space(new java.util.concurrent.atomic.AtomicBoolean());
+        space.trackTouched();
         var result=RiptidePlanner.certify(start,plan,elapsed,physics().gravity(),space,wet?space:SurfaceLaunchPlanner.DRY);
         for(long key:space.missing())request(key,0);
+        // Active thrust must refresh its own remaining corridor before the 20-tick expiry.
+        // Enqueue only: existing global/local capture budgets still govern world access.
+        for(long key:space.touched()){var entry=cells.get(key);if(entry!=null&&now-entry.tick>=8)request(key,0);}
+        riptideRejection=result!=null?"NONE":!space.missing().isEmpty()?"SNAPSHOT_MISSING:"+space.missing().size():"TRAJECTORY_REJECTED";
         return result;
     }
+    private String riptideRejection="NONE";
+    public String riptideRejection(){check();return riptideRejection;}
     private void enqueue(PlanningTask task){
         if(task.unbound() instanceof PlanningTask.Sweep sweep&&sweep.path()==null){
             var seed=seeds.get(task.slot());

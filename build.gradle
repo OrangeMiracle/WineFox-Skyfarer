@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 group = 'dev.winefox.skyfarer'
-version = '0.6.2.6'
+version = '0.6.2.7'
 base { archivesName = 'winefox_skyfarer-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
@@ -277,3 +277,16 @@ tasks.register('verifyRiptideRelease', JavaExec) {
     mainClass = 'dev.winefox.skyfarer.replay.RiptideReleaseChecks'
 }
 tasks.named('check') { dependsOn verifyRiptideRelease }
+tasks.register('verifyRiptideDuration', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.RiptideDurationChecks'
+    systemProperty 'log4j.configurationFile', file('tools/offline-log4j2.xml').toURI().toString()
+}
+tasks.named('check') { dependsOn verifyRiptideDuration }
+tasks.register('verifyRiptideDeparture', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.RiptideDepartureChecks'
+}
+tasks.named('check') { dependsOn verifyRiptideDeparture }

@@ -74,6 +74,8 @@ public final class SurfaceLaunchPlanner {
             cost+=Math.pow(Math.max(0,plan.height-s.y()),2)*.015*PredictionHorizon.weight(tick,life+start.rocketDelay()+16);
         }
         if(water.wet(s)) return Double.POSITIVE_INFINITY;
+        // No-fuel takeoff must end as usable flight, not merely survive the first hop.
+        if(life==0&&(Math.hypot(s.vx(),s.vz())<.55||s.y()<start.y()||s.vy()<-.5))return Double.POSITIVE_INFINITY;
         return cost+Math.pow(Math.max(0,2-earlyRise),2)*12;
     }
     public static double pulseCost(FlightPrediction.State start,Plan plan,double gravity,int duration,

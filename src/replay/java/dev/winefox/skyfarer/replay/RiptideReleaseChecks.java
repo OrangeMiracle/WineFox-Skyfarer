@@ -53,11 +53,11 @@ public final class RiptideReleaseChecks {
             if(!m.ground&&!m.glide){require(chargeBefore>=10,"jump interrupted incomplete charge");m.pos=m.pos.add(m.velocity);m.velocity=new Vec3(m.velocity.x*.91,(m.velocity.y-.08)*.98,m.velocity.z*.91);}
         }
         if(mode.equals("SUCCESS")) {
-            require(m.releaseCalls==1&&m.releaseCallbacks==1&&m.spinTicks==20&&trident.damage==1&&!m.using&&m.velocity.length()>1.5,"native release did not apply impulse/spin exactly once");
+            require(m.releaseCalls==1&&m.releaseCallbacks==1&&m.spinTicks>0&&trident.damage==1&&!m.using&&m.pushCalls==1,"native release did not apply impulse/spin exactly once");
             var velocity=m.velocity;RiptidePropulsion.releaseAuthorized(m,trident,71980);
             require(m.velocity==velocity&&trident.damage==1,"duplicate unowned release fired");
             // Native spin expires independently of item use. The manager must finish without a release retry.
-            m.spinTicks=0;w.advance(w.getGameTime()+20);
+            m.spinTicks=0;w.advance(w.getGameTime()+manager.selectedDuration());
             var planning=(AsyncPlanning)RiptidePriorityChecks.field(c,"planning");var heading=(HeadingController)RiptidePriorityChecks.field(c,"heading");
             require(!manager.tick(m,EquipmentLifecycleChecks.state(m),planning,heading)&&manager.completed(),"normal spin completion not recognized");
             require(m.releaseCalls==1&&!m.using,"spin completion restarted release/use");

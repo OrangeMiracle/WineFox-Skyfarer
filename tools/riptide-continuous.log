@@ -1,0 +1,17 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyRiptideDeparture
+departure targetDistance=10.0 wet=true duration=5 thrustCalls=5 altitude=10.852205204800525 state=ATTACK_EXIT rockets=0
+departure targetDistance=6.0 wet=true duration=5 thrustCalls=5 altitude=10.852205204800525 state=ATTACK_EXIT rockets=0
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+departure targetDistance=32.0 wet=true duration=5 thrustCalls=5 altitude=10.852205204800525 state=ATTACK_EXIT rockets=0
+departure targetDistance=32.0 wet=false duration=0 thrustCalls=0 altitude=0.42 state=CLIMB rockets=1
+continuous duration=19 chargeAndBurstTicks=29 pushes=19 cutoffVelocity=(0.0,3.8290200222369255,1.7534606737500031)
+Actual controller near/far Riptide departures, complete metered thrust, post-burst flight and dry firework fallback passed
+
+BUILD SUCCESSFUL in 6s
+2 actionable tasks: 2 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

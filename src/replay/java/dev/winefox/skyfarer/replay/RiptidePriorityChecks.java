@@ -56,8 +56,8 @@ public final class RiptidePriorityChecks {
             }
         }
         System.out.println(ReplayWorld.events.stream().filter(e->e.contains(m.id.toString())&&(e.contains("RIPTIDE")||e.contains("PROPULSION"))).limit(25).toList());
-        require(jumped&&m.glide&&m.offhand.damage==1&&m.spinTicks==20,"legal rain takeoff did not actually release Riptide; state="+c.state());
+        require(jumped&&m.glide&&m.offhand.damage==1&&m.spinTicks>0,"legal rain takeoff did not actually release Riptide; state="+c.state());
         require(m.inventory.consumed==0,"rocket won against safe launch Riptide");
-        require(!m.using&&m.velocity.length()>1.5,"launch did not finish charge and add impulse");c.dispose("TEST",false);
+        require(!m.using&&m.pushCalls==1,"launch did not finish charge and add impulse");c.dispose("TEST",false);
     }
 }

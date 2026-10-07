@@ -2,7 +2,16 @@
 
 ## 当前交付状态
 
-当前交付为 **0.6.2.6**，在当前本地 0.6.2.5 源码之上修复。仅编译与针对性验证，不包含 Funnel；未启动 Minecraft。
+当前交付为 **0.6.2.7**，在当前本地 0.6.2.6 源码之上修复。仅编译与针对性验证，不包含 Funnel；未启动 Minecraft。
+
+### 0.6.2.7 近目标起飞与可控时长激流（2026-10-07）
+
+- **日志与因果**：先读取指定实例 latest.log/debug.log，确认为 0.6.2.6。相同会话有 8 次候选 RIPTIDE_NO_SAFE_PATH、3 次 NO_LAUNCH_PLAN，后者紧接普通 CORRIDOR_JUMP / glide=true 后发生；成功释放记录仍有真实 OFF_HAND 蓄力与冲量，不是再次丢失 release。约 10 格来自用户复现，旧日志无数值距离，不冒充已量出现场距离。源码将普通起飞也限制在敌人前方 6 格，原固定强冲量近目标无解。见 [证据摘录](tools/riptide-metered-evidence.txt)。
+- **认证修复**：普通 departure 使用净空、eye+6 高度和末段可继续飞行状态，独立于敌人距离/高度；保留身体与生物扫掠、有限前/侧/后方向。接近目标推进仍保留 overshoot 余量，攻击仍在推进结束后由实际动量重做 Rejoin / Strike→Exit，无攻击解继续普通飞控。无动力起飞必须具有末段速度/高度，不能把短暂跳跃当作可持续起飞；离地重验无解明确进入安全恢复，不遗留空计划等下一 tick 才报错。
+- **WineFox 扩展**：保留 10 tick 实际蓄力、明确副手、原生 releaseUsing 事件和单次 1 耐久，在受控女仆层按每 tick 0.2 的 look 方向速度增量推进，之后仍走现有 Vanilla 物理。原版强度 I/II/III 对应最大 10/20/30 ticks（0.5/1/1.5 秒），从 1 到上限逐 tick 搜索，先选最短可行时间，再比较姿态成本。高等级不强制长推进，也不增加每 tick 推力。预测覆盖所有推进和 12 ticks 无动力恢复，不把 spin 动画时长误作实际持续推力。玩家三叉戟与普通 Spears 不改。
+- **执行与预算**：真实回调只启动一次，后续每 tick 最多加力一次；到期或环境/物品/spin/路径变化停止本次推力及其拥有的 spin，保留速度与 FALL_FLYING，不补历史冲量、不套火箭冷却。普通/紧急飞控接续处理变化。已有释放后第 8 tick 快照/轨迹混合拒因不能追认为单一根因；修复已选路线未提前刷新风险，仅将实际触及 cells（有界 512）在过期前排队刷新，原全服采集/队列上限不变，仍拒绝缺数据。诊断补充距离、用途、时长、推进进度，并区分快照、轨迹和生物扫掠拒绝。
+- **限定验收**：[riptide-metered-acceptance.log](tools/riptide-metered-acceptance.log) 中 compileJava、verifyRiptideDuration、verifyRiptideDeparture、verifyRiptideRelease、verifyRiptidePriority、verifyEquipmentLifecycle、verifyEquipmentPropulsion、verifyLaunchAttackReplay、jar 全部通过。6/10/32 格目标均以 5 ticks 实际推进完成起飞，截止后 12 ticks 仍在约 10.85 格高度飞行；干燥环境无激流释放并消耗一枚烟花。III 选择 1/2/3/4/12/19 ticks，逐一排除更短可行选项；19 tick 完整执行有 19 次冲量、一次释放、跨快照刷新周期且截止保留动量。另 [riptide-duration-obstacles.log](tools/riptide-duration-obstacles.log) 独立验证更长方案撞墙与 overshoot 的短时长补救。未执行全量 verify。
+- **边界与交付**：外部实体 tick、JumpControl、物品事件和雨状态使用离线夹具；编译/本地原版源码及字节码不等同于完整 Minecraft/Mixin 实机联调。原版冲量 helper 的 1500 向量差分继续用于公式核对，不声称本版完整推进仍等同玩家原版激流。产物 [winefox_skyfarer-1.21.1-0.6.2.7.jar](build/libs/winefox_skyfarer-1.21.1-0.6.2.7.jar)，526,410 bytes，SHA-256 `3B3069D539AC8B5E0372A79F895677DD9B295A3D4352C6CBB34EF55298F24756`。README、docs、版本索引同步；未安装到实例，未启动 Minecraft。
 
 ### 0.6.2.6 副手激流真实蓄力与释放入口（2026-10-07）
 

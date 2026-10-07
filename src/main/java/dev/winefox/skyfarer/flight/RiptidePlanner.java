@@ -3,12 +3,16 @@ package dev.winefox.skyfarer.flight;
 import java.util.ArrayList;
 import java.util.List;
 
-/** TridentItem.releaseUsing additive impulse + 10 use ticks + 20 spin ticks + recovery.
- * Auxiliary propulsion never carries an attack certificate across a changed velocity. */
+/** WineFox metered Riptide: native charge/release entry, bounded per-tick thrust, vanilla travel.
+ * A departure is certified for flight readiness, not for stopping before a nearby attack target. */
 public final class RiptidePlanner {
-    public static final int WINDUP=10, SPIN=20, RECOVERY=12;
-    public record Plan(double yaw,double pitch,double height,double goalX,double goalZ,float strength,double cost,List<FlightPrediction.State> trace) {
+    public static final int WINDUP=10, RECOVERY=12;
+    public static final float THRUST=.2f;
+    /** Native I/II/III strengths 1.5/2.25/3 map to 10/20/30 ticks; unknown effects remain bounded. */
+    public static int maximumTicks(float strength){return strength>0&&Float.isFinite(strength)?10*Math.max(1,Math.min(3,Math.round(strength/.75f-1))):0;}
+    public record Plan(double yaw,double pitch,double height,double goalX,double goalZ,float strength,int duration,boolean departure,double cost,List<FlightPrediction.State> trace) {
         public Plan {trace=List.copyOf(trace);}
+        public int end(){return WINDUP+duration;}
     }
     private RiptidePlanner() {}
     public static VanillaElytra.Look impulse(double yaw,double pitch,float strength) {
@@ -23,12 +27,12 @@ public final class RiptidePlanner {
         return new FlightPrediction.State(s.x(),s.y(),s.z(),s.vx()+d.x(),s.vy()+d.y(),s.vz()+d.z(),s.yaw(),s.pitch(),s.physics(),s.rocketDelay());
     }
     public static double pitch(FlightPrediction.State s,Plan p,int elapsed,double gravity) {
-        return elapsed<=WINDUP?p.pitch():GlidePlanner.feedbackPitch(s,p.height(),0,gravity,false);
+        return elapsed<p.end()?p.pitch():GlidePlanner.feedbackPitch(s,p.height(),0,gravity,false);
     }
     public static FlightPrediction.State step(FlightPrediction.State s,Plan p,int elapsed,double gravity,boolean wet) {
         double yaw=FlightPrediction.turn(s.yaw(),p.yaw(),8),pitch=FlightPrediction.turn(s.pitch(),pitch(s,p,elapsed,gravity),8);
         var aimed=new FlightPrediction.State(s.x(),s.y(),s.z(),s.vx(),s.vy(),s.vz(),yaw,pitch,s.physics(),s.rocketDelay());
-        if(elapsed==WINDUP)aimed=push(aimed,p.strength());
+        if(elapsed>=WINDUP&&elapsed<p.end())aimed=push(aimed,THRUST);
         return SurfaceLaunchPlanner.step(aimed,yaw,pitch,gravity,false,wet);
     }
     public static Plan choose(FlightPrediction.State s,double x,double height,double z,float strength,double gravity,GlidePlanner.Corridor space,SurfaceLaunchPlanner.Water water) {
@@ -36,30 +40,38 @@ public final class RiptidePlanner {
     }
     public static Plan choose(FlightPrediction.State s,double x,double height,double z,float strength,double gravity,GlidePlanner.Corridor space,SurfaceLaunchPlanner.Water water,int elapsed) {
         if(!(strength>0)||!Float.isFinite(strength))return null;
-        double yaw=Math.toDegrees(Math.atan2(s.x()-x,z-s.z()));Plan best=null;
-        for(double pitch:elapsed==WINDUP?new double[]{-35,-55,-70}:new double[]{-15,-35,-55}) {
-            var start=elapsed==WINDUP?aimLaunch(s,yaw,pitch):s;
-            var p=certify(start,new Plan(yaw,pitch,height,x,z,strength,0,List.of()),elapsed,gravity,space,water);
-            if(p!=null&&(best==null||p.cost()<best.cost()))best=p;
+        boolean departure=elapsed==WINDUP;
+        double yaw=Math.toDegrees(Math.atan2(s.x()-x,z-s.z()));
+        // Every tick length is available, not a sparse set of duration presets. Stop at the shortest feasible duration.
+        for(int duration=1;duration<=maximumTicks(strength);duration++) {
+            Plan best=null;
+            for(double turn:departure?new double[]{0,-90,90,180}:new double[]{0})
+            for(double pitch:departure?new double[]{-35,-55,-70}:new double[]{-15,-35,-55}) {
+                var start=departure?aimLaunch(s,yaw+turn,pitch):s;
+                var p=certify(start,new Plan(yaw+turn,pitch,height,x,z,strength,duration,departure,0,List.of()),elapsed,gravity,space,water);
+                if(p!=null&&(best==null||p.cost()<best.cost()))best=p;
+            }
+            if(best!=null)return best;
         }
-        return best;
+        return null;
     }
     public static FlightPrediction.State aimLaunch(FlightPrediction.State s,double yaw,double pitch) {
         return new FlightPrediction.State(s.x(),s.y(),s.z(),s.vx(),s.vy(),s.vz(),yaw,pitch,s.physics(),s.rocketDelay());
     }
     /** Revalidate the remaining path from CURRENT velocity before beginning or releasing the item. */
     public static Plan certify(FlightPrediction.State s,Plan p,int elapsed,double gravity,GlidePlanner.Corridor space,SurfaceLaunchPlanner.Water water) {
+        if(p.duration()<1||p.duration()>maximumTicks(p.strength())||elapsed<0)return null;
         var path=new ArrayList<FlightPrediction.State>();path.add(s);double cost=0;
         double dx=-Math.sin(Math.toRadians(p.yaw())),dz=Math.cos(Math.toRadians(p.yaw()));
-        for(int tick=elapsed;tick<WINDUP+SPIN+RECOVERY;tick++) {
+        for(int tick=elapsed;tick<p.end()+RECOVERY;tick++) {
             var next=step(s,p,tick,gravity,water.wet(s));
             if(!space.clear(s,next,.2,.15))return null;
             // Leave room for a fresh spear windup / landing turn instead of overshooting the destination.
-            if((p.goalX()-next.x())*dx+(p.goalZ()-next.z())*dz<6)return null;
+            if(!p.departure()&&(p.goalX()-next.x())*dx+(p.goalZ()-next.z())*dz<6)return null;
             cost+=Math.pow(Math.max(0,p.height()-next.y()),2)*.01;
             s=next;path.add(s);
         }
-        if(water.wet(s)||Math.hypot(s.vx(),s.vz())<.55)return null;
-        return new Plan(p.yaw(),p.pitch(),p.height(),p.goalX(),p.goalZ(),p.strength(),cost+1,List.copyOf(path));
+        if(water.wet(s)||Math.hypot(s.vx(),s.vz())<.55||s.y()<p.height()-1||p.departure()&&s.vy()<-.5)return null;
+        return new Plan(p.yaw(),p.pitch(),p.height(),p.goalX(),p.goalZ(),p.strength(),p.duration(),p.departure(),cost+Math.abs(s.y()-p.height())*.02,List.copyOf(path));
     }
 }

@@ -25,15 +25,20 @@ public record CollisionSnapshot(Map<Long,Cell> cells,double width,double height,
         private final CollisionSnapshot snapshot;
         private final AtomicBoolean cancelled;
         private final LinkedHashSet<Long> missing=new LinkedHashSet<>();
+        private final LinkedHashSet<Long> touched=new LinkedHashSet<>();
+        private boolean trackTouched;
         private Bounds bounds;
         private boolean exploratory;
         public void explore(){exploratory=true;}
         public void navigation(Bounds bounds){this.bounds=bounds;}
         public Space(CollisionSnapshot snapshot,AtomicBoolean cancelled){this.snapshot=snapshot;this.cancelled=cancelled;}
         public Set<Long> missing(){return Set.copyOf(missing);}
+        public Set<Long> touched(){return Set.copyOf(touched);}
+        public void trackTouched(){trackTouched=true;}
         private Cell get(int x,int y,int z){
             if(cancelled.get()||Thread.currentThread().isInterrupted())throw new CancellationException();
             long key=key(x,y,z);var c=snapshot.cells.get(key);
+            if(trackTouched&&touched.size()<512)touched.add(key);
             if(c==null&&missing.size()<192)missing.add(key);
             return c;
         }

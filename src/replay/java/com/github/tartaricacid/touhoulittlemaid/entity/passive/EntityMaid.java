@@ -38,7 +38,7 @@ public class EntityMaid extends LivingEntity implements dev.winefox.skyfarer.mix
  public net.minecraft.world.InteractionHand getUsedItemHand(){return useHand;}
  public int getUseItemRemainingTicks(){return using?activeUse.getUseDuration(this)-usedTicks:0;}
  public void releaseUsingItem(){releaseCalls++;if(using&&!vetoRelease){releaseCallbacks++;dev.winefox.skyfarer.compat.tlm.RiptidePropulsion.releaseAuthorized(this,activeUse,getUseItemRemainingTicks());}stopUsingItem();}
- public void push(double x,double y,double z){velocity=velocity.add(x,y,z);}public Object getSoundSource(){return this;}
+ public int pushCalls;public void push(double x,double y,double z){pushCalls++;velocity=velocity.add(x,y,z);}public Object getSoundSource(){return this;}
  public void wfs$spinTicks(int ticks){spinTicks=ticks;}public void wfs$spinDamage(float damage){}public void wfs$spinItem(ItemStack item){}public void wfs$livingFlag(int flag,boolean value){}
  public static class Backpack {public ItemStack stack=ItemStack.EMPTY;public int getSlots(){return 1;}public ItemStack getStackInSlot(int i){return stack;}public ItemStack extractItem(int i,int n,boolean sim){return stack;}public void setStackInSlot(int i,ItemStack s){stack=s;}public boolean isItemValid(int i,ItemStack s){return true;}public int getSlotLimit(int i){return 64;}}
  public LivingEntity owner; public boolean glide,home,task=true,equipped=true,guiOpening; public int teleports; public Pose pose=Pose.STANDING;

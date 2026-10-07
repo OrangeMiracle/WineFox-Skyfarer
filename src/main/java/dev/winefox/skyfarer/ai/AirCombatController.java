@@ -391,10 +391,11 @@ public final class AirCombatController {
             }
             if(!riptideLaunchFailed) {
                 Vec3 goal=preferred.position();
-                int choice=tryRiptide(goal,Math.max(maid.getEyeY()+6,attackHeight(preferred)),true);
+                double departureHeight=maid.getEyeY()+6;
+                int choice=tryRiptide(goal,departureHeight,true);
                 if(choice>0) {
                     if(choice==1)stateTicks=0;
-                    else {waypoint=new Vec3(goal.x,Math.max(maid.getEyeY()+6,attackHeight(preferred)),goal.z);transition(AirCombatState.TAKEOFF,"RIPTIDE_LAUNCH_WINDUP");}
+                    else {waypoint=new Vec3(goal.x,departureHeight,goal.z);transition(AirCombatState.TAKEOFF,"RIPTIDE_LAUNCH_WINDUP");}
                     return;
                 }
             }
@@ -458,7 +459,11 @@ public final class AirCombatController {
                 &&Math.hypot(start.x()-preparedLaunchStart.x(),start.z()-preparedLaunchStart.z())<.75
                 &&Math.abs(start.y()-preparedLaunchStart.y())<.65
                 &&Math.abs(start.vy()-preparedLaunchStart.vy())<.3;
-            if(!prepared)surfaceLaunch=selectSurfaceLaunch(start,surfaceLaunch.yaw(),Math.max(surfaceLaunch.height(),start.y()+3),corridor,SurfaceLaunchPlanner.DRY);
+            if(!prepared){
+                var revised=selectSurfaceLaunch(start,surfaceLaunch.yaw(),Math.max(surfaceLaunch.height(),start.y()+3),corridor,SurfaceLaunchPlanner.DRY);
+                if(revised==null){beginReturn("LAUNCH_REVALIDATION_FAILED");return;}
+                surfaceLaunch=revised;
+            }
             if(surfaceLaunch!=null) {
                 heading.steerAngles(maid,surfaceLaunch.yaw(),surfaceLaunch.pitch(),180,90);
                 if(preparedDuration==-2) {
@@ -1398,7 +1403,7 @@ public final class AirCombatController {
         for(float strength:strengths) {
             var candidate=planning.riptide(start,goal.x,height,goal.z,strength,maid.isInWaterOrBubble(),launch);
             pending|=planning.lastPending();
-            if(candidate!=null&&(best==null||candidate.cost()<best.cost()))best=candidate;
+            if(candidate!=null&&(best==null||candidate.duration()<best.duration()||candidate.duration()==best.duration()&&candidate.cost()<best.cost()))best=candidate;
         }
         if(best!=null&&(launch?riptide.beginLaunch(maid,best,planning,heading):riptide.begin(maid,best,start,planning,heading))) {
             riptideWaitTicks=0;propulsionLog("RIPTIDE_SELECTED",strengths,launch);return 2;
@@ -1410,8 +1415,8 @@ public final class AirCombatController {
         riptideWaitTicks=0;return 0;
     }
     private void propulsionLog(String reason,List<Float> strengths,boolean launch) {
-        if(SkyfarerSettings.debugLogging())WineFoxSkyfarer.LOGGER.info("[WFS debug] PROPULSION maid={} reason={} launch={} wet={} strengths={} rocketCooldown={} rocketActive={}",
-            maid.getUUID(),reason,launch,maid.isInWaterOrRain(),strengths,fireworks.cooldown(maid),fireworks.active());
+        if(SkyfarerSettings.debugLogging())WineFoxSkyfarer.LOGGER.info("[WFS debug] PROPULSION maid={} reason={} launch={} targetDistance={} purpose={} duration={} wet={} strengths={} rocketCooldown={} rocketActive={}",
+            maid.getUUID(),reason,launch,preferred==null?Double.NaN:preferred.position().subtract(maid.position()).length(),launch?"DEPARTURE":"APPROACH",riptide.selectedDuration(),maid.isInWaterOrRain(),strengths,fireworks.cooldown(maid),fireworks.active());
     }
     private void steer(String name, Vec3 point, boolean attack, boolean pullUp) {
         if (maid.isFallFlying() && state!=AirCombatState.TAKEOFF && state!=AirCombatState.LANDING) {

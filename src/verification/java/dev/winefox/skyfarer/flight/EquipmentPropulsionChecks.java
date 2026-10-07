@@ -16,7 +16,7 @@ public final class EquipmentPropulsionChecks {
         }
         var start=new FlightPrediction.State(0,80,0,0,-.1,.7,0,-15);
         var clear=RiptidePlanner.choose(start,0,85,120,3,.08,(a,b,s,v)->true,SurfaceLaunchPlanner.DRY);
-        require(clear!=null&&clear.trace().size()==43,"full windup/spin/recovery missing");
+        require(clear!=null&&clear.trace().size()==RiptidePlanner.WINDUP+clear.duration()+RiptidePlanner.RECOVERY+1,"full charge/thrust/recovery missing");
         double previous=0;
         for(float strength:new float[]{1.5f,2.25f,3f}) {
             var plan=RiptidePlanner.choose(start,0,85,120,strength,.08,(a,b,s,v)->true,SurfaceLaunchPlanner.DRY);

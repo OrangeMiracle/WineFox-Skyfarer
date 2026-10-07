@@ -1,5 +1,7 @@
 # 1.21.1 物理预测与路线能量包络
 
+0.6.2.7 明确扩展边界：WineFox 女仆通过真实副手 releaseUsing 入口后，不再施加完整单次原版激流冲量，而是在选定的 1–30 ticks 内每 tick 沿受限转向的 look 加 0.2 速度，再执行原有 Vanilla Elytra / 水中 travel。预测与执行共用 float Mth 算法；等级扩展最大时长，不增加每 tick 推力。截止清除本次拥有的 spin，不归零动量或解除滑翔；玩家与普通 Spears 不改。普通 departure 不使用敌人前方余量平面，攻击前仍重做 Rejoin 与 Strike→Exit。以下旧版本的固定冲量/20 tick spin 描述为历史实现。
+
 0.6.2.6 释放入口补正：真正调用 LivingEntity.releaseUsingItem，经 NeoForge onUseItemStop 与 ItemStack.releaseUsing 进入 TridentItem.releaseUsing。该方法只为 Player 提供原版冲刺分支，新增受同步授权保护的女仆 Mixin 适配相同速度叠加和 spin，禁止事件否决后的补发。起跳/释放时机取真实使用计时，spin 的相对时间从实际回调 tick 开始；预测公式与安全阈值不变。
 
 0.6.2.2 激流新增依据：TridentItem.releaseUsing/use 的至少 10 tick 前摇、EnchantmentHelper 的真实强度、float Mth 向量归一化后叠加速度、1 耐久及 LivingEntity 20 tick spin。原版强度 I/II/III 为 1.5/2.25/3.0。开始和释放都检查 Entity.isInWaterOrRain（含 isRainingAt 的天空/高度图/生物群系条件）。女仆仅使用空中/水面辅助推进，不执行玩家地面抬升，不生成投射物/附加伤害。42 tick 完整路径、执行重验、原版生物触碰反转限制见 [装备与生存](EQUIPMENT_SURVIVAL.md)。

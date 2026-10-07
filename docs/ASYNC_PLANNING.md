@@ -1,8 +1,10 @@
 # 异步规划与线程边界
 
+0.6.2.7：Riptide Worker 按时长从短到长搜索每个 tick，原版等级对应上限 10/20/30 ticks；最多 4 起飞方向 × 3 俯仰 × 30 时长/强度，空中仅 3 俯仰。Plan 保存 duration/departure，认证剩余前摇＋逐 tick 推进＋12 ticks coast。主线程只重验已选路线；仅此重验开启 touched cells 追踪（上限 512），将年龄 ≥8 的已触及 cells 排队刷新，仍遵守原有采集预算与 20 tick 过期拒绝。不把时长搜索搬到主线程，不让 Worker 持有实体。详见 [装备与生存](EQUIPMENT_SURVIVAL.md#0627-近目标起飞与可控时长推进)。
+
 0.6.2.2 新增数值 `PlanningTask.Riptide`，按推进强度和湿润路径分离 slot；Worker 认证 10 tick 前摇 + 20 tick spin + 12 tick 恢复，最多 3 种强度 × 3 姿态。执行阶段从当前速度用已捕获 cells 重验选中路线；缺失/过期数据拒绝。天气、物品、副手交换、spin 生命周期和生物扫掠查询只在主线程。详见 [装备与生存](EQUIPMENT_SURVIVAL.md)。
 
-核对日期：2026-10-07。实现版本：0.6.2.6，沿用 0.6.1 异步架构，没有 Funnel。本文描述当前源码；物理快照依据见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)，构建证据见 [验证文档](VALIDATION.md#7-当前构建证据与已知缺口)。
+核对日期：2026-10-07。实现版本：0.6.2.7，沿用 0.6.1 异步架构，没有 Funnel。本文描述当前源码；物理快照依据见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)，构建证据见 [验证文档](VALIDATION.md#7-当前构建证据与已知缺口)。
 
 0.6.2.5 为 Riptide slot 加入 launch 维度，起飞捕获滑翔身体，并按地面已预先转向、完成前摇后的普通跳跃状态认证 20 tick spin + 12 tick 恢复；离地后再用实际速度重验。空中候选最多等待 11 次、地面最多 39 次，届时无可执行证书则允许次级方案，避免 optional 冷请求每次都直接输给已有烟花结果。普通无烟花起飞仍由 Launch Worker 预测；激流后 Launch Attack 用非阻塞候选与实际当前状态 Rejoin，等待不暂停空中引导。Worker 仍只接收数值 DTO，不持有 Entity/Level，原队列和采集上限不变。
 
