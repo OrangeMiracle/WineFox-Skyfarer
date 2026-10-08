@@ -1,0 +1,6 @@
+"scenario","baselineFirstAttack","currentFirstAttack","baselineMaxDistance","currentMaxDistance","currentHit","currentExit","currentCollision"
+"static","6","6","33.24","33.24","27","53","false"
+"small","16","5","33.24","33.24","28","48","false"
+"minecart","-1","8","98.90","35.06","24","50","false"
+"lateral","-1","7","103.49","33.88","23","49","false"
+"reverse","-1","9","107.92","34.83","30","40","false"

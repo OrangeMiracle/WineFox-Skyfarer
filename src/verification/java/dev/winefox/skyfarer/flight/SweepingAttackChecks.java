@@ -27,6 +27,9 @@ public final class SweepingAttackChecks {
         var selected=SweepingAttackPlanner.choose(chosen,target,aim,0,.08,5,.2,8,space(boxes),(a,b,t)->ray(boxes,a,b,t));
         if(selected==null||ray(boxes,chosen,aim,0))throw new AssertionError("No attack around an occluding hill shoulder");
         var path=selected.path();
+        var afterContact=selected.prediction().trace().get(selected.prediction().contactTick()+1).state();
+        var slowExit=SweepingAttackPlanner.simulate(afterContact,path,null,0,.08,5,.2,true,space(boxes),(a,b,t)->true,24);
+        if(!slowExit.safe()||slowExit.trace().size()<=24)throw new AssertionError("Safe slow exit truncated at follow-up budget: "+slowExit.trace().size());
         if(path.entry.d().subtract(path.exit.a()).length()>1e-9||path.entry.d().subtract(path.entry.c()).subtract(path.exit.b().subtract(path.exit.a())).length()>1e-9)throw new AssertionError("C1 join broken");
         if(SweepingAttackPlanner.choose(chosen,target,aim,0,.08,5,.2,8,space(boxes),(a,b,t)->false)!=null)throw new AssertionError("Blocked spear contact accepted");
         if(SweepingAttackPlanner.choose(chosen,target,aim,0,.08,5,.2,8,(a,b,s,v)->false,(a,b,t)->true)!=null)throw new AssertionError("Unloaded/body-blocked curve accepted");

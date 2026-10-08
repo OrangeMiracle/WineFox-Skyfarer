@@ -10,6 +10,7 @@ public class ItemStack {
  public record Key(){public boolean is(Object key){return key==net.minecraft.world.item.enchantment.Enchantments.RIPTIDE;}}
  public boolean canElytraFly(Object maid){return type==Items.ELYTRA&&damage<maxDamage-1;}
  public ItemStack(Object item){this(1,1,false);type=item;}
+ public void releaseUsing(Object world,com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid m,int remaining){m.releaseCallbacks++;dev.winefox.skyfarer.compat.tlm.RiptidePropulsion.releaseAuthorized(m,this,remaining);}
  public int getDamageValue(){return damage;}public int getMaxDamage(){return maxDamage;}public int getCount(){return count;}
  public void hurtAndBreak(int n,Object entity,Object slot){damage+=n;}
  public void set(Object key,net.minecraft.world.item.component.Fireworks value){duration=value.flightDuration();}

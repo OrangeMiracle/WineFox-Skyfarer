@@ -1,5 +1,11 @@
 # 配置、指挥、调试与兼容接口
 
+0.6.2.11：推进资格、需求与激流候选统一；独立 10 tick 预蓄力保持 READY，不占实体 item-use；攻击/离场/紧急与 Transit 接入同一能力层。当前规则与历史覆盖关系见 [统一推进与 READY](PROPULSION_06211.md)。下列旧版本段落保留为历史，涉及实体副手持续使用、禁止 Strike/Exit 激流及旧 PlanningTask.Riptide 的描述均已被替代。
+
+0.6.2.10：移动目标使用三组未来拦截点，当前状态重验 Strike→Exit 后提交；准备区围绕预计拦截点保持有界，补能不再向外延伸或抢占可用攻击入口。机制、诊断、比较回放与限制见 [移动目标拦截](MOVING_ATTACK_06210.md)。
+
+0.6.2.9 既有变更：空中恢复使用独立的速度证书与实际 12 tick 恢复段；创造 Home 任务就近落地后释放控制，由 TLM 日程返回。源码因果、接口及验证边界见 [空中恢复与 Home 交接](AIR_RECOVERY_HOME_0629.md)。
+
 0.6.2.8 未新增配置开关。RIPTIDE 的 RECOVERY_BEGIN 表示推力/spin 截止但起飞恢复尚未完成；COMPLETED 在恢复及实际交接检查通过后才记录，否则 HANDOFF_NOT_READY。EXECUTION_REJECTED 附带 snapshot/trajectory/entity/装备交换/开始使用等具体原因。COMMAND_ASSIGN 增加 propulsion；地面订单和已加载候选补记 qualification_failed，缺资源区分 no_firework_riptide_environment_invalid / no_firework_or_usable_riptide。保留 PROPULSION 的 targetDistance、purpose、duration，以及 RIPTIDE 的 duration/maxDuration、departure、thrustElapsed；后者在无推力恢复期仍为释放后的 elapsed，不代表仍在施加推力。详见 [装备与生存](EQUIPMENT_SURVIVAL.md)。
 
 0.6.2.6 的 RIPTIDE 诊断增加 selectedHand/item、usedHand、startTick、charge/remaining、sameUse、wet、enchantLevel、实际 RELEASE_CALLBACK impulse/spinStarted，以及明确的 END 拒因。CHARGING 每 5 ticks 采样；STATE_TRANSITION 与 USE_STOP 的有界调用栈说明切换和取消来源。原生事件否决或回调缺失记录 RELEASE_VETOED_OR_CALLBACK_MISSING，不静默补发冲量。详见 [释放审计](EQUIPMENT_SURVIVAL.md#0626-激流使用与释放审计)。
@@ -195,7 +201,7 @@ effectiveHard   = max(Settings.hardCombatRange(), effectiveCombat + 16)
 
 Home 保留由 [CommandHomeRecallMixin](../src/main/java/dev/winefox/skyfarer/mixin/CommandHomeRecallMixin.java) 在 TLM `SchedulePos.tick` 入口实现。托管空中滑翔时暂停日程，以免任务结束后的 Home 回收切断高空控制；地面时仅当 Home 女仆持有创造订单，且同一玩家会话中**至少有一个同时满足“创造标记仍在、目标存活、目标实体及其区块已加载”**的目标时，才暂停此日程 tick。不是三个条件的逻辑 OR，也不是永久禁用 TLM 安全回收。
 
-有效创造目标全失效时 cancel 会为离开工作范围的 Home 女仆建立 RECALL：保留当前位置块 + Home 3×3，最多 200 ticks；仅在地面每 10 ticks（或到期）最多调用 10 次 TLM `TeleportHelper.teleportToRestrictCenter`。托管空中滑翔时暂缓 TLM Home 日程，控制器继续安全返航，不直接释放滑翔。成功或到期后释放票据；到期仍在空中也释放临时票据。到期仍失败不保证已经回家，日志 `COMMAND_HOME_RETURN success=false` 是明确排查入口。TLM 普通 `teleportToOwner` 没有被取消；成功会重置本模组旧路线，合法空中位置继续安全恢复，地面才释放控制。被外部送走且创造订单仍有效的女仆可重新构建 TransitFlight。
+有效创造目标全失效时 cancel 先移除订单、关闭 TransitFlight，为离开工作范围的 Home 女仆建立 RECALL。0.6.2.9 改为任务结束位置附近安全落地，地面立即 dispose、managed=false、清除 WineFox 路径记忆，放行 TLM SchedulePos；不再朝 Home 飞行，也不再每 10 ticks 主动调用 TeleportHelper。保留当前位置块 + Home 3×3、最多 200 ticks 的原票据宽限，回到限制范围或超时即释放。TLM 自身每 40 tick 的 Home 日程也适用于一直加载的女仆；是否传送由其移动资格、现有导航目标和安全落点决定。日志 COMMAND_HOME_CONTROL_RELEASE、TLM_HOME_SCHEDULE held=false、COMMAND_HOME_RETURN 与 COMMAND_TICKET 分别记录释放/日程机会/完成或超时/撤票。宽限到期仍未回家不保证传送成功；若还在空中则继续本地安全落地，不永久持票。普通 teleportToOwner 与有效创造任务的 Transit 重建保持不变。
 
 ## 5. Debug 模式、HUD 与远程调试面板
 
@@ -306,3 +312,7 @@ HUD 当前字段包含名称/UUID 前缀/维度/选中序号、状态、原因/�
 6. 离线验证入口按 [PROJECT_INDEX.md](PROJECT_INDEX.md) 的验证导航查阅；与本域直接相关的 [build.gradle](../build.gradle) 任务是 `verifyCommandDispatch`、`verifyDispatchReplay`、`verifyDebugTools`、`verifyYsmCompatibility`，飞控衔接还需 `verifyControllerReplay`。真实菜单渲染、实体追踪范围、动态 chunk ticket 时序、高倍率网络体验只能由用户实机测试确认。
 
 本文记录当前边界：观察列表未设置硬数量上限；列表刷新仍会枚举已加载实体；注册表可能含过时坐标；创造回收有明确失败到期；异步 HUD 是累计统计而非真实性能基准。上述都是维护者应知道的限制，不表示已获得该场景的实测故障结论。
+
+### 0.6.2.10 攻击搜索诊断
+
+ATTACK_SEARCH 每女仆通常 20 ticks 限频（commit 另记），显示目标实际位移、提前量、距离、重试数、候选统计和 Rejoin 原因。ATTACK_CONTINUATION_REJECT 区分执行阶段丢失的接触/离场。noContact 表示未认证接触，包含接触前碰撞，不能一律当成射程不足。字段含义见 [移动目标专项](MOVING_ATTACK_06210.md#诊断)。

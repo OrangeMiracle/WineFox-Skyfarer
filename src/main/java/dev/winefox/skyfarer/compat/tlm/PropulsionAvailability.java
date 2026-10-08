@@ -7,8 +7,7 @@ import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 public final class PropulsionAvailability {
     private PropulsionAvailability() {}
     public static String source(EntityMaid maid) {
-        if(RiptidePropulsion.available(maid)>0)return "RIPTIDE";
-        return SkyfarerEquipment.fireworks(maid)?"FIREWORK":"NONE";
+        return PropulsionCapability.inspect(maid).source();
     }
     public static String rejection(EntityMaid maid) {
         if(!source(maid).equals("NONE"))return null;

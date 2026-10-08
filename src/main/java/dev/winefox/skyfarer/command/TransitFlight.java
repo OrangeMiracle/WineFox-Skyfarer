@@ -10,8 +10,10 @@ import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import net.minecraft.world.item.*;
 import net.minecraft.world.phys.Vec3;
 
-/** Free dispatch propulsion exists only outside the combat handoff. No inventory writes. */
+/** Dispatch prefers certified inventory Riptide; legacy free-rocket fallback stays outside combat. */
 final class TransitFlight {
+    private final dev.winefox.skyfarer.compat.tlm.RiptidePropulsion riptide=new dev.winefox.skyfarer.compat.tlm.RiptidePropulsion();
+    private final dev.winefox.skyfarer.compat.tlm.PropulsionCapability propulsion=new dev.winefox.skyfarer.compat.tlm.PropulsionCapability();
     private final HeadingController heading=new HeadingController();
     private FireworkRocketEntity rocket;
     private SurfaceLaunchPlanner.Plan launch;
@@ -26,12 +28,14 @@ final class TransitFlight {
     private dev.winefox.skyfarer.async.AsyncPlanning planning;
     private EntityMaid controlled;
     boolean waterEscape(){return swimmer!=null;}
-    String diagnostics(){return "launch="+launch+" departure="+departure+" plan="+cached+" rocket="+remaining()+" jobs="+(planning==null?0:planning.pending());}
+    String diagnostics(){return "propulsion="+propulsion.reason()+" launch="+launch+" departure="+departure+" plan="+cached+" rocket="+remaining()+" jobs="+(planning==null?0:planning.pending());}
     boolean tick(EntityMaid maid,Vec3 target) {
         return tick(maid,target,false);
     }
     boolean tick(EntityMaid maid,Vec3 target,boolean creative) {
         controlled=maid;
+        riptide.prepare(maid,dev.winefox.skyfarer.compat.tlm.SkyfarerEquipment.elytra(maid));
+        riptide.context("TRANSIT");
         if(planning==null)planning=new dev.winefox.skyfarer.async.AsyncPlanning(maid);
         planning.begin(maid.level().getGameTime(),"transit:"+creative+":"+maid.isInWaterOrBubble(),
             net.minecraft.core.BlockPos.containing(target),dev.winefox.skyfarer.config.SkyfarerSettings.revision());
@@ -52,9 +56,15 @@ final class TransitFlight {
         double gravity=planning.physics().gravity();
         Vec3 v=maid.getDeltaMovement(),toward=target.subtract(maid.position());
         double yaw=Math.toDegrees(Math.atan2(-toward.x,toward.z));
+        if(riptide.active()){
+            var state=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot(),planning.physics());
+            if(riptide.tick(maid,state,planning,heading))return true;
+            cached=null;launch=null;departure=0;
+        }
         if(maid.isInWaterOrBubble())return escapeWater(maid,yaw,gravity);
         restoreSwimming();
         if(maid.onGround()) {
+            if(prefer(maid,target,true)>0)return true;
             if(ticks>80)return false;
             if(!new CorridorProbe(maid).segment(maid.getEyePosition().add(0,.01,0),maid.getEyePosition().add(0,.45,0),.02,0))return false;
             var jump=new FlightPrediction.State(maid.getX(),maid.getY()+.82,maid.getZ(),v.x,.33,v.z,maid.getYRot(),maid.getXRot(),planning.physics(),ignitionDelay(maid));
@@ -87,6 +97,7 @@ final class TransitFlight {
         var next=FlightPrediction.step(start,cached.yaw(),cached.pitch(),cached.yawRate(),cached.pitchRate(),cached.pitchRate(),gravity,remaining()>0);
         if(!space.clear(start,next,.04,.04))cached=planning.glide(start,request,space);
         if(remaining()==0 && (v.horizontalDistance()<1 || !cached.safe())) {
+            if(prefer(maid,target,false)>0)return true;
             if(Double.isFinite(planning.pulseCost(start,request,space,0,.75,.02))) {
                 boost(maid);request=request.withPulse(remaining());cached=planning.glide(start,request,space);
             }
@@ -120,7 +131,7 @@ final class TransitFlight {
     }
     void handoff(EntityMaid maid){
         audit(maid,"TRANSIT_TO_COMBAT");
-        close();var v=maid.getDeltaMovement();if(v.length()>1.7)maid.setDeltaMovement(v.normalize().scale(1.7));
+        close(true);var v=maid.getDeltaMovement();if(v.length()>1.7)maid.setDeltaMovement(v.normalize().scale(1.7));
         if(!maid.onGround()&&!maid.isFallFlying())ElytraFlightController.startGliding(maid);
     }
     private boolean wet(EntityMaid maid,FlightPrediction.State state){var pos=net.minecraft.core.BlockPos.containing(state.x(),state.y()-.35,state.z());return maid.level().hasChunkAt(pos)&&maid.level().getFluidState(pos).is(net.minecraft.tags.FluidTags.WATER);}
@@ -133,6 +144,7 @@ final class TransitFlight {
         var space=new CorridorProbe(maid,maid.getBbWidth(),.6,.4,true);
         double height=start.y()+4;
         for(int up=0;up<32;up++){var pos=maid.blockPosition().above(up);if(!maid.level().hasChunkAt(pos))break;if(!maid.level().getFluidState(pos).is(net.minecraft.tags.FluidTags.WATER)){height=pos.getY()+4;break;}}
+        if(remaining()==0&&prefer(maid,new Vec3(start.x()-Math.sin(Math.toRadians(yaw))*64,height,start.z()+Math.cos(Math.toRadians(yaw))*64),false)>0)return true;
         if(launch==null)launch=remaining()>0?planning.launchRemaining(start,yaw,height,gravity,remaining(),space,s->wet(maid,s)):
             planning.launch(start,yaw,height,gravity,0,space,s->wet(maid,s));
         if(launch==null)return false;
@@ -153,6 +165,14 @@ final class TransitFlight {
         }
         else if(planning!=null)dev.winefox.skyfarer.runtime.DebugSnapshot.corridor(data,maid,planning.trace());
     }
+    private int prefer(EntityMaid maid,Vec3 target,boolean departure){
+        var v=maid.getDeltaMovement();
+        var start=departure?dev.winefox.skyfarer.compat.tlm.RiptidePropulsion.jumpStart(maid,planning.physics()):
+            new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot(),planning.physics());
+        var demand=new PropulsionDemand(departure?PropulsionDemand.Phase.TAKEOFF:PropulsionDemand.Phase.TRANSIT,target.x,
+            departure?maid.getY()+5:Math.min(maid.getEyeY()+4,target.y+10),target.z,.9);
+        return propulsion.prefer(maid,start,demand,remaining()>0,riptide,planning,heading,new CorridorProbe(maid));
+    }
     private void boost(EntityMaid maid){
         if(remaining()>0)return;
         var stack=new ItemStack(Items.FIREWORK_ROCKET);
@@ -167,5 +187,6 @@ final class TransitFlight {
         if(dev.winefox.skyfarer.config.SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] FLIGHT_LIFECYCLE maid={} action={} state=TRANSIT glide={} velocity={} altitude={} rocket={} order={}",
             maid.getUUID(),reason,maid.isFallFlying(),maid.getDeltaMovement(),maid.getY(),remaining(),dev.winefox.skyfarer.ai.CommandAccess.context.apply(maid));
     }
-    void close(){if(controlled!=null)audit(controlled,"TRANSIT_CLOSE");controlled=null;if(planning!=null)planning.close();planning=null;cached=null;fastMotion=null;if(rocket!=null)rocket.discard();rocket=null;restoreSwimming();launch=null;lastRequest=null;ticks=departure=waterTicks=blockedFastTicks=0;descending=false;cruiseY=Double.NaN;boostedAt=Long.MIN_VALUE;}
+    void close(){close(false);}
+    private void close(boolean handoff){if(controlled!=null){audit(controlled,"TRANSIT_CLOSE");riptide.cancel(controlled,"TRANSIT_CLOSE_OR_HANDOFF");if(!handoff)dev.winefox.skyfarer.compat.tlm.RiptideReadiness.clear(controlled);}controlled=null;if(planning!=null)planning.close();planning=null;cached=null;fastMotion=null;if(rocket!=null)rocket.discard();rocket=null;restoreSwimming();launch=null;lastRequest=null;ticks=departure=waterTicks=blockedFastTicks=0;descending=false;cruiseY=Double.NaN;boostedAt=Long.MIN_VALUE;}
 }

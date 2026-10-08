@@ -1,5 +1,11 @@
 # 1.21.1 物理预测与路线能量包络
 
+0.6.2.11：推进资格、需求与激流候选统一；独立 10 tick 预蓄力保持 READY，不占实体 item-use；攻击/离场/紧急与 Transit 接入同一能力层。当前规则与历史覆盖关系见 [统一推进与 READY](PROPULSION_06211.md)。下列旧版本段落保留为历史，涉及实体副手持续使用、禁止 Strike/Exit 激流及旧 PlanningTask.Riptide 的描述均已被替代。
+
+0.6.2.10 仅扩展移动拦截搜索和当前状态接入重验；没有改变 Vanilla Elytra 方程、身体扫掠、Spears 原生接触段/前摇或全寿命火箭约束。详见 [移动目标拦截](MOVING_ATTACK_06210.md)。
+
+0.6.2.9 既有变更：空中恢复使用独立的速度证书与实际 12 tick 恢复段；创造 Home 任务就近落地后释放控制，由 TLM 日程返回。源码因果、接口及验证边界见 [空中恢复与 Home 交接](AIR_RECOVERY_HOME_0629.md)。
+
 0.6.2.8 延续 0.6.2.7 的扩展边界：WineFox 女仆通过真实副手 releaseUsing 入口后，不再施加完整单次原版激流冲量，而是在选定的 1–30 ticks 内每 tick 沿受限转向的 look 加 0.2 速度，再执行原有 Vanilla Elytra / 水中 travel。预测与执行共用 float Mth 算法；等级扩展最大时长，不增加每 tick 推力。截止清除本次拥有的 spin，不归零动量或解除滑翔；玩家与普通 Spears 不改。普通 departure 不使用敌人前方余量平面，现实际执行 24 tick 无动力恢复并检查截止/交接速度、高度及后续转向余量，之后攻击仍重做 Rejoin 与 Strike→Exit。空中补能的 12 tick 恢复仍仅为预测窗口。以下旧版本的固定冲量/20 tick spin 描述为历史实现。
 
 0.6.2.6 释放入口补正：真正调用 LivingEntity.releaseUsingItem，经 NeoForge onUseItemStop 与 ItemStack.releaseUsing 进入 TridentItem.releaseUsing。该方法只为 Player 提供原版冲刺分支，新增受同步授权保护的女仆 Mixin 适配相同速度叠加和 spin，禁止事件否决后的补发。起跳/释放时机取真实使用计时，spin 的相对时间从实际回调 tick 开始；预测公式与安全阈值不变。

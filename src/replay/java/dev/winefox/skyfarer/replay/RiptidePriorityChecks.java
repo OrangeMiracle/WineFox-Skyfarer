@@ -33,11 +33,13 @@ public final class RiptidePriorityChecks {
         var choose=AirCombatController.class.getDeclaredMethod("tryRiptide",Vec3.class,double.class,boolean.class);choose.setAccessible(true);
         var manager=(RiptidePropulsion)field(c,"riptide");
         for(int t=1;t<180&&!manager.active();t++) {
-            w.advance(t);planning.begin(t,"PRIORITY",null,0);heading.beginTick(m);last.setLong(fireworks,t);
+            w.advance(t);planning.begin(t,"PRIORITY",null,0);heading.beginTick(m);manager.prepare(m,true);last.setLong(fireworks,t);
             choose.invoke(c,new Vec3(0,85,120),85d,false);
         }
         require(manager.active()&&fireworks.cooldown(m)>0&&m.inventory.consumed==0,"rocket cooldown suppressed safe Riptide");
-        manager.cancel(m);require(manager.ready(m),"cancel added artificial cooldown");
+        manager.cancel(m);require(!manager.ready(m),"spent readiness was reused");
+        for(int i=0;i<10;i++){w.advance(w.getGameTime()+1);manager.prepare(m,true);}
+        require(manager.ready(m),"independent preparation did not refill in 10 ticks");
         m.rain=false;require(!manager.ready(m)&&RiptidePropulsion.strengths(m).isEmpty(),"dry/roofed maid allowed Riptide");
         m.water=true;require(manager.ready(m),"water not eligible");m.water=false;m.rain=true;
         m.spinTicks=1;require(!manager.ready(m),"native spin use constraint ignored");m.spinTicks=0;

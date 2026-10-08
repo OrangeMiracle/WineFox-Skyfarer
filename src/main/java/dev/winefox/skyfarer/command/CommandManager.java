@@ -35,7 +35,11 @@ public final class CommandManager {
     private static final Map<UUID,Order> ORDERS=new HashMap<>();
     private static final RemoteWakeScheduler WAKES=new RemoteWakeScheduler();
     private static final Map<UUID,Long> RETRY=new HashMap<>();
-    private record Recall(EntityMaid maid,long expires){}
+    private static final class Recall {
+        final EntityMaid maid;final long expires;boolean released;
+        Recall(EntityMaid maid,long expires){this.maid=maid;this.expires=expires;}
+        EntityMaid maid(){return maid;}long expires(){return expires;}
+    }
     private static final Map<UUID,Recall> RECALLS=new HashMap<>();
     public static void install(){CommandAccess.targets=CommandManager::targets;CommandAccess.designated=CommandManager::designated;CommandAccess.anchor=maid->{var o=ORDERS.get(maid.getUUID());return o==null?null:o.destination;};CommandAccess.context=CommandManager::context;}
     public static String context(EntityMaid maid){var o=ORDERS.get(maid.getUUID());return o==null?(recalling(maid)?"HOME_RECALL":"none"):"target="+o.target+" transit="+o.transit+" creative="+o.creative+" revision="+o.revision;}
@@ -240,7 +244,10 @@ public final class CommandManager {
             // Cancel transit/tickets first, then let the air controller land without clearing glide.
             cancel(maid.getUUID());return false;
         }
-        if(recalling(maid))return maid.onGround();
+        if(recalling(maid)){
+            if(maid.onGround())releaseHomeControl(RECALLS.get(maid.getUUID()));
+            return maid.onGround();
+        }
         var o=ORDERS.get(maid.getUUID());
         if(o==null){
             var session=SESSIONS.get(maid.getOwnerUUID());
@@ -348,15 +355,15 @@ public final class CommandManager {
         var order=ORDERS.remove(id);
         if(order!=null){
             order.flight.close();
-            if(order.level.getEntity(id) instanceof EntityMaid airborne&&airborne.isAlive()&&!airborne.isRemoved()&&!airborne.onGround())SkyfarerRuntime.ensure(airborne).commandReturn();
-            if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] COMMAND_RELEASE maid={} target={}",id,order.target);
+            if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] COMMAND_RELEASE maid={} target={} creative={} remainingCreative={} reason={} orderRemoved=true transitClosed=true",id,order.target,order.creative,activeCreative(SESSIONS.get(order.owner)),order.creative&&!activeCreative(SESSIONS.get(order.owner))?"CREATIVE_COMMAND_COMPLETE":"ORDER_CANCELLED");
             if(order.creative&&order.level.getEntity(id) instanceof EntityMaid maid&&maid.isAlive()&&!maid.isRemoved()&&maid.isHomeModeEnable()
                 &&order.owner.equals(maid.getOwnerUUID())&&!maid.isWithinRestriction()) {
-                SkyfarerRuntime.ensure(maid).commandReturn();
+                SkyfarerRuntime.ensure(maid).commandHomeReturn();
                 RECALLS.put(id,new Recall(maid,order.level.getGameTime()+200));
                 CommandTickets.recall(order.level,id,maid.blockPosition(),maid.getRestrictCenter());
                 return;
             }
+            if(order.level.getEntity(id) instanceof EntityMaid airborne&&airborne.isAlive()&&!airborne.isRemoved()&&!airborne.onGround())SkyfarerRuntime.ensure(airborne).commandReturn();
         }
         CommandTickets.release(id);
     }
@@ -364,18 +371,28 @@ public final class CommandManager {
         for(var entry:new ArrayList<>(RECALLS.entrySet())) {
             var maid=entry.getValue().maid();
             if(!maid.isAlive()||maid.isRemoved()||!maid.isHomeModeEnable()||maid.isWithinRestriction()) {
+                if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] COMMAND_HOME_RETURN maid={} success={} reason=TLM_HANDOFF_FINISHED loaded={} home={}",maid.getUUID(),maid.isWithinRestriction(),!maid.isRemoved(),maid.getRestrictCenter());
                 RECALLS.remove(entry.getKey());CommandTickets.release(entry.getKey());continue;
             }
-            if(!maid.onGround()&&now<entry.getValue().expires())continue;
-            if(now%10==0||now>=entry.getValue().expires()) {
-                boolean returned=false;
-                for(int attempt=0;maid.onGround()&&attempt<10&&!returned;attempt++)returned=com.github.tartaricacid.touhoulittlemaid.util.TeleportHelper.teleportToRestrictCenter(maid);
-                if(returned||now>=entry.getValue().expires()) {
-                    if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] COMMAND_HOME_RETURN maid={} success={} home={}",maid.getUUID(),returned,maid.getRestrictCenter());
-                    observe(maid);RECALLS.remove(entry.getKey());CommandTickets.release(entry.getKey());
-                }
+            if(maid.onGround())releaseHomeControl(entry.getValue());
+            // SchedulePos.tick runs in TLM's normal entity tick, including continuously loaded maids.
+            // Keep the existing finite ticket grace, but do not implement another teleport schedule.
+            if(now>=entry.getValue().expires()) {
+                if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] COMMAND_HOME_RETURN maid={} success=false reason=TLM_GRACE_EXPIRED ground={} managed={} home={}",maid.getUUID(),maid.onGround(),SkyfarerRuntime.isAirControlActive(maid),maid.getRestrictCenter());
+                observe(maid);RECALLS.remove(entry.getKey());CommandTickets.release(entry.getKey());
             }
         }
+    }
+    private static void releaseHomeControl(Recall recall){
+        if(recall.released)return;
+        recall.released=true;var maid=recall.maid();var controller=SkyfarerRuntime.get(maid);
+        if(controller!=null)controller.dispose("COMMAND_HOME_CONTROL_RELEASE",false);
+        TlmFollowCompat.clearGroundMovement(maid);
+        if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] COMMAND_HOME_CONTROL_RELEASE maid={} managed={} order={} home={} schedule=RESTORED",maid.getUUID(),SkyfarerRuntime.isAirControlActive(maid),ORDERS.containsKey(maid.getUUID()),maid.getRestrictCenter());
+    }
+    public static void homeScheduleOpportunity(EntityMaid maid,boolean held){
+        if(SkyfarerSettings.debugLogging()&&maid.isHomeModeEnable()&&maid.tickCount%40==0&&(recalling(maid)||held))
+            dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] TLM_HOME_SCHEDULE maid={} held={} managed={} ground={} withinHome={} canBrainMoving={} order={}",maid.getUUID(),held,SkyfarerRuntime.isAirControlActive(maid),maid.onGround(),maid.isWithinRestriction(),maid.canBrainMoving(),context(maid));
     }
     public static void logout(UUID owner){SESSIONS.remove(owner);WAKES.stop(owner,"logout");for(var entry:new ArrayList<>(ORDERS.entrySet()))if(entry.getValue().owner.equals(owner))cancel(entry.getKey());}
     public static void clear(){for(var id:new ArrayList<>(ORDERS.keySet()))cancel(id);tickRecalls(Long.MAX_VALUE);RECALLS.clear();WAKES.clear();SESSIONS.clear();RETRY.clear();CommandTickets.clear();}

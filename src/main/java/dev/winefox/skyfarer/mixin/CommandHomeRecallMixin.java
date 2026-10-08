@@ -13,6 +13,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class CommandHomeRecallMixin {
     @Inject(method="tick",at=@At("HEAD"),cancellable=true)
     private void wfs$holdDispatch(EntityMaid maid,CallbackInfo ci) {
-        if(CommandManager.holdHome(maid))ci.cancel();
+        boolean held=CommandManager.holdHome(maid);
+        CommandManager.homeScheduleOpportunity(maid,held);
+        if(held)ci.cancel();
     }
 }

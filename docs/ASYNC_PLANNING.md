@@ -1,12 +1,18 @@
 # 异步规划与线程边界
 
+0.6.2.11：推进资格、需求与激流候选统一；独立 10 tick 预蓄力保持 READY，不占实体 item-use；攻击/离场/紧急与 Transit 接入同一能力层。当前规则与历史覆盖关系见 [统一推进与 READY](PROPULSION_06211.md)。下列旧版本段落保留为历史，涉及实体副手持续使用、禁止 Strike/Exit 激流及旧 PlanningTask.Riptide 的描述均已被替代。
+
+0.6.2.10：移动目标使用三组未来拦截点，当前状态重验 Strike→Exit 后提交；准备区围绕预计拦截点保持有界，补能不再向外延伸或抢占可用攻击入口。机制、诊断、比较回放与限制见 [移动目标拦截](MOVING_ATTACK_06210.md)。
+
+0.6.2.9 既有变更：空中恢复使用独立的速度证书与实际 12 tick 恢复段；创造 Home 任务就近落地后释放控制，由 TLM 日程返回。源码因果、接口及验证边界见 [空中恢复与 Home 交接](AIR_RECOVERY_HOME_0629.md)。
+
 0.6.2.8：起飞激流认证扩展至推进截止、24 tick 无推进恢复与末端左右各 18 tick 转向余量（至少一侧通过）。Worker 仍只接收数值/碰撞快照；主线程重验及执行同一恢复控制，不再提前交接。普通空中激流维持 12 tick 预测恢复。有限候选数、采集/touched cells/worker 上限不变；失败起飞候选在本次 prepare 内锁存，不让备用规划的 Pending 反复重启已耗尽的激流搜索。后续历史段落的 12 tick 起飞窗口已被此规则替代。
 
 0.6.2.7：Riptide Worker 按时长从短到长搜索每个 tick，原版等级对应上限 10/20/30 ticks；最多 4 起飞方向 × 3 俯仰 × 30 时长/强度，空中仅 3 俯仰。Plan 保存 duration/departure，认证剩余前摇＋逐 tick 推进＋12 ticks coast。主线程只重验已选路线；仅此重验开启 touched cells 追踪（上限 512），将年龄 ≥8 的已触及 cells 排队刷新，仍遵守原有采集预算与 20 tick 过期拒绝。不把时长搜索搬到主线程，不让 Worker 持有实体。详见 [装备与生存](EQUIPMENT_SURVIVAL.md#0627-近目标起飞与可控时长推进)。
 
 0.6.2.2 新增数值 `PlanningTask.Riptide`，按推进强度和湿润路径分离 slot；Worker 认证 10 tick 前摇 + 20 tick spin + 12 tick 恢复，最多 3 种强度 × 3 姿态。执行阶段从当前速度用已捕获 cells 重验选中路线；缺失/过期数据拒绝。天气、物品、副手交换、spin 生命周期和生物扫掠查询只在主线程。详见 [装备与生存](EQUIPMENT_SURVIVAL.md)。
 
-核对日期：2026-10-07。实现版本：0.6.2.8，沿用 0.6.1 异步架构，没有 Funnel。本文描述当前源码；物理快照依据见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)，构建证据见 [验证文档](VALIDATION.md#7-当前构建证据与已知缺口)。
+核对日期：2026-10-08。实现版本：0.6.2.11，沿用 0.6.1 异步架构，没有 Funnel。本文描述当前源码；物理快照依据见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)，构建证据见 [验证文档](VALIDATION.md#7-当前构建证据与已知缺口)。
 
 0.6.2.5 为 Riptide slot 加入 launch 维度，起飞捕获滑翔身体，并按地面已预先转向、完成前摇后的普通跳跃状态认证 20 tick spin + 12 tick 恢复；离地后再用实际速度重验。空中候选最多等待 11 次、地面最多 39 次，届时无可执行证书则允许次级方案，避免 optional 冷请求每次都直接输给已有烟花结果。普通无烟花起飞仍由 Launch Worker 预测；激流后 Launch Attack 用非阻塞候选与实际当前状态 Rejoin，等待不暂停空中引导。Worker 仍只接收数值 DTO，不持有 Entity/Level，原队列和采集上限不变。
 
@@ -68,7 +74,7 @@
 | `Lane` | `AttackLanePlanner` 的直线、坡面、竖向曲线入口与出口几何 | 主线程只接收并设置 lane/entry/exit 等元数据 |
 | `Exit` | `AttackExitPlanner` 离场候选与安全评分 | `Choice`；不在 Worker 切换状态 |
 | `Chain` | 主攻击接触预测或次要目标二段追击 | 数值接触状态 / 追击计划；实体筛选和实际目标引用仍在主线程 |
-| `Sweep` | 无 path 时生成连续转弯候选；有 path 时回放当前曲线跟踪 | `Selection` 或 `Rollout`；命中段射线查询数值碰撞盒。`ignition` 冻结拟点火条件，Worker 内追加首 tick 等待；候选仍需 Rejoin 的完整寿命认证 |
+| `Sweep` | 无 path 时生成连续转弯候选；有 path 时回放当前曲线跟踪 | `Search(Selection, counts)` 或 `Rollout`；命中段射线查询数值碰撞盒。`ignition` 冻结拟点火条件，Worker 内追加首 tick 等待；候选仍需 Rejoin 的完整寿命认证 |
 | `SweepPulse` | 将一枚火箭所有 12 种随机寿命在一个任务中评估 | 任一寿命不安全/不能命中则不可行，否则按平均成本及推进时长评分；避免每种寿命分别排队造成饥饿 |
 | `Emergency` | 六个滑翔候选优先，最多三种库存 duration 的全寿命逃逸；已有火箭不叠加 | 提案必须经当前状态和已有 snapshot cells 重验 |
 | `LaunchAttack` | 同战略层最多四个目标，每目标 27 条起飞攻击曲线、全寿命与 Strike→Exit | UUID/姿态/Path 提案，地面预热及离地 Rejoin 最终决定 |
@@ -157,8 +163,9 @@
 | 普通结果 | 基于原任务提交 tick，最多 4 ticks；请求兼容；当前位置差 ≤4 格、航向差 ≤24°、速度各分量绝对差之和 ≤1.2 |
 | 坡面 `Slope` | 最多 20 ticks；目标采样中心误差 ≤0.5 格、采样半径/步长一致 |
 | 候选几何 `Sweep(path=null)` | 最多 12 ticks；位置差 ≤16 格、航向差 ≤90°；作为几何候选，不能直接承诺攻击 |
-| 几何 seed | 在兼容的候选 slot 内固定最多 12 ticks |
-| `Rejoin` / `AttackCertificate` 接触认证 | 在一般门槛之上，年龄 ≤2 ticks，位置差 ≤2.5 格，yaw/pitch 差各 ≤8°，速度 L1 差 ≤0.35 |
+| 几何 seed | 在兼容的候选 slot 内固定最多 12 ticks；明确无解释放 seed，移动无解缓存最多 3 ticks |
+| `Rejoin` / `AttackCertificate` 接触缓存 | 在一般门槛之上，年龄 ≤2 ticks，位置差 ≤2.5 格，yaw/pitch 差各 ≤8°，速度 L1 差 ≤0.35 |
+| `Rejoin` 提案及移动几何即时重验 | 不直接执行旧结果；主线程对一个选中路径用当前 State/Aim 和 ≤20 tick cells 完整重验，全部新火箭寿命仍认证。移动曲线可先做一次无新增火箭重验，成功时省去第二次 Worker 往返；静止曲线保留原 Worker 接入入口 |
 | Pending 复用 | 6 ticks 内且兼容；否则取消并换新 |
 | Debug trace | 仅读 generation 相同、年龄 ≤8 ticks 的完成缓存，不新提交预测 |
 

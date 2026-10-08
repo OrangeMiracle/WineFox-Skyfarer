@@ -20,11 +20,16 @@ public final class SweepingAttackPlanner {
         public final Cubic entry,exit;
         public final String style;
         public final double simplicity;
+        public final boolean tracking;
         private final List<Point> points;
         private final double[] lengths;
         private final double[] remainingHeights;
         public final int contactIndex;
         public Path(Cubic entry,Cubic exit,String style,double simplicity){
+            this(entry,exit,style,simplicity,false);
+        }
+        public Path(Cubic entry,Cubic exit,String style,double simplicity,boolean tracking){
+            this.tracking=tracking;
             this.entry=entry;this.exit=exit;this.style=style;this.simplicity=simplicity;
             var p=new ArrayList<Point>();sample(entry,p);contactIndex=p.size()-1;
             var tail=new ArrayList<Point>();sample(exit,tail);p.addAll(tail.subList(1,tail.size()));points=List.copyOf(p);
@@ -79,17 +84,42 @@ public final class SweepingAttackPlanner {
         }
     }
     public record Selection(Path path,Rollout prediction){}
+    public record Search(Selection selection,int candidates,int geometryRejected,int contactRejected,int exitRejected,int accepted,double bestMiss){}
     /** Re-certify a stable entry after asynchronous latency; keep C1 and adjust only recovery headroom. */
     public static Selection rejoin(FlightPrediction.State start,Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,double minimum,GlidePlanner.Corridor space,Contact contact){
         for(double rise:new double[]{0,1,2,4,6}){
             var lift=new Point(0,rise,0);
-            var candidate=rise==0?path:new Path(path.entry,new Cubic(path.exit.a,path.exit.b,path.exit.c.add(lift),path.exit.d.add(lift)),path.style,path.simplicity+rise*.1);
+            var candidate=rise==0?path:new Path(path.entry,new Cubic(path.exit.a,path.exit.b,path.exit.c.add(lift),path.exit.d.add(lift)),path.style,path.simplicity+rise*.1,path.tracking);
             var prediction=simulate(start,candidate,aim,rocket,gravity,rate,minimum,false,space,contact,120);
             if(prediction.safe&&prediction.hit)return new Selection(candidate,prediction);
         }
         return null;
     }
     public static Point point(FlightPrediction.State s){return new Point(s.x(),s.y(),s.z());}
+    /** Solve the horizontal rendezvous time, including the native use windup.
+     * This only seeds geometry: the rollout still checks the moving body every tick. */
+    public static double interceptTicks(FlightPrediction.State start,FlightPrediction.Aim aim){
+        double dx=aim.x()-start.x(),dz=aim.z()-start.z();
+        double speed=Math.max(.55,Math.hypot(start.vx(),start.vz()));
+        double a=aim.vx()*aim.vx()+aim.vz()*aim.vz()-speed*speed;
+        double b=2*(dx*aim.vx()+dz*aim.vz()),c=dx*dx+dz*dz;
+        double t=Math.sqrt(c)/speed,disc=b*b-4*a*c;
+        if(Math.abs(a)>1e-6&&disc>=0){
+            double u=(-b-Math.sqrt(disc))/(2*a),v=(-b+Math.sqrt(disc))/(2*a);
+            if(u>0)t=u;if(v>0)t=u>0?Math.min(u,v):v;
+        }
+        return Math.clamp(t,Math.min(60,aim.readyIn()+2),60);
+    }
+    public static List<Path> interceptCandidates(FlightPrediction.State start,Point target,FlightPrediction.Aim aim,double exitLength){
+        if(aim==null||Math.hypot(aim.vx(),aim.vz())<.025)return candidates(start,target,exitLength);
+        var paths=new ArrayList<Path>();double estimate=interceptTicks(start,aim);
+        for(double factor:new double[]{1,.65,1.35}){
+            double lead=Math.clamp(estimate*factor,Math.min(72,aim.readyIn()),72);
+            var strike=target.add(new Point(aim.vx()*lead,aim.vy()*lead,aim.vz()*lead));
+            for(var path:candidates(start,strike,exitLength))paths.add(new Path(path.entry,path.exit,path.style,path.simplicity,true));
+        }
+        return paths;
+    }
     private static FlightPrediction.State state(Point p){return new FlightPrediction.State(p.x,p.y,p.z,0,0,0,0,0);}
     public static List<Path> candidates(FlightPrediction.State start,Point target,double exitLength){
         var paths=new ArrayList<Path>();var origin=point(start);var delta=target.subtract(origin);double distance=delta.length();
@@ -132,6 +162,14 @@ public final class SweepingAttackPlanner {
         var tangent=path.atDistance(along+1).subtract(path.atDistance(Math.max(0,along-1))).unit();
         double dot=s.vx()*tangent.x+s.vz()*tangent.z;
         double dx=goal.x-s.x()-(s.vx()-dot*tangent.x)*3,dz=goal.z-s.z()-(s.vz()-dot*tangent.z)*3;
+        // Terminal interception follows the latest body motion. A fixed Bezier endpoint is
+        // only an entry proposal; carrying it unchanged through a reversal creates a miss.
+        if(!exiting&&aim!=null&&path.tracking&&path.remaining(here,false)<Math.max(12,speed*12)){
+            double distance=Math.hypot(aim.x()-s.x(),aim.z()-s.z());
+            double closing=Math.max(.35,speed-((aim.x()-s.x())*aim.vx()+(aim.z()-s.z())*aim.vz())/Math.max(.1,distance));
+            double lead=Math.clamp((distance-aim.maxReach()*.5)/closing,0,12);
+            dx=aim.x()+aim.vx()*lead-s.x();dz=aim.z()+aim.vz()*lead-s.z();
+        }
         if(!exiting&&aim!=null&&Math.hypot(aim.x()-s.x(),aim.z()-s.z())<aim.maxReach()+.75){dx=aim.x()-s.x();dz=aim.z()-s.z();}
         double yaw=Math.toDegrees(Math.atan2(-dx,dz));
         double vy=tangent.y*speed;
@@ -143,6 +181,9 @@ public final class SweepingAttackPlanner {
                 double center=aim.bottom()+aim.height()*.5;
                 pitch=-Math.toDegrees(Math.atan2(center-s.y(),Math.max(.05,Math.hypot(aim.x()-s.x(),aim.z()-s.z()))));
             }
+        }
+        if(!exiting&&aim!=null&&path.tracking&&Math.hypot(aim.x()-s.x(),aim.z()-s.z())<aim.maxReach()+speed*3){
+            pitch=-Math.toDegrees(Math.atan2(aim.bottom()+aim.height()*.5-s.y(),Math.max(.05,Math.hypot(dx,dz))));
         }
         return new Command(yaw,Math.clamp(pitch,-75,75),rate,exiting&&path.style.startsWith("VERTICAL_")?14:6);
     }
@@ -159,6 +200,10 @@ public final class SweepingAttackPlanner {
         envelope.observe(start,0,exiting?EnergyReserveEnvelope.Stage.EXIT:EnergyReserveEnvelope.Stage.APPROACH,
             path.requiredHeight(point(start),exiting),exiting?Math.max(.3,minSpeed):minSpeed,gravity);
         double exitLength=exiting?Math.max(0,path.length()-path.nearest(point(start),true)):path.exit.d.subtract(path.exit.a).length();
+        // Entry rollouts extend the horizon when contact occurs. A follow-up EXIT rollout
+        // starts after contact and must receive the same full remaining-travel budget.
+        // Otherwise a safe slow exit is mislabeled unsafe solely at the 24-tick deadline.
+        if(exiting)horizon=Math.min(160,Math.max(horizon,17+(int)Math.ceil(exitLength/.3)));
         var outward=path.exit.d.subtract(path.exit.c);
         double outwardYaw=Math.toDegrees(Math.atan2(-outward.x,outward.z));
         for(int tick=0;tick<horizon;tick++){
@@ -202,17 +247,25 @@ public final class SweepingAttackPlanner {
     }
     public static Selection choose(FlightPrediction.State start,Point target,FlightPrediction.Aim aim,int rocket,double gravity,double rate,
         double minimumSpeed,double exitLength,GlidePlanner.Corridor space,Contact contact,double currentTurn){
+        return search(start,target,aim,rocket,gravity,rate,minimumSpeed,exitLength,space,contact,currentTurn).selection();
+    }
+    public static Search search(FlightPrediction.State start,Point target,FlightPrediction.Aim aim,int rocket,double gravity,double rate,
+        double minimumSpeed,double exitLength,GlidePlanner.Corridor space,Contact contact,double currentTurn){
         Selection best=null;
-        for(var path:candidates(start,target,exitLength)){
-            if(!path.clear(space,.15,.12))continue;
+        int count=0,geometryRejected=0,contactRejected=0,exitRejected=0,accepted=0;double miss=Double.POSITIVE_INFINITY;
+        for(var path:interceptCandidates(start,target,aim,exitLength)){
+            count++;
+            if(!path.clear(space,.15,.12)){geometryRejected++;continue;}
             var result=simulate(start,path,aim,rocket,gravity,rate,minimumSpeed,false,space,contact,120,false);
+            miss=Math.min(miss,result.miss);
+            if(!result.hit)contactRejected++;else if(!result.safe)exitRejected++;else accepted++;
             double turn=FlightPrediction.turn(start.yaw(),result.first.yaw,rate)-start.yaw();
             if(turn*currentTurn<-.1)result=new Rollout(result.safe,result.hit,result.contactTick,result.cost+Math.min(3,Math.abs(currentTurn))*.6,result.miss,result.first,result.trace,result.envelope);
             if(result.safe&&result.hit&&(best==null||result.cost<best.prediction.cost))best=new Selection(path,result);
         }
-        if(best==null)return null;
+        if(best==null)return new Search(null,count,geometryRejected,contactRejected,exitRejected,accepted,miss);
         var traced=simulate(start,best.path,aim,rocket,gravity,rate,minimumSpeed,false,space,contact,120);
         var p=best.prediction;
-        return new Selection(best.path,new Rollout(p.safe,p.hit,p.contactTick,p.cost,p.miss,p.first,traced.trace,traced.envelope));
+        return new Search(new Selection(best.path,new Rollout(p.safe,p.hit,p.contactTick,p.cost,p.miss,p.first,traced.trace,traced.envelope)),count,geometryRejected,contactRejected,exitRejected,accepted,miss);
     }
 }

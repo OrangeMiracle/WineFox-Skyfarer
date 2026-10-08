@@ -1,0 +1,35 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :compileControllerReplay
+
+> Task :verifyRiptidePriority FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+[[WFS debug] PROPULSION maid=bcd4b01b-11df-493d-862b-de63d74a629c reason=ACTIVE_PROPULSION launch=false targetDistance=31.056688803574005 purpose=EMERGENCY duration=0 wet=true strengths=[3.0] rocketCooldown=0 rocketActive=true, [WFS debug] PROPULSION maid=bcd4b01b-11df-493d-862b-de63d74a629c reason=ACTIVE_PROPULSION launch=false targetDistance=34.97063297421693 purpose=EMERGENCY duration=0 wet=true strengths=[3.0] rocketCooldown=0 rocketActive=true, [WFS debug] PROPULSION maid=bcd4b01b-11df-493d-862b-de63d74a629c reason=ACTIVE_PROPULSION launch=false targetDistance=NaN purpose=APPROACH duration=0 wet=true strengths=[3.0] rocketCooldown=0 rocketActive=true, [WFS debug] PROPULSION maid=bcd4b01b-11df-493d-862b-de63d74a629c reason=ACTIVE_PROPULSION launch=false targetDistance=NaN purpose=APPROACH duration=0 wet=true strengths=[3.0] rocketCooldown=0 rocketActive=true]
+Exception in thread "main" java.lang.AssertionError: legal rain takeoff did not actually release Riptide; state=RETURN_TO_OWNER recent=[[WFS debug] maid=bcd4b01b-11df-493d-862b-de63d74a629c state=ATTACK_EXIT reason=EMERGENCY_GLIDE_TURN scan=[nearby=2, in_range=2, valid=1, protected_radius=16.0] pos=(-1.6598073746593585,-41.244220029968325,6.961075496209041) velocity=(-0.4878536744527586,-0.8689891150623126,0.09853601376661647) ground=false glide=true clearance=NaN preferred=dfe11077-0c64-40b2-a408-c08272c46c1b run=dfe11077-0c64-40b2-a408-c08272c46c1b using=false chargeTicks=0 spearReach=2.25, [WFS debug] async gen=6 cells=518 requested=0 jobs=0 cache=0 queue=0 cache=72 stale=0 failed=0 captureMs=1 workerMs=97, [WFS debug] FLIGHT_DECISION maid=bcd4b01b-11df-493d-862b-de63d74a629c action=RETURN reason=NO_TARGET_AFTER_LOITER state=ATTACK_EXIT nextTarget=null command=none wet=true riptide=3.0 rocket=true energyDecision=not_requested velocity=(-0.4273966642042105,-0.00813545811750319,0.0), [WFS debug] maid=bcd4b01b-11df-493d-862b-de63d74a629c ATTACK_EXIT -> RETURN_TO_OWNER; reason=NO_TARGET_AFTER_LOITER; run=none, [WFS debug] PROPULSION maid=bcd4b01b-11df-493d-862b-de63d74a629c reason=ACTIVE_PROPULSION launch=false targetDistance=NaN purpose=APPROACH duration=0 wet=true strengths=[3.0] rocketCooldown=0 rocketActive=true, [WFS debug] maid=bcd4b01b-11df-493d-862b-de63d74a629c state=RETURN_TO_OWNER reason=NO_TARGET_AFTER_LOITER scan=[nearby=2, in_range=2, valid=0, protected_radius=16.0] pos=(-22.15319044953341,-58.32861253875133,11.545017434950532) velocity=(0.32852679009117836,-0.35126307285532476,-0.023847308742942275) ground=false glide=true clearance=NaN preferred=none run=none using=false chargeTicks=0 spearReach=2.25, [WFS debug] async gen=7 cells=729 requested=0 jobs=2 cache=19 queue=0 cache=126 stale=2 failed=0 captureMs=1 workerMs=138, [WFS debug] maid=bcd4b01b-11df-493d-862b-de63d74a629c planner=GLIDE safe=false clearTicks=1 energyReserve=-Infinity rocketTicks=26 exit=STRAIGHT_CLIMB corridor=[VERTICAL_LAUNCH cost=18.700516131604363 contactTicks=21] pitch=-25.20112364547507, [WFS debug] maid=bcd4b01b-11df-493d-862b-de63d74a629c energyDecision=not_requested pulseReview=none cooldown=0 contactDistance=0.0 contactHeight=5.05 signedSlope=0.0, [WFS debug] PROPULSION maid=bcd4b01b-11df-493d-862b-de63d74a629c reason=ACTIVE_PROPULSION launch=false targetDistance=NaN purpose=APPROACH duration=0 wet=true strengths=[3.0] rocketCooldown=0 rocketActive=true]
+	at dev.winefox.skyfarer.replay.RiptidePriorityChecks.require(RiptidePriorityChecks.java:15)
+	at dev.winefox.skyfarer.replay.RiptidePriorityChecks.launch(RiptidePriorityChecks.java:61)
+	at dev.winefox.skyfarer.replay.RiptidePriorityChecks.main(RiptidePriorityChecks.java:24)
+
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyRiptidePriority'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 9s
+4 actionable tasks: 3 executed, 1 up-to-date

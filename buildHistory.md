@@ -2,7 +2,39 @@
 
 ## 当前交付状态
 
-当前交付为 **0.6.2.8**，在当前本地 0.6.2.7 源码之上修复。仅编译与针对性验证，不包含 Funnel；未启动 Minecraft。
+当前交付为 **0.6.2.11**，在当前本地 0.6.2.10 未提交工作区上继续修改，保留此前成果。没有从远程覆盖或回滚，没有 Funnel；仅编译、定向回归与打包，未启动 Minecraft、未安装到测试实例。
+
+### 0.6.2.11 统一推进能力与独立 Riptide READY（2026-10-08）
+
+- **审查结果**：资格已支持激流，但 AttackLane fuel、曲线 Strike/Exit、紧急恢复、部分预热和 Transit 仍有火箭专属入口；实体 OFF_HAND use session 阻断主手 Spears。完整审计矩阵见 [统一推进说明](docs/PROPULSION_06211.md)。
+- **结构**：PropulsionCapability 统一实时能力、预热与优先选择；PropulsionDemand 携带阶段/高度/速度/曲线/Aim/接触时限；唯一 PlanningTask.Propulsion 使用不可变数值快照。删除旧 PlanningTask.Riptide 和旧 AsyncPlanning 激流入口。相同需求先评估 coast，再选择可执行 Riptide、后备 Firework；火箭全随机寿命/点火延迟/cooldown 保持独立硬约束。
+- **READY**：确认 1.21.1 TridentItem 原版 10 tick 门槛及 Player 限定。WineFox 用独立的 10 tick 资源预备/保持/消费/再充能，失雨、三叉戟/装备/Level 变化或释放控制时清除；显式 Transit/Combat 交接共享。没有永久 startUsingItem，也不会停止主手长矛。实际释放通过 NeoForge stop 事件与副手 ItemStack.releaseUsing 的同步授权回调，消费耐久、生成 spin/推力/声音；这是明确的 WineFox 生命周期扩展，非伪称原版实体蓄力。
+- **飞行阶段**：可控激流覆盖起飞、接近、重新定位、完整攻击/离场、空中恢复、紧急逃逸与 Transit；最多 12 个当前动量拦截种子可用激流资助，继续验证真实接触/前摇时限和 Exit。推进中更新移动 Aim，原生命中后转离场。创造高速赶路与原免费火箭后备契约保留，选中激流时消耗实际三叉戟耐久；不将运输特权带入战斗。
+- **修复接入问题**：新增任务明确捕获起飞滑翔身体尺寸；确定拒绝立即允许后备，避免 Transit 每次重开等待而饿死起飞；候选 pending 时继续曲线转向，不把 pending 当 coast 失败，也不使用遗漏推力的 coast TTC 去取消已经认证的激流。
+- **验证**：[propulsion-acceptance.log](tools/propulsion-acceptance.log) 中 compileJava、10 项定向 verify（UnifiedPropulsion、RiptideRelease、RiptidePriority、RiptideDeparture、RiptideDuration、RemotePropulsion、AirRecoveryHome、MovingAttack、LaunchAttackReplay、EquipmentLifecycle）与 jar 成功。另 [propulsion-review-checks.log](tools/propulsion-review-checks.log) 的 AsyncPlanning、EmergencyReplay、HandoffStability 通过，共 13 项相关 verify，没有执行全量 42 项或 build/check。
+- **专项结果**：6/10/32/60 格雨中起飞完整完成，干燥/释放否决均有烟花回退；普通/创造 Home 无库存烟花均实际释放激流、到达并保持滑翔交接。墙前纯滑翔无解时，7 tick 激流完成整段安全恢复，0 烟花。静止/小幅/矿车/横移/改向首次攻击为 6/5/8/7/10 tick，全部命中安全离场，最大距离 34.83 格。追加 [两目标连续回放](tools/propulsion-continuous-second.log) 实际 controller 2 次命中、7 次激流、0 烟花、安全离场且无中途落地。
+- **验证边界**：外部物品事件、实体与环境是离线夹具，Spears 命中为原生接触代理，非 Minecraft 实机。连续两目标最初使用加速到 5 ms/tick 的 Worker 调度回放发生碰撞；改用与既有移动目标基准相同的 20 ms/tick 后通过，未改动生产安全阈值。此加速压力失败保留于 propulsion-continuous.log，不将其记作通过，亦不宣称任意 Worker 延迟下保证安全。完整 CommandManager/TLM/Mixin 运行仍需用户实机核查。
+- **交付**：[winefox_skyfarer-1.21.1-0.6.2.11.jar](build/libs/winefox_skyfarer-1.21.1-0.6.2.11.jar)，556,942 bytes，SHA-256 `C026B3F7CB540388E3874E0B092527DE0F291B910E20E7F141B6061207914507`。Manifest 与 Mod 元数据同为 0.6.2.11，包含新统一推进/READY 类，不含旧激流任务或离线夹具。README、相关 docs、推进诊断与验证说明同步。
+
+### 0.6.2.10 移动目标未来拦截与有界重定位（2026-10-07）
+
+- **证据**：实例确认 0.6.2.9；日志出现重复无解/等待及 AIR_RECOVERY 后距离 49.905→80.583→83.377 格。旧日志不足以标识矿车目标或逐候选拒因，不将推测当事实。源码及同组修改前回放确认当前位置几何与未来接触失配、移动/静止缓存混用、异步接入窗口损失和补能向外延伸。[日志摘录](tools/moving-target-evidence.txt)。
+- **拦截**：按实际目标位移、女仆速度和原生前摇生成三组提前量，最多 648 曲线；近接触持续更新方向/俯仰。当前状态、目标运动及有效数值快照完整重验选中路径，移动曲线可省去额外 Worker 往返；无解再走有界 Rejoin。原 Rejoin/AttackCertificate 缓存的严格门槛保持，未放松 Vanilla、身体扫掠、原生 Spears 接触、速度/前摇或全随机火箭寿命认证。
+- **有界与时序**：重定位中心为提前量有界的拦截点，48 格局部转向半径不随外飘位置扩张；补能朝内或沿局部切向。已认证攻击优先，初始候选等待保留武器机会，激流也遵守不破坏可用入口的规则。移动无解每 3 ticks 重搜，反向刷新；静止/运动缓存分开。
+- **离场**：追加山地回放发现慢速 Exit 只重算 24 ticks，误判原本完整认证的安全离场；现按剩余长度分配完整预算，保留 160 tick 上限/逐步碰撞认证。此前失败记录见 moving-target-package-initial.log；修复后两个镜像均在 tick 53 命中，在 138/139 落地。未重写返航或紧急飞控。
+- **诊断**：ATTACK_SEARCH 限频记录运动、距离、提前量、前摇、重试、推进来源、几何/无接触/离场拒绝与当前重验结果；ATTACK_CONTINUATION_REJECT 记录执行阶段状态。详见 [专项说明](docs/MOVING_ATTACK_06210.md)。
+- **比较**：旧版往返/横移/改向在 600 ticks 内均无首次攻击，最远 98.90/103.49/107.92 格；本版首次攻击 8/7/9 ticks，命中 24/23/30 ticks，最远 35.06/33.88/34.83 格。静止 6→6，小幅移动 16→5 ticks。五场均命中并安全离场/落地；[CSV](tools/moving-target-comparison.csv)。离线 tick 间隔同为 20 ms，真实生产控制器与异步执行器，但外部实体/矿车轨迹、伤害为夹具/接触代理，非 Minecraft 实机效果保证。
+- **验收**：[moving-target-final.log](tools/moving-target-final.log) 中 compileJava、verifyMovingAttack、verifySweepingAttacks、verifyAsyncPlanning、verifyAirRecoveryHome、verifySweepingReplay、jar 成功；另 verifyAsyncSweep 在 [moving-target-acceptance.log](tools/moving-target-acceptance.log) 通过（仅获取候选的测试，不将其打印的失败 review 当执行安全证明）。包括当前运动重验、缺失 cells、墙体、边界、原生前摇拒绝、异步生命周期、干燥烟花回退、既有 Home 本地落地。没有执行全量 41 项 verify/build/check，未启动 Minecraft。
+- **交付**：[winefox_skyfarer-1.21.1-0.6.2.10.jar](build/libs/winefox_skyfarer-1.21.1-0.6.2.10.jar)，537,649 bytes，SHA-256 `F169548959F11057928DE6B08128705DDF087C8324E636850D5346262A7A9CF3`。Manifest/Mod 元数据统一 0.6.2.10；Jar 不含回放夹具或模拟 Minecraft/TLM 类。README、相关 docs 与配置诊断说明同步；未安装到测试实例。
+
+### 0.6.2.9 空中恢复推进与创造 Home 控制权交接（2026-10-07）
+
+- **日志与源码**：0.6.2.8 实机既有 APPROACH 激流，也有低速 REPOSITION；不能将问题描述为完全没有空中激流。真正缺口为紧凑转向仅用烟花、能量 pending 仅预热火箭、复战资格仅认火箭。Home 任务结束后 COMMAND_COMPLETE 开始朝 Home 托管飞行，recall 等落地而在 200 ticks 空中超时。证据见 [air-recovery-home-evidence.txt](tools/air-recovery-home-evidence.txt)。
+- **恢复**：coast 优先，不足时认证独立局部 AIR_RECOVERY 激流候选，末速 ≥0.9、扫掠/实体/边界检查、真实前摇和推力；实际执行 12 tick coast 恢复再交接。接近、重新定位、完成 Exit 后和等待路径均接入，已承诺 Strike/Exit 不插入推进。无合法激流继续火箭/安全飞控，保留无级最短时长、雨水资格及独立冷却。良性返航/落地可在有合法下一目标和恢复资源时重新作战，任务完成/装备安全/超时仍不可强行续战。
+- **Home**：实际 TLM 1.5.3 SchedulePos 每 40 ticks 对超出限制范围且可移动的女仆决定走回或最多十次安全传送，完全不要求卸载。创造任务结束先移除订单/关闭 Transit，空中就近安全落地；地面 dispose、managed=false、清理 WineFox 路径后放行 TLM。删除 WineFox 每 10 tick 主动传送循环，保留原 200 tick 有界票据宽限，成功或到期释放。不擅自飞越 900 格返乡，不改写 TLM Home 系统。
+- **诊断**：FLIGHT_DECISION 提供 RETURN/LANDING/RECOVERY 原因、下一目标、订单、推进资格与速度；PROPULSION 区分 AIR_RECOVERY；COMMAND_RELEASE 标记 CREATIVE_COMMAND_COMPLETE；COMMAND_HOME_CONTROL_RELEASE、TLM_HOME_SCHEDULE held/canBrainMoving/managed 与 COMMAND_HOME_RETURN/COMMAND_TICKET 分别显示控制权、日程机会、结果和撤票。
+- **验证**：[air-recovery-home-acceptance.log](tools/air-recovery-home-acceptance.log) 中 compileJava、verifyAirRecoveryHome、verifyRiptideDuration、verifyRiptideDeparture、verifyRiptideRelease、verifyRiptidePriority、verifyAttackPolicy、verifyHandoffStability、verifyRemoteWake、jar 成功。八项定向回归；未执行全部 40 项 verify/build/check。新增生产控制器回放从低速 APPROACH/REPOSITION/完成 Exit/良性 LANDING 恢复空战；900 格 Home 持续加载时在任务当地 67 ticks 落地并释放，已着地立即释放。实体和世界为离线夹具，完整 TLM/Mixin/订单 ServerTick 未实机执行，不声称已验证实际传送成功。
+- **交付**：[winefox_skyfarer-1.21.1-0.6.2.9.jar](build/libs/winefox_skyfarer-1.21.1-0.6.2.9.jar)，530,870 bytes，SHA-256 `F4F59DA7EC7F6B822B3FE8B325F747EC91B4D5D7A85B983F3E3E02F575B14E27`。README、相关 docs、元数据和版本索引同步；未安装到实例，未启动 Minecraft。[详细机制](docs/AIR_RECOVERY_HOME_0629.md)。
 
 ### 0.6.2.8 可持续激流起飞、备用分支与远程资格（2026-10-07）
 

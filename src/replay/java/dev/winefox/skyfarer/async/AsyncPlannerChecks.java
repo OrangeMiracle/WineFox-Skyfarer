@@ -83,6 +83,7 @@ public final class AsyncPlannerChecks {
         require(!waiting.safe()&&facade.waiting()&&waiting.reason().equals("async_pending"),
             "cold certificate must veto commitment while allowing this tick's steering to continue");
         facade.close();
+        movingCertificates(full);
         long rejected=PlannerExecutor.rejected.sum();var jobs=new ArrayList<PlannerExecutor.Ticket<Object>>();
         for(int i=0;i<400;i++){var job=PlannerExecutor.submit(task(),full,10);if(job!=null)jobs.add(job);require(PlannerExecutor.queued()<=64,"unbounded queue");}
         require(PlannerExecutor.rejected.sum()>rejected,"backpressure was not exercised");for(var job:jobs)job.cancel();
@@ -92,5 +93,34 @@ public final class AsyncPlannerChecks {
         System.out.println("Async boundary checks passed: immutable DTOs, world-border keys, strict unknown cells, main-only capture, identical math, generation/target/config/dimension invalidation, cancellation, bounded queues and restart.");
     }
     private static void pending(PlannerSession session,PlanningTask task){try{session.query(task);throw new AssertionError("stale result reused");}catch(PlannerSession.Pending expected){}}
+    private static void movingCertificates(CollisionSnapshot full){
+        var s=new FlightPrediction.State(0,9.4,-32,0,-.08,1.1,0,0);
+        var aim=new FlightPrediction.Aim(0,-3,0,.3,7.8,.32,0,0,0,2.25,.1,10);
+        var stationary=new FlightPrediction.Aim(0,-3,0,.3,7.8,0,0,0,0,2.25,.1,10);
+        require(!PlanningTask.geometryAim(aim,stationary),"stationary geometry suppresses moving intercept search");
+        require(SweepingAttackPlanner.interceptCandidates(s,new SweepingAttackPlanner.Point(0,3.4,0),aim,8).size()==648,"intercept family unbounded or missing lead alternatives");
+        var choice=SweepingAttackPlanner.choose(s,new SweepingAttackPlanner.Point(0,3.4,0),aim,0,.08,5,.2,8,full.space(new AtomicBoolean()),(a,b,t)->true);
+        require(choice!=null,"moving fixture has no physical strike/exit");
+        var snapshots=new CollisionSnapshot[]{full};
+        var session=new PlannerSession(new PlannerSession.Source(){
+            public CollisionSnapshot.Cell capture(long key){return AIR;}
+            public CollisionSnapshot snapshot(Map<Long,CollisionSnapshot.Cell> cells,boolean wet,boolean launch){return snapshots[0];}
+        });
+        session.begin(1,"ENTRY","target",0,1);
+        var proposal=new PlanningTask.RejoinResult(choice,-1);
+        var current=FlightPrediction.step(s,0,0,5,6,6,.08,false);
+        var task=new PlanningTask.Rejoin(current,choice.path(),aim.after(1),0,.08,5,.2,List.of());
+        var checked=session.recertifyRejoin(task,proposal,null);
+        require(checked!=null&&checked.selection().prediction().trace().getFirst().state().equals(current),"certificate reused old state instead of actual motion");
+        require(session.recertifyRejoin(task,proposal,new CollisionSnapshot.Bounds(0,0,1))==null,"intercept bypassed navigation bound");
+        var moved=new FlightPrediction.Aim(60,-3,0,.3,7.8,-.32,0,0,0,2.25,.1,200);
+        require(session.recertifyRejoin(new PlanningTask.Rejoin(current,choice.path(),moved,0,.08,5,.2,List.of()),proposal,null)==null,"stale contact or unfinished native windup accepted");
+        snapshots[0]=snapshot(Map.of());require(session.recertifyRejoin(task,proposal,null)==null,"missing geometry accepted");
+        var blocked=new HashMap<Long,CollisionSnapshot.Cell>();
+        var wall=new CollisionSnapshot.Cell(List.of(new FlightCorridor.Box(-96,-96,-96,96,96,96)),List.of(),0,true);
+        full.cells().keySet().forEach(k->blocked.put(k,wall));snapshots[0]=snapshot(blocked);
+        require(session.recertifyRejoin(task,proposal,null)==null,"new wall accepted through old certificate");
+        session.close();System.out.println("Moving certificate: 648 bounded candidates, current-state rejoin, native windup, missing cells, boundary and wall veto passed");
+    }
     private static void await(PlannerExecutor.Ticket<?> ticket)throws Exception{long end=System.nanoTime()+5_000_000_000L;while(ticket.outcome==null&&System.nanoTime()<end)Thread.sleep(2);require(ticket.outcome!=null,"worker timeout");if(ticket.outcome.failure()!=null)throw new AssertionError(ticket.outcome.failure());}
 }

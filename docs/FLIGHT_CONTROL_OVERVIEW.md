@@ -1,5 +1,11 @@
 # 飞控系统总设计与当前实现
 
+0.6.2.11：推进资格、需求与激流候选统一；独立 10 tick 预蓄力保持 READY，不占实体 item-use；攻击/离场/紧急与 Transit 接入同一能力层。当前规则与历史覆盖关系见 [统一推进与 READY](PROPULSION_06211.md)。下列旧版本段落保留为历史，涉及实体副手持续使用、禁止 Strike/Exit 激流及旧 PlanningTask.Riptide 的描述均已被替代。
+
+0.6.2.10：移动目标使用三组未来拦截点，当前状态重验 Strike→Exit 后提交；准备区围绕预计拦截点保持有界，补能不再向外延伸或抢占可用攻击入口。机制、诊断、比较回放与限制见 [移动目标拦截](MOVING_ATTACK_06210.md)。
+
+0.6.2.9 既有变更：空中恢复使用独立的速度证书与实际 12 tick 恢复段；创造 Home 任务就近落地后释放控制，由 TLM 日程返回。源码因果、接口及验证边界见 [空中恢复与 Home 交接](AIR_RECOVERY_HOME_0629.md)。
+
 0.6.2.8：激流普通起飞实际执行推进后的 24 tick 无动力恢复，推进截止和交接都须满足速度/高度下限，并预测转向及下一次蓄力余量；完成后才允许普通飞控/机会攻击接管。一次起飞只认证当地出发，不以远目标作为必须到达的终点。激流失败搜索在本次起飞中锁存，备用异步规划不再饿死。普通/创造远程指令共用实时推进资格（合法激流或烟花），取消旧烟花硬门槛，保留已有免费 TransitFlight。详细数值、证据与边界见 [装备与生存](EQUIPMENT_SURVIVAL.md)。
 
 0.6.2.7：普通激流起飞单独认证离地净空、eye+6 起飞高度和可继续飞行状态，近目标不再作为刹停终点；攻击接近仍检查目标余量。激流以最短安全整数 tick 时长执行，按原版 I/II/III 最大 10/20/30 ticks、每 tick 0.2 速度增量；推进后从实际状态重新做攻击认证。无动力起飞不能只认证短暂跳跃，必须具有末段可用速度/高度；离地重验失败明确安全恢复。完整日志因果与物理扩展见 [装备与生存](EQUIPMENT_SURVIVAL.md#0627-近目标起飞与可控时长推进)。
@@ -9,7 +15,7 @@
 0.6.2.5 推进顺序：滑翔已足够时不消耗推进；需要补能时先认证激流，再考虑烟花，激流不复用火箭冷却/对齐门槛。起飞先尝试地面前摇→普通跳跃→滑翔→激流释放，再退回烟花或经过预测的普通起飞；激流 spin 结束后重新认证机会目标的 Strike→Exit，失败继续 CLIMB/APPROACH。已经承诺的 Strike/Exit 与 active rocket 不插入激流。环境、库存、证书等待和执行拒因均有 PROPULSION/RIPTIDE 记录。
 
 0.6.2.2 增加装备安全门槛、落地长矛普通近战、可选鞘翅身份配置，以及不侵入已承诺攻击的激流辅助推进。控制器和指挥赶路均先尝试备用换装；低耐久空中返航保留滑翔。0.6.2.3 明确不可损坏装备豁免；普通长矛使用真实左键范围并兼容 TLM 距离加成，保留近身盲区和后撤；装备气泡改为持久事件去重与错峰限频。0.6.2.4 将普通导航跳跃与托管飞行区分，装备不合格的地面离地过程不再接管飞控、清除路径；资格失败按实际原因记录。详见 [装备与生存](EQUIPMENT_SURVIVAL.md)。
-核对日期：2026-10-07。源码基线：Gradle 项目版本 `0.6.2.8`。本文描述当前源码，不是未来设计提案；mapped 物理依据与完整路线认证详见 [VANILLA_PHYSICS.md](VANILLA_PHYSICS.md)。
+核对日期：2026-10-08。源码基线：Gradle 项目版本 `0.6.2.11`。本文描述当前源码，不是未来设计提案；mapped 物理依据与完整路线认证详见 [VANILLA_PHYSICS.md](VANILLA_PHYSICS.md)。
 
 本文面向修改飞控算法、状态机和路径规划，以及排查飞行行为的维护者。新会话先读 [PROJECT_INDEX.md](PROJECT_INDEX.md)，线程池、快照、缓存与结果有效性细节继续读 [ASYNC_PLANNING.md](ASYNC_PLANNING.md)。配置、HUD 和命令见 [CONFIG_DEBUG_REFERENCE.md](CONFIG_DEBUG_REFERENCE.md)，验证入口见 [VALIDATION.md](VALIDATION.md)。
 
@@ -515,7 +521,7 @@ expectedTicks(duration) = minimumTicks + 5.5
 
 发现阶段由 `RemoteWakeScheduler` 保持每玩家每 10 ticks 最多 2 只、全服最多 8 个 wake、100 ticks 超时。未尝试者优先，已失败者在 200 ticks 冷却后按旧尝试顺序重试；上限不会把等待者永久标记为已尝试。generation 随标记增删、死亡和清理更新，旧 wake 被释放；成功后移交独立 Order/TransitFlight，其他同 owner 候选继续获得批次。registry 保存所有者和最近位置等事实，不保存 attempted；旧工作模式否定记录也允许醒来重新核实。完整日志和资格条件见 [配置调试参考](CONFIG_DEBUG_REFERENCE.md#42-发现与分配)。
 
-创造订单仍有存活且已加载的有效创造标记时，`holdHome()` 暂阻 TLM 落地 Home 回收。标记结束/失效后，取消订单，必要时保留女仆位置和 Home 的 recall 票据，最长 200 ticks 内周期调用 TLM `TeleportHelper.teleportToRestrictCenter`，成功/超时后释放票据。普通订单完成则给原版地面 Home 回收约 45 ticks 机会。真实票据激活时序、卸载与第三方传送事件并非离线夹具可全部证明。
+创造订单仍有存活且已加载的有效创造标记时，`holdHome()` 暂阻 TLM 落地 Home 回收。标记结束/失效后，取消订单、关闭 Transit，Home 女仆在任务结束位置附近安全落地，释放 managed 控制并放行原生 SchedulePos；0.6.2.9 不再由 WineFox 周期调用 Home 传送或飞行返乡。原当前位置/Home recall 票据最长 200 ticks，回到限制区或超时释放；普通订单完成仍给原版地面 Home 回收约 45 ticks 机会。真实 TLM/Mixin、票据激活时序及第三方传送事件并非离线夹具可全部证明。
 
 ## 11. 异步 Planner 与实际飞控之间的关系
 

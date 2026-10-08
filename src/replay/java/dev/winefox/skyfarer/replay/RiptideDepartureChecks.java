@@ -27,8 +27,8 @@ public final class RiptideDepartureChecks {
         var planning=new AsyncPlanning(m);var manager=new RiptidePropulsion();var heading=new HeadingController();
         long tick=1;RiptidePlanner.Plan selected=null;
         for(;tick<180;tick++) {
-            w.advance(tick);planning.begin(tick,"LONG_BURST",null,0);heading.beginTick(m);
-            selected=planning.riptide(EquipmentLifecycleChecks.state(m),0,160,120,3,false);
+            w.advance(tick);planning.begin(tick,"LONG_BURST",null,0);heading.beginTick(m);manager.prepare(m,true);
+            selected=planning.propulsion(EquipmentLifecycleChecks.state(m),new PropulsionDemand(PropulsionDemand.Phase.APPROACH,0,160,120,.55),3,false,new dev.winefox.skyfarer.safety.CorridorProbe(m));
             if(selected!=null&&manager.begin(m,selected,EquipmentLifecycleChecks.state(m),planning,heading))break;
         }
         require(manager.active()&&selected.duration()>10&&selected.duration()<30,"long request did not select a bounded variable duration");
@@ -91,13 +91,15 @@ public final class RiptideDepartureChecks {
     }
     static void rejectedLaunchFallback() {
         var w=new ReplayWorld();w.loadedRadius=256;var m=new EntityMaid(w,Vec3.ZERO);m.owner=new Player(w,new Vec3(8,0,8));
-        m.rain=true;m.vetoUseStart=true;m.inventory.count=64;m.offhand=new ItemStack(Items.TRIDENT);m.offhand.strength=3;
+        m.rain=true;m.vetoRelease=true;m.inventory.count=64;m.offhand=new ItemStack(Items.TRIDENT);m.offhand.strength=3;
         new LivingEntity(w,new Vec3(0,0,32));var c=new AirCombatController(m);
         for(int tick=1;tick<180&&m.inventory.consumed==0;tick++){
             w.advance(tick);c.tick();
-            if(!m.ground&&!m.glide){m.pos=m.pos.add(m.velocity);m.velocity=new Vec3(m.velocity.x*.91,(m.velocity.y-.08)*.98,m.velocity.z*.91);}
+            if(m.glide)EquipmentLifecycleChecks.move(m,FlightPrediction.step(EquipmentLifecycleChecks.state(m),m.yaw,m.pitch,180,90,90,.08,false));
+            else if(!m.ground){m.pos=m.pos.add(m.velocity);m.velocity=new Vec3(m.velocity.x*.91,(m.velocity.y-.08)*.98,m.velocity.z*.91);}
+            if(m.getY()<=0){m.ground=true;m.glide=false;m.pose=Pose.STANDING;m.pos=new Vec3(m.getX(),0,m.getZ());m.velocity=Vec3.ZERO;}
         }
-        require(m.inventory.consumed>0&&m.releaseCalls==0,"rejected Riptide keeps restarting and starves rocket launch");
+        require(m.inventory.consumed>0&&m.releaseCallbacks==0,"rejected Riptide keeps restarting and starves rocket launch");
         c.dispose("TEST_END",false);System.out.println("exhausted Riptide execution -> ordinary firework departure passed");
     }
 }

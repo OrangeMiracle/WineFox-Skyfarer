@@ -13,7 +13,7 @@ import java.util.*;
 public final class RemotePropulsionChecks {
     static void require(boolean ok,String why){if(!ok)throw new AssertionError(why);}
     public static void main(String[] args)throws Exception {
-        System.setProperty("wfs.replayTickMillis","5");
+        System.setProperty("wfs.replayTickMillis","5");dev.winefox.skyfarer.config.SkyfarerConfig.DEBUG_LOGGING.set(true);
         for(boolean creative:new boolean[]{false,true})run(creative);
         // CommandManager depends on the full server. Check both production call sites still use
         // the gate exercised here, rather than pretending this fixture executes ServerTick/Post.
@@ -43,13 +43,13 @@ public final class RemotePropulsionChecks {
         require(assigned.isEmpty()&&tickets.isEmpty()&&events.stream().anyMatch(s->s.contains("no_firework_riptide_environment_invalid")),"dry maid accepted or ticket leaked");
         m.rain=true;loaded.clear();scheduler.offer(owner,2,200,List.of(id),backend);loaded.add(id);scheduler.tick(201);
         require(assigned.contains(id)&&tickets.isEmpty()&&scheduler.active()==0,"wet maid could not retry/wake/assign");
-        var transit=new TransitFlight();var goal=new Vec3(0,0,180);boolean arrived=false;
+        m.owner.pos=new Vec3(8,0,8);var transit=new TransitFlight();var goal=new Vec3(0,0,180);boolean arrived=false;
         for(int tick=1;tick<600;tick++) {
             w.advance(tick);
             if(m.position().distanceTo(goal)<=DispatchPolicy.handoffRange(creative)){
                 transit.handoff(m);require(m.glide&&!m.ground,"handoff lost glide");arrived=true;break;
             }
-            require(transit.tick(m,goal,creative),"Riptide-only transit failed at "+tick);
+            require(transit.tick(m,goal,creative),"Riptide-only transit failed at "+tick+" pos="+m.pos+" vel="+m.velocity+" "+transit.diagnostics()+" events="+ReplayWorld.events.stream().skip(Math.max(0,ReplayWorld.events.size()-6)).toList());
             if(m.glide){
                 var s=new FlightPrediction.State(m.getX(),m.getEyeY(),m.getZ(),m.velocity.x,m.velocity.y,m.velocity.z,m.yaw,m.pitch);
                 var n=FlightPrediction.step(s,m.yaw,m.pitch,180,90,90,.08,w.rockets.stream().anyMatch(r->r.alive&&r.createdAt<w.time));
@@ -59,6 +59,7 @@ public final class RemotePropulsionChecks {
             for(var r:w.rockets)if(r.alive&&r.createdAt<w.time&&++r.life>r.lifetime)r.discard();
         }
         transit.close();require(arrived&&m.inventory.count==0&&m.inventory.consumed==0,"remote flight required inventory fireworks");
+        require(m.releaseCallbacks>0&&m.offhand.damage>0,"Transit did not select/release legal Riptide");
         m.rain=false;m.inventory.count=1;require(PropulsionAvailability.source(m).equals("FIREWORK"),"dry firework fallback missing");
         System.out.println("Home dispatch creative="+creative+" inventoryFireworks=0 wake=accepted transit=arrived glide=preserved");
     }

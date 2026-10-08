@@ -13,7 +13,7 @@ public final class AsyncSweepChecks {
         var target=new SweepingAttackPlanner.Point(1,13.4,10);
         var initial=new FlightPrediction.State(9,14,-28,Math.sin(Math.toRadians(35))*1.3,-.05,Math.cos(Math.toRadians(35))*1.3,-35,0);
         var task=new PlanningTask.Sweep(initial,target,aim,0,.08,5,.2,8,0,null,false,120);
-        var selected=(SweepingAttackPlanner.Selection)task.compute(snapshot.space(new AtomicBoolean()));
+        var selected=((SweepingAttackPlanner.Search)task.compute(snapshot.space(new AtomicBoolean()))).selection();
         if(selected==null)throw new AssertionError("Full immutable snapshot changed hillside geometry");
         System.out.println("Snapshot curve="+selected.path().style+" contact="+selected.prediction().contactTick());
         var source=new PlannerSession.Source(){
@@ -23,7 +23,7 @@ public final class AsyncSweepChecks {
         var session=new PlannerSession(source);var s=initial;boolean found=false;
         for(int tick=0;tick<12;tick++){
             PlannerSession.serverTick();session.begin(tick,"entry","target",0,1);
-            try{var choice=(SweepingAttackPlanner.Selection)session.query(new PlanningTask.Sweep(s,target,aim,0,.08,5,.2,8,0,null,false,120));System.out.println("tick "+tick+" ready="+(choice!=null)+" "+session.detail());if(choice!=null){var review=SweepingAttackPlanner.simulate(s,choice.path(),aim,0,.08,5,.2,false,snapshot.space(new AtomicBoolean()),(a,b,t)->snapshot.space(new AtomicBoolean()).ray(a.x(),a.y(),a.z(),b.x(),b.bottom()+b.height()/2,b.z()),120);System.out.println("review="+review.safe()+" hit="+review.hit()+" contact="+review.contactTick()+" last="+review.trace().getLast().state());found=true;break;}}
+            try{var choice=((SweepingAttackPlanner.Search)session.query(new PlanningTask.Sweep(s,target,aim,0,.08,5,.2,8,0,null,false,120))).selection();System.out.println("tick "+tick+" ready="+(choice!=null)+" "+session.detail());if(choice!=null){var review=SweepingAttackPlanner.simulate(s,choice.path(),aim,0,.08,5,.2,false,snapshot.space(new AtomicBoolean()),(a,b,t)->snapshot.space(new AtomicBoolean()).ray(a.x(),a.y(),a.z(),b.x(),b.bottom()+b.height()/2,b.z()),120);System.out.println("review="+review.safe()+" hit="+review.hit()+" contact="+review.contactTick()+" last="+review.trace().getLast().state());found=true;break;}}
             catch(PlannerSession.Pending pending){System.out.println("tick "+tick+" pending "+session.detail());}
             s=FlightPrediction.step(s,s.yaw(),0,5,3,8,.08,false);Thread.sleep(50);
         }

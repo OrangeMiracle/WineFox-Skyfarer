@@ -18,6 +18,11 @@ public final class RiptideDurationChecks {
             }
         }
         require(durations.size()>=3&&durations.stream().filter(n->n<30).count()>=3,"III only offers maximum duration");
+        var slow=new FlightPrediction.State(0,80,0,0,-.15,.45,0,0);
+        var recovery=RiptidePlanner.choose(slow,0,84,40,3,.08,(a,b,s,v)->true,SurfaceLaunchPlanner.DRY,0,.9);
+        require(recovery!=null&&recovery.guidedRecovery()&&recovery.minimumSpeed()==.9,"air recovery certificate missing");
+        var end=recovery.trace().getLast();require(Math.hypot(end.vx(),end.vz())>=.9,"air recovery cannot hand off enough speed");
+        require(RiptidePlanner.choose(slow,0,84,40,3,.08,(a,b,s,v)->b.z()+s<8,SurfaceLaunchPlanner.DRY,0,.9)==null,"recovery thrust ignored wall");
         var jump=new FlightPrediction.State(0,.82,0,0,.3332,0,0,0);
         var nearAim=new FlightPrediction.Aim(0,-3,10,.3,7.8,0,0,0,0,2.25,.1,10);
         require(LaunchAttackPlanner.choose(jump,List.of(new LaunchAttackPlanner.Target(new UUID(0,1),nearAim)),List.of(),.08,5,.2,8,(a,b,s,v)->true,(a,b,t)->true)==null,"scenario unexpectedly permits uphill Launch Attack");

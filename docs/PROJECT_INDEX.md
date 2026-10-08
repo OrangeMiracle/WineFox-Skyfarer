@@ -1,6 +1,12 @@
 # WineFox: Skyfarer 工程总索引
 
-这是**项目总索引、当前项目事实总览和新开发会话的第一阅读入口**，面向维护者与后续 Codex。玩家安装与使用介绍保留在 [README](../README.md)。本文按 2026-10-07 的源码核对；构建版本为 **0.6.2.8**。
+0.6.2.11：推进资格、需求与激流候选统一；独立 10 tick 预蓄力保持 READY，不占实体 item-use；攻击/离场/紧急与 Transit 接入同一能力层。当前规则与历史覆盖关系见 [统一推进与 READY](PROPULSION_06211.md)。下列旧版本段落保留为历史，涉及实体副手持续使用、禁止 Strike/Exit 激流及旧 PlanningTask.Riptide 的描述均已被替代。
+
+0.6.2.10：移动目标使用三组未来拦截点，当前状态重验 Strike→Exit 后提交；准备区围绕预计拦截点保持有界，补能不再向外延伸或抢占可用攻击入口。机制、诊断、比较回放与限制见 [移动目标拦截](MOVING_ATTACK_06210.md)。
+
+0.6.2.9 既有变更：空中恢复使用独立的速度证书与实际 12 tick 恢复段；创造 Home 任务就近落地后释放控制，由 TLM 日程返回。源码因果、接口及验证边界见 [空中恢复与 Home 交接](AIR_RECOVERY_HOME_0629.md)。
+
+这是**项目总索引、当前项目事实总览和新开发会话的第一阅读入口**，面向维护者与后续 Codex。玩家安装与使用介绍保留在 [README](../README.md)。本文按 2026-10-08 的源码核对；构建版本为 **0.6.2.11**。
 
 ## 先读：长期维护规则
 
@@ -35,7 +41,7 @@
 | Java / 构建 | Java 21；Gradle Wrapper；ModDev 插件 2.0.148；[build.gradle](../build.gradle)、[gradle.properties](../gradle.properties) |
 | 必需依赖 | `libs/touhoulittlemaid-1.5.3-neoforge+mc1.21.1.jar`、`libs/spear-backport-neoforge-1.8.0-1.21.1.jar` |
 | 可选兼容 | YSM；`tools/ysm-reference.jar` 只用于编译参考；兼容检查针对其 2.6.5 接口，不是必需依赖 |
-| 构建版本 | `build.gradle` 的 `version='0.6.2.8'`，Jar Manifest 的 `Implementation-Version` 来自它；[neoforge.mods.toml](../src/main/resources/META-INF/neoforge.mods.toml) 同步为 0.6.2.8。修正了此前 0.6.0/0.5.4 不一致；发版仍须核对实际 Jar |
+| 构建版本 | `build.gradle` 的 `version='0.6.2.11'`，Jar Manifest 的 `Implementation-Version` 来自它；[neoforge.mods.toml](../src/main/resources/META-INF/neoforge.mods.toml) 同步为 0.6.2.11。修正了此前 0.6.0/0.5.4 不一致；发版仍须核对实际 Jar |
 | 运行依赖范围 | 元数据限定 MC `[1.21.1]`、NeoForge `[21.1.250,21.2)`、TLM `[1.5.3,1.6)`、Spears `[1.8.0,1.9)`，均为 BOTH；范围声明不等于每个版本均已实测 |
 | 许可证 | [LGPL-3.0-only](../LICENSE) |
 

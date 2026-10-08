@@ -102,6 +102,7 @@ public final class PlannerSession {
                 if(!usable(done.value()))continue;
             }
             cache.addFirst(new Cached(work.task,done.value(),work.tick,work.generation));while(cache.size()>96)cache.removeLast();
+            if(done.value() instanceof SweepingAttackPlanner.Search search&&search.selection()==null)seeds.remove(work.task.slot());
         }
         if(localEpoch!=captureEpoch){localEpoch=captureEpoch;capturedThisEpoch=0;}
         int local=Math.max(1,256/participants)-capturedThisEpoch;
@@ -129,6 +130,7 @@ public final class PlannerSession {
     }
     private void request(long key,int priority){if(requested.size()<512||requested.containsKey(key))requested.merge(key,priority,Math::min);}
     private static boolean usable(Object value){
+        if(value instanceof SweepingAttackPlanner.Search s)return s.selection()!=null;
         if(value instanceof PlanningTask.GlideResult g)return g.plan().safe()&&g.forecast().safe();
         if(value instanceof GlidePlanner.PulseReview p)return Double.isFinite(p.cost());
         if(value instanceof PlanningTask.PulseResult p)return Double.isFinite(p.review().cost());
@@ -146,7 +148,9 @@ public final class PlannerSession {
         for(var cached:cache){
             boolean terrain=unbound instanceof PlanningTask.Slope;
             boolean geometry=unbound instanceof PlanningTask.Sweep sweep&&sweep.path()==null;
-            if(cached.generation!=generation||now-cached.tick>(terrain?20:geometry?12:4)||!task.compatible(cached.task))continue;
+            boolean failedMoving=geometry&&cached.value instanceof SweepingAttackPlanner.Search search&&search.selection()==null
+                &&((PlanningTask.Sweep)unbound).aim()!=null&&Math.hypot(((PlanningTask.Sweep)unbound).aim().vx(),((PlanningTask.Sweep)unbound).aim().vz())>.025;
+            if(cached.generation!=generation||now-cached.tick>(terrain?20:failedMoving?3:geometry?12:4)||!task.compatible(cached.task))continue;
             var a=task.start();var b=cached.task.start();
             // Committing a contact curve is more sensitive than reusing a steering hint.
             // Especially under a long rocket pulse, two ticks of turning can invalidate
@@ -214,6 +218,32 @@ public final class PlannerSession {
     }
     private String riptideRejection="NONE";
     public String riptideRejection(){check();return riptideRejection;}
+    /** Rejoin results are proposals until this bounded CURRENT-state simulation succeeds.
+     * No candidate search or live world/entity access; all random rocket lifetimes remain checked. */
+    public PlanningTask.RejoinResult recertifyRejoin(PlanningTask.Rejoin task,PlanningTask.RejoinResult proposal,CollisionSnapshot.Bounds bounds){
+        check();if(proposal==null){rejoinReason="NO_WORKER_PROPOSAL";return null;}
+        var map=new HashMap<Long,CollisionSnapshot.Cell>();
+        cells.forEach((k,v)->{if(now-v.tick<=20)map.put(k,v.cell);});
+        var space=source.snapshot(Map.copyOf(map),false,task.launchBody()).space(new java.util.concurrent.atomic.AtomicBoolean());
+        GlidePlanner.Corridor corridor=bounds==null?space:(a,b,side,vertical)->Math.hypot(b.x()-bounds.x(),b.z()-bounds.z())<=bounds.radius()&&space.clear(a,b,side,vertical);
+        SweepingAttackPlanner.Contact contact=(s,a,t)->space.ray(s.x(),s.y(),s.z(),a.x()+a.vx()*t,a.bottom()+a.height()*.5+a.vy()*t,a.z()+a.vz()*t);
+        int lo=proposal.duration()<0?task.rocket():RocketProfile.minimumTicks(proposal.duration());
+        int hi=proposal.duration()<0?task.rocket():RocketProfile.maximumTicks(proposal.duration());
+        SweepingAttackPlanner.Rollout chosen=null;
+        for(int life=lo;life<=hi;life++){
+            var start=proposal.duration()<0?task.start():task.start().withRocketDelay(1);
+            var result=SweepingAttackPlanner.simulate(start,proposal.selection().path(),task.aim(),life,task.gravity(),task.rate(),task.minimum(),false,corridor,contact,120);
+            if(!result.safe()||!result.hit()){
+                rejoinReason=!space.missing().isEmpty()?"SNAPSHOT_MISSING:"+space.missing().size():!result.hit()?"CURRENT_CONTACT_MISS:"+result.miss():"CURRENT_EXIT_UNSAFE";
+                for(long key:space.missing())request(key,0);return null;
+            }
+            chosen=result;
+        }
+        rejoinReason="CURRENT_STRIKE_EXIT_CERTIFIED";
+        return new PlanningTask.RejoinResult(new SweepingAttackPlanner.Selection(proposal.selection().path(),chosen),proposal.duration());
+    }
+    private String rejoinReason="NOT_REQUESTED";
+    public String rejoinReason(){check();return rejoinReason;}
     private void enqueue(PlanningTask task){
         if(task.unbound() instanceof PlanningTask.Sweep sweep&&sweep.path()==null){
             var seed=seeds.get(task.slot());
@@ -226,8 +256,8 @@ public final class PlannerSession {
         // Expired shapes are absent, not silently considered empty. Fetch only cells actually queried.
         if(cells.values().removeIf(c->now-c.tick>80))dirty=true;
         if(dirty){var map=new HashMap<Long,CollisionSnapshot.Cell>();cells.forEach((k,v)->map.put(k,v.cell));frozen=Map.copyOf(map);dirty=false;}
-        var unbound=task.unbound();boolean wet=unbound instanceof PlanningTask.Launch l&&l.wet()||unbound instanceof PlanningTask.Riptide r&&r.wet();
-        var snapshot=source.snapshot(frozen,wet,unbound instanceof PlanningTask.Launch||unbound instanceof PlanningTask.LaunchAttack||unbound instanceof PlanningTask.Riptide riptide&&riptide.launch()||unbound instanceof PlanningTask.Rejoin r&&r.launchBody());
+        var unbound=task.unbound();boolean wet=unbound instanceof PlanningTask.Launch l&&l.wet()||unbound instanceof PlanningTask.Propulsion p&&p.wet();
+        var snapshot=source.snapshot(frozen,wet,unbound instanceof PlanningTask.Launch||unbound instanceof PlanningTask.LaunchAttack||unbound instanceof PlanningTask.Propulsion p&&p.demand().departure()||unbound instanceof PlanningTask.Rejoin r&&r.launchBody());
         if(pending.size()>=24)return;
         var ticket=PlannerExecutor.submit(task,snapshot,horizon);
         if(ticket!=null)pending.put(task.slot(),new Work(task,ticket,now,generation));
@@ -238,6 +268,7 @@ public final class PlannerSession {
             if(c.value instanceof PlanningTask.GlideResult g)return g.trace();
             if(c.value instanceof SweepingAttackPlanner.Rollout r)return r.trace();
             if(c.value instanceof SweepingAttackPlanner.Selection s)return s.prediction().trace();
+            if(c.value instanceof SweepingAttackPlanner.Search s&&s.selection()!=null)return s.selection().prediction().trace();
         }return List.of();
     }
     public int pendingCount(){check();return pending.size();}

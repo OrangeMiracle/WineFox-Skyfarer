@@ -1,0 +1,34 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+注: 某些输入文件使用或覆盖了已过时的 API。
+> Task :compileJava
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :compileControllerReplay
+
+> Task :verifyRiptidePriority FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: cancel added artificial cooldown recent=[[WFS debug] RIPTIDE maid=abdf5b69-4a36-42a8-b606-eaa4eb9895c4 event=READY_RESERVED:AIR_READY state=NONE selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=11 tick=11 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=3 maxDuration=30 departure=false thrustElapsed=0 released=false spin=false velocity=(0.0,-0.1,0.7), [WFS debug] RIPTIDE maid=abdf5b69-4a36-42a8-b606-eaa4eb9895c4 event=CHARGING state=NONE selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=11 tick=11 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=3 maxDuration=30 departure=false thrustElapsed=0 released=false spin=false velocity=(0.0,-0.1,0.7), [WFS debug] RIPTIDE maid=abdf5b69-4a36-42a8-b606-eaa4eb9895c4 event=RELEASE_REQUEST:CERTIFIED_CHARGE_COMPLETE state=NONE selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=11 tick=11 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=3 maxDuration=30 departure=false thrustElapsed=0 released=false spin=false velocity=(0.0,-0.1,0.7), [WFS debug] RIPTIDE maid=abdf5b69-4a36-42a8-b606-eaa4eb9895c4 event=READY_RELEASE_CALLBACK impulse=(0.0,0.027828237041831017,0.19805452227592468) spinStarted=true state=NONE selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=11 tick=11 prepared=0 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=3 maxDuration=30 departure=false thrustElapsed=0 released=true spin=true velocity=(0.0,-0.07217176295816899,0.8980545222759246), [WFS debug] RIPTIDE maid=abdf5b69-4a36-42a8-b606-eaa4eb9895c4 event=RELEASED state=NONE selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=11 tick=11 prepared=0 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=3 maxDuration=30 departure=false thrustElapsed=0 released=true spin=true velocity=(0.0,-0.07217176295816899,0.8980545222759246), [WFS debug] PROPULSION maid=abdf5b69-4a36-42a8-b606-eaa4eb9895c4 reason=RIPTIDE_ACCEPTED launch=false targetDistance=NaN purpose=APPROACH duration=3 wet=true strengths=[3.0] rocketCooldown=30 rocketActive=false, [WFS debug] RIPTIDE maid=abdf5b69-4a36-42a8-b606-eaa4eb9895c4 event=END:CALLER_CANCEL state=NONE selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=11 tick=11 prepared=0 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=3 maxDuration=30 departure=false thrustElapsed=0 released=true spin=true velocity=(0.0,-0.07217176295816899,0.8980545222759246)]
+	at dev.winefox.skyfarer.replay.RiptidePriorityChecks.require(RiptidePriorityChecks.java:15)
+	at dev.winefox.skyfarer.replay.RiptidePriorityChecks.airPriority(RiptidePriorityChecks.java:40)
+	at dev.winefox.skyfarer.replay.RiptidePriorityChecks.main(RiptidePriorityChecks.java:24)
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyRiptidePriority'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 8s
+4 actionable tasks: 3 executed, 1 up-to-date

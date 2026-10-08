@@ -1,0 +1,41 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\RiptidePlanner.java:54: 错误: 无法将类 SweepingAttackPlanner中的方法 interceptCandidates应用到给定类型;
+            var paths=SweepingAttackPlanner.interceptCandidates(s,new SweepingAttackPlanner.Point(d.aim().x(),d.aim().bottom()+d.aim().height()*.5,d.aim().z()),24);
+                                           ^
+  需要: State,Point,Aim,double
+  找到:    State,Point,int
+  原因: 实际参数列表和形式参数列表长度不同
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+1 个错误
+
+> Task :compileJava FAILED
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler output below.
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\RiptidePlanner.java:54: 错误: 无法将类 SweepingAttackPlanner中的方法 interceptCandidates应用到给定类型;
+              var paths=SweepingAttackPlanner.interceptCandidates(s,new SweepingAttackPlanner.Point(d.aim().x(),d.aim().bottom()+d.aim().height()*.5,d.aim().z()),24);
+                                             ^
+    需要: State,Point,Aim,double
+    找到:    State,Point,int
+    原因: 实际参数列表和形式参数列表长度不同
+  注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+  注: 某些输入文件使用或覆盖了已过时的 API。
+  1 个错误
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to generate a Build Scan (powered by Develocity).
+
+BUILD FAILED in 7s
+2 actionable tasks: 1 executed, 1 up-to-date

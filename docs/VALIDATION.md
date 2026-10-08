@@ -1,8 +1,16 @@
 # 验证、离线回放与构建
 
-核对日期：2026-10-07。实现版本 0.6.2.8，基于本地 0.6.2.7 工作区继续修改。本轮只做编译、激流/远程推进与受影响起飞路径定向检查和打包，未执行 build/check 或全量 verify，未启动 Minecraft。
+0.6.2.11：推进资格、需求与激流候选统一；独立 10 tick 预蓄力保持 READY，不占实体 item-use；攻击/离场/紧急与 Transit 接入同一能力层。当前规则与历史覆盖关系见 [统一推进与 READY](PROPULSION_06211.md)。下列旧版本段落保留为历史，涉及实体副手持续使用、禁止 Strike/Exit 激流及旧 PlanningTask.Riptide 的描述均已被替代。
 
-0.6.2.8 当前证据：[riptide-sustainable-acceptance.log](../tools/riptide-sustainable-acceptance.log) 中 compileJava、verifyRiptideDuration、verifyRiptideDeparture、verifyRiptideRelease、verifyRiptidePriority、verifyRemotePropulsion、verifyRemoteWake、verifyLaunchAttackReplay、jar 均通过（七项针对性 verify）。6/10/32/60 格真实控制器回放从主矛副戟前摇、跳跃、9 tick 推力、24 tick 实际恢复，延长至交接后 40 ticks，无触地、无库存火箭消耗；近目标后续可正常再选 4 tick 激流。交接检查水平速度 ≥0.9、高度 ≥5；60 格为合法标记目标，没有绕过战略规则。数值规划另覆盖 256/900 格目标与近目标相同起飞时长，保留 III 的 1/2/3/4/12/19 tick 空中选择、短时长救回撞墙/overshoot，以及逐个更短起飞时长不可行断言。
+0.6.2.11 的 [最终验收](../tools/propulsion-acceptance.log) 为 compileJava、10 项定向 verify 与 jar；额外的异步/紧急/交接 3 项见 [复查日志](../tools/propulsion-review-checks.log)。新增 verifyUnifiedPropulsion，追加两目标连续空战见 [连续回放](../tools/propulsion-continuous-second.log)。没有全量运行。5 ms/tick 加速连续回放碰撞失败与 20 ms/tick 基准通过的边界已如实记录于 [本版说明](PROPULSION_06211.md) 和 buildHistory。
+
+0.6.2.10 验收与逐场比较见 [移动目标专项](MOVING_ATTACK_06210.md) 和 [moving-target-final.log](../tools/moving-target-final.log)。新增 verifyMovingAttack；本轮最终执行六项定向 verify（MovingAttack、SweepingAttacks、AsyncPlanning、AirRecoveryHome、SweepingReplay，加上此前通过的 AsyncSweep），没有全量执行。首次山地返航失败及随后修复的 Exit 时域缺口记录在专项文档；最终日志才是交付依据。verifyAsyncPlanning 增加当前状态接入、缺失快照、边界、墙体和前摇拒绝测试。末次编译与既有山地曲线回放/打包见 [moving-target-final.log](../tools/moving-target-final.log)。
+
+核对日期：2026-10-08。实现版本 0.6.2.11，基于当前本地 0.6.2.10 工作区。仅推进系统及直接受影响模块的定向验证、编译与打包，未执行全量 verify/build/check，未启动 Minecraft。
+
+0.6.2.9 历史证据：[air-recovery-home-acceptance.log](../tools/air-recovery-home-acceptance.log) 中 compileJava、verifyAirRecoveryHome、verifyRiptideDuration、verifyRiptideDeparture、verifyRiptideRelease、verifyRiptidePriority、verifyAttackPolicy、verifyHandoffStability、verifyRemoteWake、jar 成功（八项定向 verify）。新回放覆盖 APPROACH/REPOSITION/完成 Exit/良性 LANDING 的激流恢复、干燥时烟花回退、恢复证书末速及墙体拒绝、持续加载且 Home 距离 900 格的本地落地释放（67 ticks）和已着地立即释放。原副手、起飞、优先级、交接及 wake 生命周期保持通过。完整 TLM SchedulePos/Mixin/CommandManager ServerTick 未在游戏中运行；TLM 机制来自实际依赖反编译，订单连接用编译与源码连接检查。详见 [专项说明](AIR_RECOVERY_HOME_0629.md)。
+
+0.6.2.8 历史证据：[riptide-sustainable-acceptance.log](../tools/riptide-sustainable-acceptance.log) 中 compileJava、verifyRiptideDuration、verifyRiptideDeparture、verifyRiptideRelease、verifyRiptidePriority、verifyRemotePropulsion、verifyRemoteWake、verifyLaunchAttackReplay、jar 均通过（七项针对性 verify）。6/10/32/60 格真实控制器回放从主矛副戟前摇、跳跃、9 tick 推力、24 tick 实际恢复，延长至交接后 40 ticks，无触地、无库存火箭消耗；近目标后续可正常再选 4 tick 激流。交接检查水平速度 ≥0.9、高度 ≥5；60 格为合法标记目标，没有绕过战略规则。数值规划另覆盖 256/900 格目标与近目标相同起飞时长，保留 III 的 1/2/3/4/12/19 tick 空中选择、短时长救回撞墙/overshoot，以及逐个更短起飞时长不可行断言。
 
 新增拒绝开始使用事件的真实 prepare 回放，确认有限激流尝试耗尽后仍能执行烟花起飞；原副手/释放否决/失雨/使用手覆盖/长矛恢复、火箭 cooldown 内选择激流仍通过。普通机会目标 Launch Attack 与无解普通起飞保持通过。
 
@@ -50,7 +58,7 @@ verifyRemotePropulsion 使用生产 PropulsionAvailability、DispatchPolicy、Re
 在仓库根目录用 PowerShell：
 
 ```powershell
-# 完整发布检查：build → check → 所有 39 项 verify 任务
+# 完整发布检查：build → check → 所有 42 项 verify 任务
 & .\tools\build.ps1 -Stage maintenance-release -Tasks @('build', '--continue')
 
 # 有针对性的并发、几何和生命周期检查
@@ -67,7 +75,7 @@ verifyRemotePropulsion 使用生产 PropulsionAvailability、DispatchPolicy、Re
 
 [tools/build.ps1](../tools/build.ps1) 只有 `-Stage` 与 `-Tasks` 两个参数，没有 `-ExtraArgs`。它在已安装路径存在时设置 JDK 21.0.10；为本机 Windows 的 AF_UNIX 限制设置 `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir`，让 JDK 回退 TCP；调用根目录 wrapper，日志写入 `tools/<Stage>.log`，显示尾部 65 行并保留 Gradle 返回码。移植到其他机器需核对本地 JDK/该环境专用设置，不把此路径当作项目必装目录。
 
-`build` 同时构建 Jar 和检查；仅 `assemble` 或 `jar` 成功不代表回归通过。`test` 目前是 `NO-SOURCE`，真正检查是 39 个 `JavaExec` 任务，它们的 `main()` 抛 `AssertionError` 判失败，不依赖 Java `-ea`。需要强制复跑时按 Gradle 方式传 `--rerun-tasks`；不要同时启动多个构建去争用相同的 `build/classes/controllerReplay` 和报告文件。
+`build` 同时构建 Jar 和检查；仅 `assemble` 或 `jar` 成功不代表回归通过。`test` 目前是 `NO-SOURCE`，真正检查是 40 个 `JavaExec` 任务，它们的 `main()` 抛 `AssertionError` 判失败，不依赖 Java `-ea`。需要强制复跑时按 Gradle 方式传 `--rerun-tasks`；不要同时启动多个构建去争用相同的 `build/classes/controllerReplay` 和报告文件。
 
 ## 2. 三类证据必须区分
 
@@ -174,7 +182,7 @@ verifyRemotePropulsion 使用生产 PropulsionAvailability、DispatchPolicy、Re
 
 最终 Jar 大小、SHA-256 与逐项证据记录在 [buildHistory](../buildHistory.md)。`tools/physics-*.log`、`v061-release`、`v061-verified`、`v061-final`、`v061-complete`、`v061-validation` 是中间验证记录，其中存在失败；名字包含 final/release 并不代表交付成功。此前 0.6.0 的独立记录保留在 [tools/v060-release.log](../tools/v060-release.log)，不与本轮结果混用。
 
-Gradle、最终 Jar 的 Manifest 与 Mod 元数据已核对统一为 0.6.1，修正此前 0.6.0/0.5.4 的已知差异。最终包的模块、Mixin/语言资源及夹具隔离均已检查；未启动 Minecraft。
+历史 0.6.1 的 Gradle、Jar Manifest 与 Mod 元数据曾核对统一为 0.6.1，修正此前 0.6.0/0.5.4 的已知差异。最终包的模块、Mixin/语言资源及夹具隔离均已检查；未启动 Minecraft。
 
 下次交付至少检查：
 

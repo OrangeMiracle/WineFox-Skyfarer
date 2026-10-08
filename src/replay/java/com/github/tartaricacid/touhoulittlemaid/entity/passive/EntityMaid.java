@@ -7,7 +7,7 @@ import dev.winefox.skyfarer.replay.ReplayWorld;
 public class EntityMaid extends LivingEntity implements dev.winefox.skyfarer.mixin.LivingRiptideAccessor {
  public net.minecraft.nbt.CompoundTag persistent=new net.minecraft.nbt.CompoundTag();public net.minecraft.nbt.CompoundTag getPersistentData(){return persistent;}
  public java.util.UUID getOwnerUUID(){return owner==null?null:owner.getUUID();}
- public ItemStack getItemBySlot(Object slot){return new ItemStack(net.minecraft.world.item.Items.ELYTRA);}
+ public ItemStack chest=new ItemStack(net.minecraft.world.item.Items.ELYTRA);public ItemStack getItemBySlot(Object slot){return chest;}
  public final Brain brain=new Brain();public final Navigation navigation=new Navigation();public int meleeHits,swings;
  public double interactionRange=2;public int favorabilityBonus;
  public Brain getBrain(){return brain;}public Navigation getNavigation(){return navigation;}

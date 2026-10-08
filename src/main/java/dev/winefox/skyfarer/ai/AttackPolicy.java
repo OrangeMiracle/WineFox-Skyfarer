@@ -8,7 +8,7 @@ public final class AttackPolicy {
     }
     public static boolean canResume(String reason,boolean glide,boolean equipped,boolean fueled,boolean workAllowed,boolean timeLeft) {
         return glide && equipped && fueled && workAllowed && timeLeft && switch(reason) {
-            case "NO_TARGET_AFTER_LOITER", "ALIGNMENT_TIMEOUT", "EXIT_PATH_TIMEOUT", "COMBAT_AREA_EMERGENCY_RANGE" -> true;
+            case "NO_TARGET_AFTER_LOITER", "ALIGNMENT_TIMEOUT", "EXIT_PATH_TIMEOUT", "COMBAT_AREA_EMERGENCY_RANGE", "FLIGHT_LIMIT_OR_FUEL" -> true;
             default -> false;
         };
     }

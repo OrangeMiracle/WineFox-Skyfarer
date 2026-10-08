@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 group = 'dev.winefox.skyfarer'
-version = '0.6.2.8'
+version = '0.6.2.11'
 base { archivesName = 'winefox_skyfarer-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
@@ -115,6 +115,7 @@ def replayProduction = fileTree('src/main/java') {
     include 'dev/winefox/skyfarer/command/RemoteWakeScheduler.java'
     include 'dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.java'
     include 'dev/winefox/skyfarer/compat/tlm/PropulsionAvailability.java'
+    include 'dev/winefox/skyfarer/compat/tlm/RiptideReadiness.java', 'dev/winefox/skyfarer/compat/tlm/PropulsionCapability.java'
     include 'dev/winefox/skyfarer/compat/tlm/WingInventory.java'
     include 'dev/winefox/skyfarer/compat/tlm/EquipmentNoticePolicy.java', 'dev/winefox/skyfarer/compat/tlm/EquipmentNotices.java'
     include 'dev/winefox/skyfarer/compat/tlm/EquipmentDiagnostics.java'
@@ -299,3 +300,24 @@ tasks.register('verifyRemotePropulsion', JavaExec) {
     mainClass = 'dev.winefox.skyfarer.command.RemotePropulsionChecks'
 }
 tasks.named('check') { dependsOn verifyRemotePropulsion }
+
+tasks.register('verifyAirRecoveryHome', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.AirRecoveryHomeChecks'
+}
+tasks.named('check') { dependsOn verifyAirRecoveryHome }
+
+tasks.register('verifyMovingAttack', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.MovingAttackReplayChecks'
+}
+tasks.named('check') { dependsOn verifyMovingAttack }
+
+tasks.register('verifyUnifiedPropulsion', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.UnifiedPropulsionChecks'
+}
+tasks.named('check') { dependsOn verifyUnifiedPropulsion }
