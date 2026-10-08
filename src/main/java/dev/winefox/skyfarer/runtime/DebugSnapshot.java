@@ -30,7 +30,6 @@ public final class DebugSnapshot {
         if (preferred != null) { data.putUUID("preferred", preferred.getUUID()); data.putString("preferred_name", preferred.getName().getString()); vector(data, "preferred_position", preferred.getBoundingBox().getCenter()); }
         if (run != null && run.isAlive()) { data.putUUID("run", run.getUUID()); data.putString("target_name", run.getName().getString()); vector(data, "target", run.getBoundingBox().getCenter()); }
         if (previous != null) data.putUUID("previous", previous);
-        data.putDouble("previous_bonus", 0); // Previous target is now a strategic tier, not an additive route bonus.
         data.putDouble("max_turn", SkyfarerSettings.maxTurnAngle()); data.putDouble("turn_rate", state == AirCombatState.DIVE || state == AirCombatState.SPEAR_CHARGE ? SkyfarerSettings.attackTurnRate() : SkyfarerSettings.turnRate());
         data.putDouble("search_range", SkyfarerSettings.searchRange()); data.putDouble("combat_range", dev.winefox.skyfarer.ai.TargetEvaluator.combatRange(maid));
         ListTag waypoints = new ListTag();

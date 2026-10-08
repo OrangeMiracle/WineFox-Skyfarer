@@ -4,7 +4,7 @@ package dev.winefox.skyfarer.ai;
 public final class AttackPolicyChecks {
     public static void main(String[] args) {
         for (AirCombatState state : new AirCombatState[]{AirCombatState.ATTACK_RUN, AirCombatState.DIVE,
-            AirCombatState.SPEAR_CHARGE, AirCombatState.BREAKAWAY, AirCombatState.ATTACK_EXIT})
+            AirCombatState.SPEAR_CHARGE, AirCombatState.ATTACK_EXIT})
             require(AttackPolicy.finishCycle(state), "Ordinary return must wait through " + state);
         require(!AttackPolicy.finishCycle(AirCombatState.APPROACH), "Do not start a new run after fuel/time limit");
         require(!AttackPolicy.emergency(80, 35, true, 96), "Pull-up outside old 56-block leash must continue");

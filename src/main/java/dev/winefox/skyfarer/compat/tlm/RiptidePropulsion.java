@@ -60,7 +60,7 @@ public final class RiptidePropulsion {
         return s.is(Items.TRIDENT)&&(!s.isDamageableItem()||s.has(net.minecraft.core.component.DataComponents.UNBREAKABLE)||s.getDamageValue()<s.getMaxDamage()-1)?EnchantmentHelper.getTridentSpinAttackStrength(s,m):0;
     }
     public static float available(EntityMaid m) {
-        return strengths(m).stream().max(Float::compare).orElse(0f);
+        float value=strength(m,prechargeItem(m));return Float.isFinite(value)?value:0;
     }
     public static java.util.List<Float> strengths(EntityMaid m) {
         float value=strength(m,prechargeItem(m));
@@ -129,7 +129,8 @@ public final class RiptidePropulsion {
     public SweepingAttackPlanner.Selection attackSelection(){
         if(!continuation()||plan.demand().exiting()||plan.demand().aim()==null)return null;
         var trace=plan.trace().stream().map(s->new GlidePlanner.TracePoint(s,.2,.15)).toList();
-        var d=plan.demand();var first=RiptidePlanner.command(plan.trace().getFirst(),plan,RiptidePlanner.WINDUP,.08);
+        var d=plan.demand();var initial=plan.trace().getFirst();
+        var first=RiptidePlanner.command(initial,plan,RiptidePlanner.WINDUP,initial.physics()==null?.08:initial.physics().gravity());
         // Contact time is telemetry; the complete continuation certificate authorized this plan.
         int contact=plan.duration();double miss=Double.POSITIVE_INFINITY;
         for(int i=plan.duration();i<plan.trace().size();i++){

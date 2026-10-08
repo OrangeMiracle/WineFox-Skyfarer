@@ -1,0 +1,26 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyAirRecoveryHome
+air recovery state=APPROACH wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=REPOSITION wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=ATTACK_EXIT wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=LANDING wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=APPROACH wet=false release=0 rockets=1 altitude=2.3612041518009246
+Home kept loaded; initiallyGrounded=false releasedTick=120 position=(-3.615241917342126,0.0,8.224101661153432)
+Home kept loaded; initiallyGrounded=true releasedTick=1 position=(0.0,0.0,0.0)
+Air recovery / dry rejection / continuously-loaded 900-block Home local landing and control release passed
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyControllerReplay
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+Visible -> occluded search, hidden attack exclusion, expiry and dead-target release passed.
+uphill-cycle attack=208 hits=1 landed=476 peak=38.43 radius=65.95 rockets=3
+Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.
+
+BUILD SUCCESSFUL in 38s
+3 actionable tasks: 3 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

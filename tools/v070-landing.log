@@ -1,0 +1,70 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyStabilityLaunch
+side wall ttc=6 margin=31 glide=null boost=EMERGENCY_BOOST_TURN
+launch height=6 distance=10 pitch=-50.0 duration=0 contact=10
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+launch height=10 distance=10 pitch=-30.0 duration=0 contact=10
+launch height=14 distance=10 pitch=-30.0 duration=0 contact=10
+Stability/launch targeted physics checks passed
+
+> Task :compileControllerReplay
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+flat-near attack=94 hits=1 landed=314 peak=33.28 radius=60.38 rockets=3
+flat-normal attack=78 hits=1 landed=170 peak=17.96 radius=44.27 rockets=2
+flat-behind-long-pulse attack=151 hits=1 landed=246 peak=52.75 radius=52.74 rockets=3
+home-continuous attack=56 hits=3 landed=-1 peak=41.74 radius=55.28 rockets=2
+flat-short-pulse attack=136 hits=1 landed=340 peak=39.44 radius=37.25 rockets=3
+flat-longest-pulse attack=92 hits=1 landed=196 peak=40.55 radius=42.20 rockets=2
+flat-far attack=20 hits=1 landed=209 peak=44.23 radius=63.98 rockets=2
+follow-continuous attack=54 hits=3 landed=272 peak=17.96 radius=50.26 rockets=4
+slope-cycle attack=146 hits=1 landed=351 peak=17.17 radius=49.49 rockets=4
+small-target-cycle attack=57 hits=1 landed=162 peak=17.96 radius=44.63 rockets=2
+target-despawn attack=76 hits=0 landed=131 peak=17.96 radius=44.27 rockets=2
+task-cancel attack=76 hits=0 landed=115 peak=17.96 radius=44.27 rockets=2
+snow-layer-cycle attack=57 hits=1 landed=152 peak=18.09 radius=44.29 rockets=2
+mixed-partial-cycle attack=79 hits=1 landed=188 peak=18.46 radius=44.27 rockets=2
+slab-cycle attack=57 hits=1 landed=152 peak=18.46 radius=44.29 rockets=2
+ice-inertia-cycle attack=56 hits=1 landed=181 peak=18.04 radius=37.81 rockets=2
+radius-32-cycle attack=76 hits=1 landed=181 peak=17.96 radius=44.27 rockets=2
+surface-and-cave attack=76 hits=1 landed=181 peak=17.96 radius=44.27 rockets=2
+summit-cycle attack=8 hits=1 landed=145 peak=28.34 radius=52.59 rockets=1
+uphill-cycle attack=246 hits=1 landed=366 peak=34.65 radius=44.54 rockets=2
+upward-pillar attack=25 hits=1 landed=120 peak=24.34 radius=42.62 rockets=2
+Exception in thread "main" java.lang.AssertionError: home-continuous: body corridor collision during RETURN_TO_OWNER; trace=build\reports\controller-replay\home-continuous.tsv
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.main(ControllerReplayChecks.java:42)
+
+> Task :verifyControllerReplay FAILED
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyControllerReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 4m 6s
+7 actionable tasks: 5 executed, 2 up-to-date

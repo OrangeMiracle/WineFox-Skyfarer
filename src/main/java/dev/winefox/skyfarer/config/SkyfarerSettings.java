@@ -61,9 +61,7 @@ public final class SkyfarerSettings {
     public static double combatRange() { return Math.min(get("combat_range"), hardCombatRange()); }
     public static double hardCombatRange() { return Math.min(get("hard_combat_range"), emergencyTeleportRange() - 1); }
     public static double emergencyTeleportRange() { return get("emergency_teleport_range"); }
-    public static double previousTargetBonus() { return get("previous_target_bonus"); }
     public static double targetSwitchThreshold() { return get("target_switch_threshold"); }
-    public static double climbHeight() { return get("climb_height"); }
     public static double attackEntryDistance() { return get("attack_entry_distance"); }
     public static double breakawayDistance() { return get("breakaway_distance"); }
     public static double attackExitDistance() { return breakawayDistance()*2/3; }

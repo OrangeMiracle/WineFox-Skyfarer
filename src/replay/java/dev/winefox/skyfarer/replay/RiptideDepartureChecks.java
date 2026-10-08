@@ -49,7 +49,7 @@ public final class RiptideDepartureChecks {
         m.rain=wet;m.inventory.count=wet?0:64;m.offhand=new ItemStack(Items.TRIDENT);m.offhand.strength=3;
         var target=new LivingEntity(w,new Vec3(0,0,distance));var c=new AirCombatController(m);
         if(distance>32){CommandAccess.targets=x->List.of(target);CommandAccess.designated=(x,t)->t==target;CommandAccess.anchor=x->target.position();c.acceptCommand(target);}
-        var manager=(RiptidePropulsion)RiptidePriorityChecks.field(c,"riptide");
+        var manager=(RiptidePropulsion)RiptidePriorityChecks.field(RiptidePriorityChecks.field(c,"propulsion"),"guided");
         int duration=0,releaseTick=-1,completedTick=-1;
         for(int tick=1;tick<180;tick++) {
             w.advance(tick);var before=m.velocity;int pushes=m.pushCalls;c.tick();

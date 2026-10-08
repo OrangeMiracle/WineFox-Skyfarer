@@ -28,10 +28,10 @@ public final class RiptidePriorityChecks {
         var w=new ReplayWorld();w.loadedRadius=256;var m=new EntityMaid(w,new Vec3(0,80,0));m.owner=new Player(w,new Vec3(20,80,30));
         m.ground=false;m.glide=true;m.pose=Pose.FALL_FLYING;m.rain=true;m.velocity=new Vec3(0,-.1,.7);
         m.offhand=new ItemStack(Items.TRIDENT);m.offhand.strength=3;
-        var c=new AirCombatController(m);var planning=(AsyncPlanning)field(c,"planning");var heading=(HeadingController)field(c,"heading");var fireworks=(FireworkManager)field(c,"fireworks");
+        var c=new AirCombatController(m);var planning=(AsyncPlanning)field(c,"planning");var heading=(HeadingController)field(c,"heading");var fireworks=(FireworkManager)field(field(field(c,"propulsion"),"attached"),"motor");
         var last=FireworkManager.class.getDeclaredField("lastBoost");last.setAccessible(true);
-        var choose=AirCombatController.class.getDeclaredMethod("tryRiptide",Vec3.class,double.class,boolean.class);choose.setAccessible(true);
-        var manager=(RiptidePropulsion)field(c,"riptide");
+        var choose=AirCombatController.class.getDeclaredMethod("tryPreferredPropulsion",Vec3.class,double.class,boolean.class);choose.setAccessible(true);
+        var manager=(RiptidePropulsion)field(field(c,"propulsion"),"guided");
         for(int t=1;t<180&&!manager.active();t++) {
             w.advance(t);planning.begin(t,"PRIORITY",null,0);heading.beginTick(m);manager.prepare(m,true);last.setLong(fireworks,t);
             choose.invoke(c,new Vec3(0,85,120),85d,false);

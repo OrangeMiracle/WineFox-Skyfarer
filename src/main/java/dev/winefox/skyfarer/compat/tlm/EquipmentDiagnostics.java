@@ -36,6 +36,6 @@ public final class EquipmentDiagnostics {
     }
     public static void result(EntityMaid maid,WingInventory.Qualification before,String replacement,WingInventory.Qualification after) {
         WineFoxSkyfarer.LOGGER.info("[WFS debug] EQUIPMENT_RESULT maid={} before={} replacement={} equipmentQualified={} reason={} spear={} fireworks={} propulsion={} ground={} glide={}",
-            maid.getUUID(),before,replacement,after==WingInventory.Qualification.READY,after,SkyfarerEquipment.spear(maid),SkyfarerEquipment.fireworks(maid),PropulsionAvailability.source(maid),maid.onGround(),maid.isFallFlying());
+            maid.getUUID(),before,replacement,after==WingInventory.Qualification.READY,after,SkyfarerEquipment.spear(maid),SkyfarerEquipment.fireworks(maid),PropulsionCapability.source(maid),maid.onGround(),maid.isFallFlying());
     }
 }

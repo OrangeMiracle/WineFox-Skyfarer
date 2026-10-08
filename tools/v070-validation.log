@@ -1,0 +1,340 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Task :createMinecraftArtifacts
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Loaded 145 artifacts from F:\AI\AI_Project\.....\build\tmp\createMinecraftArtifacts\nfrt_artifact_manifest.properties
+*** Started working on downloadJson
+ DONE  Completed downloadJson in 0.02s
+*** Started working on downloadClientMappings
+*** Started working on downloadServer
+*** Started working on downloadClient
+ DONE  Completed downloadServer in 0.02s
+ DONE  Completed downloadClient in 0.02s
+ DONE  Completed downloadClientMappings in 0.02s
+*** Started working on mergeMappings
+ REUSE Used cache of mergeMappings in 0.00s
+*** Started working on stripClient
+ REUSE Used cache of stripClient in 0.00s
+*** Started working on extractServer
+ REUSE Used cache of extractServer in 0.00s
+*** Started working on stripServer
+ REUSE Used cache of stripServer in 0.00s
+*** Started working on merge
+ REUSE Used cache of merge in 0.00s
+*** Started working on rename
+ REUSE Used cache of rename in 0.00s
+*** Started working on decompile
+ REUSE Used cache of decompile in 0.00s
+*** Started working on inject
+ REUSE Used cache of inject in 0.00s
+*** Started working on patch
+ REUSE Used cache of patch in 0.00s
+*** Started working on applyNeoforgePatches
+ REUSE Used cache of applyNeoforgePatches in 0.00s
+*** Started working on transformSources
+ REUSE Used cache of transformSources in 0.00s
+*** Started working on recompile
+ REUSE Used cache of recompile in 0.00s
+*** Started working on sourcesWithNeoForge
+ REUSE Used cache of sourcesWithNeoForge in 0.00s
+*** Started working on compiledWithNeoForge
+ REUSE Used cache of compiledWithNeoForge in 0.00s
+*** Started working on sourcesAndCompiledWithNeoForge
+ REUSE Used cache of sourcesAndCompiledWithNeoForge in 0.00s
+Total runtime: 1.23s
+
+
+> Task :compileJava
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\client\SkyfarerClient.java:12: 警告: [removal] EventBusSubscriber 中的 bus() 已过时, 且标记为待删除
+@EventBusSubscriber(modid = WineFoxSkyfarer.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+                                                                         ^
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\client\SkyfarerClient.java:12: 警告: [removal] EventBusSubscriber 中的 Bus 已过时, 且标记为待删除
+@EventBusSubscriber(modid = WineFoxSkyfarer.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+                                                                                                 ^
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+2 个警告
+
+> Task :processResources
+> Task :classes
+> Task :jarJar NO-SOURCE
+> Task :jar
+> Task :assemble
+> Task :compileTestJava NO-SOURCE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :test NO-SOURCE
+> Task :compileControllerReplay
+
+> Task :verifyAirRecoveryHome
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+air recovery state=APPROACH wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=REPOSITION wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=ATTACK_EXIT wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=LANDING wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=APPROACH wet=false release=0 rockets=1 altitude=4.7756137855153575
+Home kept loaded; initiallyGrounded=false releasedTick=134 position=(11.793180744040413,0.0,14.620500219478261)
+Home kept loaded; initiallyGrounded=true releasedTick=1 position=(0.0,0.0,0.0)
+Air recovery / dry rejection / continuously-loaded 900-block Home local landing and control release passed
+
+> Task :compileVerificationJava
+注: F:\AI\AI_Project\骑空士酒狐\src\verification\java\dev\winefox\skyfarer\flight\YsmCompatibilityChecks.java使用了未经检查或不安全的操作。
+注: 有关详细信息, 请使用 -Xlint:unchecked 重新编译。
+
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyArchitecture
+0.7 architecture: provider-free upper control, closed worker DTOs, dead config/state removal and live config retention passed.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyAsyncPlanning
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Moving certificate: 648 bounded candidates, current-state rejoin, native windup, missing cells, boundary and wall veto passed
+Async boundary checks passed: immutable DTOs, world-border keys, strict unknown cells, main-only capture, identical math, generation/target/config/dimension invalidation, cancellation, bounded queues and restart.
+
+> Task :verifyAsyncSweep
+Snapshot curve=RIGHT_ARC contact=54
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+tick 0 pending gen=2 cells=0 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=0
+tick 1 pending gen=2 cells=100 requested=92 jobs=1 cache=0 queue=1 cache=0 stale=0 failed=0 captureMs=0 workerMs=65
+tick 2 pending gen=2 cells=200 requested=1 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=75
+tick 3 pending gen=2 cells=201 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=80
+tick 4 ready=true gen=2 cells=201 requested=0 jobs=0 cache=1 queue=0 cache=1 stale=0 failed=0 captureMs=0 workerMs=84
+review=false hit=false contact=-1 last=State[x=1.7579184987468215, y=8.308341509951127, z=8.966155012697651, vx=-0.09592326804202735, vy=-0.24699318465574233, vz=0.28826149262785017, yaw=24.186588287353516, pitch=-44.427005767822266, physics=null, rocketDelay=0]
+
+> Task :verifyAttackEnvelope
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Attack envelope checks passed: downhill/uphill, cliff, translation, low/high speed, long approach, coast/inventory/12 lifetimes, active expiry, exit reserve, horizon and physics veto.
+
+> Task :verifyAttackPolicy
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Attack cycle, maneuver boundary, entry opportunity and repeated recovery checks passed.
+
+> Task :verifyCombatEntries
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+low-energy-summit hit=94 landed=332 upward=false maxSlowTicks=1 rockets=4
+upward-entry hit=22 landed=307 upward=true maxSlowTicks=0 rockets=3
+
+> Task :verifyCombatRecovery
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Short exits, charge-tail deduplication/failure settlement, dense slope fits passed; no game launched.
+
+> Task :verifyCommandDispatch
+Command queue, ownership/range policy, handoff, route priority, bounded tickets, debug forecast and actual spyglass/Home bytecode checks passed.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+flat-near attack=126 hits=1 landed=147 peak=16.09 radius=60.85 rockets=2
+flat-normal attack=166 hits=1 landed=392 peak=31.32 radius=46.48 rockets=4
+flat-behind-long-pulse attack=119 hits=1 landed=287 peak=50.21 radius=61.82 rockets=2
+home-continuous attack=93 hits=0 landed=-1 peak=35.79 radius=97.71 rockets=4
+
+> Task :verifyControllerReplay FAILED
+Exception in thread "main" java.lang.AssertionError: home-continuous: no hit/progress for 450 ticks; trace=build\reports\controller-replay\home-continuous.tsv
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.run(ControllerReplayChecks.java:134)
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.main(ControllerReplayChecks.java:22)
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyDebugTools
+Debug tools: multi-binding, wraparound, unloaded snapshot retention, reload, unbind, logout, exact TLM/teleport APIs and common-side isolation passed.
+
+> Task :verifyDispatchReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+dispatch 180 blocks yaw=0 snow=false friendly=false creativeMultiplier=0 handoff=113 hit=138 landed=151 combat rockets=0
+dispatch 900 blocks yaw=180 snow=true friendly=false creativeMultiplier=0 handoff=620 hit=659 landed=703 combat rockets=0
+dispatch 256 blocks yaw=-90 snow=false friendly=false creativeMultiplier=0 handoff=165 hit=202 landed=234 combat rockets=0
+dispatch 180 blocks yaw=0 snow=false friendly=true creativeMultiplier=0 handoff=109 hit=147 landed=197 combat rockets=0
+dispatch 900 blocks yaw=0 snow=false friendly=false creativeMultiplier=2 handoff=318 hit=555 landed=646 combat rockets=2
+dispatch 900 blocks yaw=180 snow=false friendly=false creativeMultiplier=100 handoff=41 hit=257 landed=293 combat rockets=2
+dispatch 180 blocks yaw=90 snow=false friendly=true creativeMultiplier=2 handoff=71 hit=332 landed=574 combat rockets=5
+Dispatch full-cycle replay passed; transit consumes no inventory; combat and landing remain native controller decisions.
+
+> Task :verifyEmergencyReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cold async emergency wall=14.0 detected=0 boost=3 collision=false; complete escape, inventory pulses=1
+Cold async emergency wall=20.0 detected=0 boost=-1 collision=false; complete escape, inventory pulses=0
+
+> Task :verifyEquipmentFixes
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Equipment fixes passed: Unbreakable/tiny/zero durability + vanilla 19/20, airborne return, real ground behavior approach/contact/dead-zone, persistent notices and 20-maid throttling.
+
+> Task :verifyEquipmentLifecycle
+Actual controller low-wing ground/air/land/spare lifecycle and actual Riptide item-use lifecycle passed
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyEquipmentPropulsion
+1500 native impulse vectors, full Riptide collision/overshoot and native environment/melee integration checks passed
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyFlightMath
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Charge timing checks passed; Minecraft was not launched.
+
+> Task :verifyFlightPrediction
+162 powered/unpowered flight scenarios and rocket selection passed; Minecraft was not launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyGlideCorridor
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+144 new-planner attack/charge replays passed.
+48 closed-loop corridor replays and swept-body/energy checks passed; Minecraft was not launched.
+
+> Task :verifyGroundMelee
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Ground melee passed: real AABB geometry, bonus/blind-zone, native stab collector descriptor and actual bonus linkage.
+
+> Task :verifyHandoffStability
+Transit debug-before-tick/after-close and airborne lifecycle checks passed
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyLaunchAttackReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Launch replay opportunity=true launch=true nativeHit=true exit=true normalFallback=false
+Launch replay opportunity=false launch=false nativeHit=false exit=false normalFallback=true
+
+> Task :verifyMaidCombat
+Small-target vertical tolerance, horizontal/range limits, pass deduplication, target switching, withdrawal timing and primary-safe multi-pierce checks passed. Minecraft was not launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyMovingAttack
+static,6,27,53,33.24,false
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+small,5,28,48,33.24,false
+minecart,8,32,58,33.24,false
+lateral,7,30,56,33.24,false
+reverse,9,30,40,34.83,false
+
+> Task :verifyPlannerLoad
+Synthetic 24-owner / 100-tick scheduler load (not MC TPS): ready=1979; main p50=0.397 ms, p95=1.894 ms, max=33.820 ms; worker CPU=1069.205 ms; captured block reads=2095200; every owner served; queue <=64, per-owner jobs <=24 and cells <=768; shutdown clean.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyRemotePropulsion
+Home dispatch creative=false inventoryFireworks=0 wake=accepted transit=arrived glide=preserved
+Home dispatch creative=true inventoryFireworks=0 wake=accepted transit=arrived glide=preserved
+Remote normal/creative Home Riptide-only qualification, bounded wake, dry rejection, transit and glide handoff passed
+
+> Task :verifyRemoteWake
+Remote wake lifecycle passed: two Home maids, second mission, 13-candidate batches, retry, generations, NBT rebuild, qualification, global cap and cleanup.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyRiptideDeparture
+departure targetDistance=10.0 wet=true duration=9 thrustCalls=13 altitude=13.272130834053183 state=APPROACH rockets=0
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+departure targetDistance=6.0 wet=true duration=9 thrustCalls=13 altitude=13.483929228698145 state=APPROACH rockets=0
+departure targetDistance=32.0 wet=true duration=9 thrustCalls=9 altitude=16.667574049652536 state=SPEAR_CHARGE rockets=0
+departure targetDistance=60.0 wet=true duration=9 thrustCalls=9 altitude=15.302451856885753 state=ATTACK_EXIT rockets=0
+departure targetDistance=32.0 wet=false duration=0 thrustCalls=0 altitude=0.42 state=CLIMB rockets=1
+exhausted Riptide execution -> ordinary firework departure passed
+continuous duration=19 chargeAndBurstTicks=19 pushes=19 cutoffVelocity=(0.0,3.9898797599377316,2.0484347719600353)
+Actual controller near/far Riptide departures, complete metered thrust, post-burst flight and dry firework fallback passed
+
+> Task :verifyRiptideDuration
+metered height=80.0 duration=1 max=30
+metered height=82.0 duration=1 max=30
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+metered height=84.0 duration=2 max=30
+metered height=86.0 duration=3 max=30
+metered height=90.0 duration=5 max=30
+metered height=120.0 duration=12 max=30
+metered height=160.0 duration=19 max=30
+Metered Riptide: per-tick shortest duration, near-target departure, full recovery, wall/overshoot shortening and roof rejection passed
+
+> Task :verifyRiptidePriority
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+[[WFS debug] RIPTIDE_RESOURCE maid=16d22aed-40f7-4c30-bf22-889cbbcffa94 state=RIPTIDE_READY prepared=10 reason=PREPARED using=false hand=MAIN_HAND, [WFS debug] RIPTIDE maid=16d22aed-40f7-4c30-bf22-889cbbcffa94 event=READY_RESERVED:LAUNCH_READY state=TAKEOFF_PREP selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=10 tick=10 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=9 maxDuration=30 departure=true thrustElapsed=0 released=false spin=false velocity=(0.0,0.0,0.0), [WFS debug] RIPTIDE maid=16d22aed-40f7-4c30-bf22-889cbbcffa94 event=READY_CHECK state=TAKEOFF_PREP selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=10 tick=10 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=9 maxDuration=30 departure=true thrustElapsed=0 released=false spin=false velocity=(0.0,0.0,0.0), [WFS debug] RIPTIDE maid=16d22aed-40f7-4c30-bf22-889cbbcffa94 event=LAUNCH_JUMP state=TAKEOFF_PREP selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=10 tick=10 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=9 maxDuration=30 departure=true thrustElapsed=0 released=false spin=false velocity=(0.0,0.42,0.0), [WFS debug] PROPULSION maid=16d22aed-40f7-4c30-bf22-889cbbcffa94 reason=RIPTIDE_ACCEPTED launch=true targetDistance=32.55764119219941 purpose=TAKEOFF source=RIPTIDE guided=true duration=9 attached=false cooldown=0, [WFS debug] RIPTIDE maid=16d22aed-40f7-4c30-bf22-889cbbcffa94 event=STATE_TRANSITION TAKEOFF_PREP->TAKEOFF:RIPTIDE_LAUNCH_WINDUP state=TAKEOFF_PREP selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=10 tick=10 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=9 maxDuration=30 departure=true thrustElapsed=0 released=false spin=false velocity=(0.0,0.42,0.0), [WFS debug] maid=16d22aed-40f7-4c30-bf22-889cbbcffa94 TAKEOFF_PREP -> TAKEOFF; reason=RIPTIDE_LAUNCH_WINDUP; run=none, [WFS debug] RIPTIDE maid=16d22aed-40f7-4c30-bf22-889cbbcffa94 event=RELEASE_REQUEST:CERTIFIED_READY state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=10 tick=11 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=9 maxDuration=30 departure=true thrustElapsed=0 released=false spin=false velocity=(0.0,0.33319999999999994,0.0), [WFS debug] RIPTIDE maid=16d22aed-40f7-4c30-bf22-889cbbcffa94 event=READY_RELEASE_CALLBACK impulse=(0.0,0.11471172422170639,0.1638329029083252) spinStarted=true state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=10 tick=11 prepared=0 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=9 maxDuration=30 departure=true thrustElapsed=0 released=true spin=true velocity=(0.0,0.44791172422170633,0.1638329029083252), [WFS debug] RIPTIDE maid=16d22aed-40f7-4c30-bf22-889cbbcffa94 event=RELEASED state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=10 tick=11 prepared=0 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=9 maxDuration=30 departure=true thrustElapsed=0 released=true spin=true velocity=(0.0,0.44791172422170633,0.1638329029083252)]
+[[WFS debug] RIPTIDE_RESOURCE maid=00db42cc-be4e-4e43-82ce-8f643feb4450 state=RIPTIDE_READY prepared=10 reason=PREPARED using=false hand=MAIN_HAND, [WFS debug] RIPTIDE maid=00db42cc-be4e-4e43-82ce-8f643feb4450 event=READY_RESERVED:LAUNCH_READY state=TAKEOFF_PREP selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=10 tick=10 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=9 maxDuration=30 departure=true thrustElapsed=0 released=false spin=false velocity=(0.0,0.0,0.0), [WFS debug] RIPTIDE maid=00db42cc-be4e-4e43-82ce-8f643feb4450 event=READY_CHECK state=TAKEOFF_PREP selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=10 tick=10 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=9 maxDuration=30 departure=true thrustElapsed=0 released=false spin=false velocity=(0.0,0.0,0.0), [WFS debug] RIPTIDE maid=00db42cc-be4e-4e43-82ce-8f643feb4450 event=LAUNCH_JUMP state=TAKEOFF_PREP selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=10 tick=10 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=9 maxDuration=30 departure=true thrustElapsed=0 released=false spin=false velocity=(0.0,0.42,0.0), [WFS debug] PROPULSION maid=00db42cc-be4e-4e43-82ce-8f643feb4450 reason=RIPTIDE_ACCEPTED launch=true targetDistance=32.55764119219941 purpose=TAKEOFF source=RIPTIDE guided=true duration=9 attached=false cooldown=0, [WFS debug] RIPTIDE maid=00db42cc-be4e-4e43-82ce-8f643feb4450 event=STATE_TRANSITION TAKEOFF_PREP->TAKEOFF:RIPTIDE_LAUNCH_WINDUP state=TAKEOFF_PREP selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=10 tick=10 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=9 maxDuration=30 departure=true thrustElapsed=0 released=false spin=false velocity=(0.0,0.42,0.0), [WFS debug] maid=00db42cc-be4e-4e43-82ce-8f643feb4450 TAKEOFF_PREP -> TAKEOFF; reason=RIPTIDE_LAUNCH_WINDUP; run=none, [WFS debug] RIPTIDE maid=00db42cc-be4e-4e43-82ce-8f643feb4450 event=RELEASE_REQUEST:CERTIFIED_READY state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=10 tick=11 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=9 maxDuration=30 departure=true thrustElapsed=0 released=false spin=false velocity=(0.0,0.33319999999999994,0.0), [WFS debug] RIPTIDE maid=00db42cc-be4e-4e43-82ce-8f643feb4450 event=READY_RELEASE_CALLBACK impulse=(0.0,0.11471172422170639,0.1638329029083252) spinStarted=true state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=10 tick=11 prepared=0 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=9 maxDuration=30 departure=true thrustElapsed=0 released=true spin=true velocity=(0.0,0.44791172422170633,0.1638329029083252), [WFS debug] RIPTIDE maid=00db42cc-be4e-4e43-82ce-8f643feb4450 event=RELEASED state=TAKEOFF selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=10 tick=11 prepared=0 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=9 maxDuration=30 departure=true thrustElapsed=0 released=true spin=true velocity=(0.0,0.44791172422170633,0.1638329029083252)]
+Riptide priority passed: real async selection with rocket cooldown; inventory rain launch with/without fireworks; charge/jump/glide/native impulse; invalid environment rejection; default equivalent list.
+
+> Task :verifyRiptideRelease
+Independent readiness/release passed: 10 ticks, held ready, main Spears uninterrupted, exact thrust/wear, event veto, environment/equipment invalidation and recharge.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyScanCadence
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Scan cadence checks passed; Minecraft was not launched.
+
+> Task :verifySorties
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Bounded kinetic-to-height turns, curved dive contacts, lateral chain contact/recovery and blocked-chain rejection passed; no game launched.
+
+> Task :verifySpearIntercept
+144 native-sized spear intercept scenarios passed; Minecraft was not launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyStabilityLaunch
+side wall ttc=6 margin=31 glide=null boost=EMERGENCY_BOOST_TURN
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+launch height=6 distance=10 pitch=-50.0 duration=0 contact=10
+launch height=10 distance=10 pitch=-30.0 duration=0 contact=10
+launch height=14 distance=10 pitch=-30.0 duration=0 contact=10
+Stability/launch targeted physics checks passed
+
+> Task :verifySurfaceLaunch
+60 ice/snow/water departures across every rocket lifetime, low-roof side launch and sealed-water fallback passed; no game launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifySweepingAttacks
+Continuous cubic attack, C1 contact/exit, occluded approach and final contact/body rejection passed.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifySweepingReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Occluded hillside mirror=1 curved hit=53 continued exit=true landed=220
+Occluded hillside mirror=-1 curved hit=53 continued exit=true landed=139
+
+> Task :verifyTerrainCombat
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+36 steep/slow attack replays with finite pulses and planned exits passed.
+36 sloped attack replays, low-roof launch, target layers and airborne reengagement checks passed; no game launched.
+
+> Task :verifyUnifiedPropulsion
+phase=APPROACH duration=4 fullTrace=17
+phase=REPOSITION duration=4 fullTrace=17
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+phase=AIR_RECOVERY duration=4 fullTrace=17
+phase=EXIT duration=4 fullTrace=17
+phase=TRANSIT duration=4 fullTrace=17
+phase=EMERGENCY duration=3 fullTrace=16
+intercept motion=0.0 duration=1 completeStrikeExitTrace=100 exitDuration=1
+intercept motion=0.08 duration=1 completeStrikeExitTrace=99 exitDuration=1
+intercept motion=-0.08 duration=1 completeStrikeExitTrace=99 exitDuration=1
+emergency wall turn yaw=-135.0 duration=1
+actual emergency glide=unsolvable Riptide=7 thrustTicks completed=true rockets=0
+continuous combat targets=2 hits=2 safeExit=true releases=4 rockets=0
+Unified propulsion phases, strike/exit/deadline rejection, emergency corridor, shortest duration, repeated READY and source fallback passed
+
+> Task :verifyVanillaPhysics
+18000 mapped 1.21.1 differential physics steps passed; dive/pull-up, drag, float lookup, epsilon, negative/zero gravity, slow-fall expiry and rocket order.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyVerticalAttacks
+dive contact=17 pitch=61.13945007324219 style=VERTICAL_DIVE exitTicks=35
+climb contact=13 pitch=-51.91439437866211 style=VERTICAL_CLIMB_RIGHT exitTicks=49
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyYsmCompatibility
+5 exact optional YSM 2.6.5 hooks and upstream missing elytra state verified without loading a game.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyControllerReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 5m 26s
+49 actionable tasks: 49 executed

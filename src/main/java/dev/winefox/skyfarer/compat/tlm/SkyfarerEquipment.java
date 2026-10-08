@@ -54,5 +54,5 @@ public final class SkyfarerEquipment {
         for (int i = 0; i < inventory.getSlots(); i++) if (inventory.getStackInSlot(i).is(Items.FIREWORK_ROCKET)) return true;
         return false;
     }
-    public static boolean ready(EntityMaid maid) { return spear(maid) && elytra(maid) && PropulsionAvailability.rejection(maid)==null; }
+    public static boolean ready(EntityMaid maid) { return spear(maid) && elytra(maid) && PropulsionCapability.rejection(maid)==null; }
 }

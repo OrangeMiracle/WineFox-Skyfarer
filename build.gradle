@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 group = 'dev.winefox.skyfarer'
-version = '0.6.2.11'
+version = '0.7.0'
 base { archivesName = 'winefox_skyfarer-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
@@ -114,7 +114,7 @@ def replayProduction = fileTree('src/main/java') {
     include 'dev/winefox/skyfarer/command/CreativeTransitPlanner.java'
     include 'dev/winefox/skyfarer/command/RemoteWakeScheduler.java'
     include 'dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.java'
-    include 'dev/winefox/skyfarer/compat/tlm/PropulsionAvailability.java'
+    include 'dev/winefox/skyfarer/compat/tlm/FlightPropulsion.java', 'dev/winefox/skyfarer/compat/tlm/FireworkProvider.java'
     include 'dev/winefox/skyfarer/compat/tlm/RiptideReadiness.java', 'dev/winefox/skyfarer/compat/tlm/PropulsionCapability.java'
     include 'dev/winefox/skyfarer/compat/tlm/WingInventory.java'
     include 'dev/winefox/skyfarer/compat/tlm/EquipmentNoticePolicy.java', 'dev/winefox/skyfarer/compat/tlm/EquipmentNotices.java'
@@ -321,3 +321,11 @@ tasks.register('verifyUnifiedPropulsion', JavaExec) {
     mainClass = 'dev.winefox.skyfarer.replay.UnifiedPropulsionChecks'
 }
 tasks.named('check') { dependsOn verifyUnifiedPropulsion }
+
+tasks.register('verifyArchitecture', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'dev.winefox.skyfarer.flight.ArchitectureChecks'
+    systemProperty 'log4j.configurationFile', file('tools/offline-log4j2.xml').toURI().toString()
+}
+tasks.named('check') { dependsOn verifyArchitecture }

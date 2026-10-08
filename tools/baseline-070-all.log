@@ -1,0 +1,368 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :jarJar NO-SOURCE
+> Task :jar UP-TO-DATE
+> Task :assemble UP-TO-DATE
+> Task :compileTestJava NO-SOURCE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :test NO-SOURCE
+> Task :compileControllerReplay UP-TO-DATE
+
+> Task :verifyAirRecoveryHome
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+air recovery state=APPROACH wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=REPOSITION wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=ATTACK_EXIT wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=LANDING wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=APPROACH wet=false release=0 rockets=1 altitude=4.7756137855153575
+Home kept loaded; initiallyGrounded=false releasedTick=134 position=(11.793180744040413,0.0,14.620500219478261)
+Home kept loaded; initiallyGrounded=true releasedTick=1 position=(0.0,0.0,0.0)
+Air recovery / dry rejection / continuously-loaded 900-block Home local landing and control release passed
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyAsyncPlanning
+Moving certificate: 648 bounded candidates, current-state rejoin, native windup, missing cells, boundary and wall veto passed
+Async boundary checks passed: immutable DTOs, world-border keys, strict unknown cells, main-only capture, identical math, generation/target/config/dimension invalidation, cancellation, bounded queues and restart.
+
+> Task :verifyAsyncSweep
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Snapshot curve=RIGHT_ARC contact=54
+tick 0 pending gen=2 cells=0 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=0
+tick 1 pending gen=2 cells=100 requested=92 jobs=1 cache=0 queue=1 cache=0 stale=0 failed=0 captureMs=0 workerMs=59
+tick 2 pending gen=2 cells=200 requested=1 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=68
+tick 3 pending gen=2 cells=201 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=74
+tick 4 ready=true gen=2 cells=201 requested=0 jobs=0 cache=1 queue=0 cache=1 stale=0 failed=0 captureMs=0 workerMs=78
+review=false hit=false contact=-1 last=State[x=1.7579184987468215, y=8.308341509951127, z=8.966155012697651, vx=-0.09592326804202735, vy=-0.24699318465574233, vz=0.28826149262785017, yaw=24.186588287353516, pitch=-44.427005767822266, physics=null, rocketDelay=0]
+
+> Task :compileVerificationJava UP-TO-DATE
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses UP-TO-DATE
+
+> Task :verifyAttackEnvelope
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Attack envelope checks passed: downhill/uphill, cliff, translation, low/high speed, long approach, coast/inventory/12 lifetimes, active expiry, exit reserve, horizon and physics veto.
+
+> Task :verifyAttackPolicy
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Attack cycle, maneuver boundary, entry opportunity and repeated recovery checks passed.
+
+> Task :verifyCombatEntries
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+low-energy-summit hit=94 landed=332 upward=false maxSlowTicks=1 rockets=4
+upward-entry hit=22 landed=307 upward=true maxSlowTicks=0 rockets=3
+
+> Task :verifyCombatRecovery FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: configured radius must not be silently capped at twelve
+	at dev.winefox.skyfarer.flight.CombatRecoveryChecks.require(CombatRecoveryChecks.java:8)
+	at dev.winefox.skyfarer.flight.CombatRecoveryChecks.slopes(CombatRecoveryChecks.java:39)
+	at dev.winefox.skyfarer.flight.CombatRecoveryChecks.main(CombatRecoveryChecks.java:10)
+
+> Task :verifyCommandDispatch
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Command queue, ownership/range policy, handoff, route priority, bounded tickets, debug forecast and actual spyglass/Home bytecode checks passed.
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+flat-near attack=103 hits=1 landed=220 peak=16.09 radius=60.85 rockets=2
+flat-normal attack=166 hits=1 landed=392 peak=31.32 radius=46.48 rockets=4
+flat-behind-long-pulse attack=119 hits=1 landed=287 peak=50.21 radius=61.82 rockets=2
+home-continuous attack=93 hits=0 landed=-1 peak=17.17 radius=73.51 rockets=6
+
+> Task :verifyControllerReplay FAILED
+Exception in thread "main" java.lang.AssertionError: home-continuous: no hit/progress for 450 ticks; trace=build\reports\controller-replay\home-continuous.tsv
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.run(ControllerReplayChecks.java:134)
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.main(ControllerReplayChecks.java:22)
+
+> Task :verifyDebugTools
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Debug tools: multi-binding, wraparound, unloaded snapshot retention, reload, unbind, logout, exact TLM/teleport APIs and common-side isolation passed.
+
+> Task :verifyDispatchReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+dispatch 180 blocks yaw=0 snow=false friendly=false creativeMultiplier=0 handoff=113 hit=138 landed=151 combat rockets=0
+dispatch 900 blocks yaw=180 snow=true friendly=false creativeMultiplier=0 handoff=620 hit=659 landed=703 combat rockets=0
+dispatch 256 blocks yaw=-90 snow=false friendly=false creativeMultiplier=0 handoff=165 hit=202 landed=234 combat rockets=0
+dispatch 180 blocks yaw=0 snow=false friendly=true creativeMultiplier=0 handoff=109 hit=147 landed=197 combat rockets=0
+dispatch 900 blocks yaw=0 snow=false friendly=false creativeMultiplier=2 handoff=318 hit=556 landed=719 combat rockets=3
+dispatch 900 blocks yaw=180 snow=false friendly=false creativeMultiplier=100 handoff=41 hit=257 landed=293 combat rockets=2
+dispatch 180 blocks yaw=90 snow=false friendly=true creativeMultiplier=2 handoff=71 hit=246 landed=264 combat rockets=2
+Dispatch full-cycle replay passed; transit consumes no inventory; combat and landing remain native controller decisions.
+
+> Task :verifyEmergencyReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cold async emergency wall=14.0 detected=0 boost=3 collision=false; complete escape, inventory pulses=1
+Cold async emergency wall=20.0 detected=0 boost=-1 collision=false; complete escape, inventory pulses=0
+
+> Task :verifyEquipmentFixes
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Equipment fixes passed: Unbreakable/tiny/zero durability + vanilla 19/20, airborne return, real ground behavior approach/contact/dead-zone, persistent notices and 20-maid throttling.
+
+> Task :verifyEquipmentLifecycle
+Actual controller low-wing ground/air/land/spare lifecycle and actual Riptide item-use lifecycle passed
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyEquipmentPropulsion FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.class:strengths missing isInWaterOrRain
+	at dev.winefox.skyfarer.flight.EquipmentPropulsionChecks.require(EquipmentPropulsionChecks.java:6)
+	at dev.winefox.skyfarer.flight.EquipmentPropulsionChecks.checkCalls(EquipmentPropulsionChecks.java:58)
+	at dev.winefox.skyfarer.flight.EquipmentPropulsionChecks.main(EquipmentPropulsionChecks.java:35)
+
+> Task :verifyFlightMath
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Charge timing checks passed; Minecraft was not launched.
+
+> Task :verifyFlightPrediction
+162 powered/unpowered flight scenarios and rocket selection passed; Minecraft was not launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyGlideCorridor
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+144 new-planner attack/charge replays passed.
+48 closed-loop corridor replays and swept-body/energy checks passed; Minecraft was not launched.
+
+> Task :verifyGroundMelee
+Ground melee passed: real AABB geometry, bonus/blind-zone, native stab collector descriptor and actual bonus linkage.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyHandoffStability
+Transit debug-before-tick/after-close and airborne lifecycle checks passed
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyLaunchAttackReplay
+Launch replay opportunity=true launch=true nativeHit=true exit=true normalFallback=false
+Launch replay opportunity=false launch=false nativeHit=false exit=false normalFallback=true
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyMaidCombat
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Small-target vertical tolerance, horizontal/range limits, pass deduplication, target switching, withdrawal timing and primary-safe multi-pierce checks passed. Minecraft was not launched.
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyMovingAttack
+static,6,27,53,33.24,false
+small,5,28,48,33.24,false
+minecart,8,28,54,33.24,false
+lateral,7,27,53,33.24,false
+reverse,10,30,56,34.83,false
+
+> Task :verifyPlannerLoad
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Synthetic 24-owner / 100-tick scheduler load (not MC TPS): ready=1922; main p50=0.407 ms, p95=2.822 ms, max=36.521 ms; worker CPU=1281.214 ms; captured block reads=2073600; every owner served; queue <=64, per-owner jobs <=24 and cells <=768; shutdown clean.
+
+> Task :verifyRemotePropulsion
+Home dispatch creative=false inventoryFireworks=0 wake=accepted transit=arrived glide=preserved
+Home dispatch creative=true inventoryFireworks=0 wake=accepted transit=arrived glide=preserved
+Remote normal/creative Home Riptide-only qualification, bounded wake, dry rejection, transit and glide handoff passed
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyRemoteWake
+Remote wake lifecycle passed: two Home maids, second mission, 13-candidate batches, retry, generations, NBT rebuild, qualification, global cap and cleanup.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyRiptideDeparture FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.NoSuchFieldException: riptide
+	at java.base/java.lang.Class.getDeclaredField(Class.java:2784)
+	at dev.winefox.skyfarer.replay.RiptidePriorityChecks.field(RiptidePriorityChecks.java:16)
+	at dev.winefox.skyfarer.replay.RiptideDepartureChecks.run(RiptideDepartureChecks.java:52)
+	at dev.winefox.skyfarer.replay.RiptideDepartureChecks.main(RiptideDepartureChecks.java:20)
+
+> Task :verifyRiptideDuration
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+metered height=80.0 duration=1 max=30
+metered height=82.0 duration=2 max=30
+metered height=84.0 duration=2 max=30
+metered height=86.0 duration=3 max=30
+metered height=90.0 duration=4 max=30
+metered height=120.0 duration=12 max=30
+metered height=160.0 duration=19 max=30
+Metered Riptide: per-tick shortest duration, near-target departure, full recovery, wall/overshoot shortening and roof rejection passed
+
+> Task :verifyRiptidePriority FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.NoSuchFieldException: fireworks
+	at java.base/java.lang.Class.getDeclaredField(Class.java:2784)
+	at dev.winefox.skyfarer.replay.RiptidePriorityChecks.field(RiptidePriorityChecks.java:16)
+	at dev.winefox.skyfarer.replay.RiptidePriorityChecks.airPriority(RiptidePriorityChecks.java:31)
+	at dev.winefox.skyfarer.replay.RiptidePriorityChecks.main(RiptidePriorityChecks.java:24)
+
+> Task :verifyRiptideRelease
+Independent readiness/release passed: 10 ticks, held ready, main Spears uninterrupted, exact thrust/wear, event veto, environment/equipment invalidation and recharge.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyScanCadence
+Scan cadence checks passed; Minecraft was not launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifySorties
+Bounded kinetic-to-height turns, curved dive contacts, lateral chain contact/recovery and blocked-chain rejection passed; no game launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifySpearIntercept
+144 native-sized spear intercept scenarios passed; Minecraft was not launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyStabilityLaunch
+side wall ttc=6 margin=31 glide=null boost=EMERGENCY_BOOST_TURN
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+launch height=6 distance=10 pitch=-50.0 duration=0 contact=10
+launch height=10 distance=10 pitch=-30.0 duration=0 contact=10
+launch height=14 distance=10 pitch=-30.0 duration=0 contact=10
+Stability/launch targeted physics checks passed
+
+> Task :verifySurfaceLaunch
+60 ice/snow/water departures across every rocket lifetime, low-roof side launch and sealed-water fallback passed; no game launched.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifySweepingAttacks
+Continuous cubic attack, C1 contact/exit, occluded approach and final contact/body rejection passed.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifySweepingReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Occluded hillside mirror=1 curved hit=53 continued exit=true landed=138
+Occluded hillside mirror=-1 curved hit=53 continued exit=true landed=139
+
+> Task :verifyTerrainCombat FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: hard return must remain authoritative
+	at dev.winefox.skyfarer.flight.TerrainCombatChecks.require(TerrainCombatChecks.java:14)
+	at dev.winefox.skyfarer.flight.TerrainCombatChecks.main(TerrainCombatChecks.java:24)
+
+> Task :verifyUnifiedPropulsion
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+phase=APPROACH duration=4 fullTrace=17
+phase=REPOSITION duration=4 fullTrace=17
+phase=AIR_RECOVERY duration=4 fullTrace=17
+phase=EXIT duration=4 fullTrace=17
+phase=TRANSIT duration=4 fullTrace=17
+phase=EMERGENCY duration=3 fullTrace=16
+intercept motion=0.0 duration=1 completeStrikeExitTrace=100 exitDuration=1
+intercept motion=0.08 duration=1 completeStrikeExitTrace=99 exitDuration=1
+intercept motion=-0.08 duration=1 completeStrikeExitTrace=99 exitDuration=1
+emergency wall turn yaw=-135.0 duration=1
+actual emergency glide=unsolvable Riptide=7 thrustTicks completed=true rockets=0
+
+Exception in thread "main" java.lang.AssertionError: continuous combat body collision tick=224 hits=1 state=ATTACK_EXIT pos=(7.715243123208351,0.17381362184919613,-29.304882373550846) events=[[WFS debug] sweep pending=true selected=false gen=12 cells=768 requested=0 jobs=1 cache=1 queue=0 cache=191 stale=9 failed=0 captureMs=1 workerMs=865, [WFS debug] EMERGENCY_DETECTED maid=f34a033b-4927-443d-b14a-3b466d4d8849 state=REPOSITION ttc=26 margin=32 divergence=153.1463202299913 velocity=(0.037264958420581445,0.025861444319325202,-0.7045521679228096), [WFS debug] maid=f34a033b-4927-443d-b14a-3b466d4d8849 REPOSITION -> ATTACK_EXIT; reason=EARLY_COLLISION_RECOVERY; run=none, [WFS debug] FLIGHT_LIFECYCLE maid=f34a033b-4927-443d-b14a-3b466d4d8849 action=EMERGENCY_CERTIFIED reason=EMERGENCY_GLIDE_TURN duration=-1 horizon=36 state=ATTACK_EXIT managed=true glide=true velocity=(0.09074120143756528,-0.00945741191725291,-0.674197701830013) altitude=6.493168558020749 clearance=6.493168558020749 target=e76e471e-e25f-4785-b780-0c09c742c4e4 order=none, [WFS debug] maid=f34a033b-4927-443d-b14a-3b466d4d8849 state=ATTACK_EXIT reason=EMERGENCY_GLIDE_TURN scan=[nearby=2, in_range=2, valid=1, protected_radius=16.0] pos=(2.7721664610058094,4.5379389569376185,-29.501964713687087) velocity=(0.2765225129416713,-0.20030890525579537,-0.01798165880308389) ground=false glide=true clearance=4.5379389569376185 preferred=e76e471e-e25f-4785-b780-0c09c742c4e4 run=none using=false chargeTicks=0 spearReach=2.25, [WFS debug] async gen=13 cells=768 requested=0 jobs=0 cache=1 queue=0 cache=193 stale=10 failed=0 captureMs=1 workerMs=879, [WFS debug] maid=f34a033b-4927-443d-b14a-3b466d4d8849 ATTACK_EXIT -> APPROACH; reason=ASSESS_NEXT_ATTACK_ENTRY; run=none, [WFS debug] ATTACK_SEARCH maid=f34a033b-4927-443d-b14a-3b466d4d8849 state=APPROACH reason=CANDIDATES_PENDING target=e76e471e-e25f-4785-b780-0c09c742c4e4 distance=33.524269258421874 targetMotion=(0.0,0.0,0.0) leadTicks=60.0 windup=10 retries=0 source=COAST_OR_ACTIVE_ROCKET search=PENDING rejoin=CURRENT_STRIKE_EXIT_CERTIFIED gen=14 cells=607 requested=0 jobs=1 cache=0 queue=0 cache=193 stale=12 failed=0 captureMs=1 workerMs=879, [WFS debug] EMERGENCY_DETECTED maid=f34a033b-4927-443d-b14a-3b466d4d8849 state=APPROACH ttc=6 margin=22 divergence=82.74996908969605 velocity=(0.309058975510416,-0.25433771173583675,0.023161509336219795), [WFS debug] PROPULSION maid=f34a033b-4927-443d-b14a-3b466d4d8849 reason=CERTIFICATE_PENDING launch=false targetDistance=33.47456863444774 purpose=EMERGENCY source=RIPTIDE guided=false duration=0 attached=false cooldown=0, [WFS debug] maid=f34a033b-4927-443d-b14a-3b466d4d8849 APPROACH -> ATTACK_EXIT; reason=EARLY_COLLISION_RECOVERY; run=none, [WFS debug] EMERGENCY_WAIT maid=f34a033b-4927-443d-b14a-3b466d4d8849 ttc=6 pitch=-64.427 position=(6.577730467644825,1.4591713169883571,-29.412493377588046) velocity=(0.309058975510416,-0.25433771173583675,0.023161509336219795) gen=2 cells=150 requested=0 jobs=1 cache=10 queue=0 cache=193 stale=13 failed=0 captureMs=1 workerMs=880, [WFS debug] EMERGENCY_WAIT maid=f34a033b-4927-443d-b14a-3b466d4d8849 ttc=4 pitch=-75.0 position=(6.878751599331666,1.1834452089603904,-29.387113964048343) velocity=(0.30102113168684186,-0.27572610802796665,0.02537941353970214) gen=2 cells=158 requested=0 jobs=1 cache=11 queue=0 cache=194 stale=13 failed=0 captureMs=1 workerMs=880, [WFS debug] EMERGENCY_WAIT maid=f34a033b-4927-443d-b14a-3b466d4d8849 ttc=3 pitch=-75.0 position=(7.168207812660523,0.8776838768314967,-29.36057253205842) velocity=(0.28945621332885585,-0.3057613321288936,0.02654143198992277) gen=2 cells=162 requested=0 jobs=1 cache=12 queue=0 cache=196 stale=13 failed=0 captureMs=1 workerMs=881, [WFS debug] EMERGENCY_WAIT maid=f34a033b-4927-443d-b14a-3b466d4d8849 ttc=2 pitch=-75.0 position=(7.4468108995261915,0.5413016663820636,-29.333097209687903) velocity=(0.27860308686566876,-0.3363822104494331,0.027475322370516825) gen=2 cells=164 requested=0 jobs=1 cache=13 queue=0 cache=198 stale=13 failed=0 captureMs=1 workerMs=881, [WFS debug] EMERGENCY_WAIT maid=f34a033b-4927-443d-b14a-3b466d4d8849 ttc=1 pitch=-75.0 position=(7.715243123208351,0.17381362184919613,-29.304882373550846) velocity=(0.2684322236821598,-0.3674880445328675,0.028214836137056033) gen=2 cells=164 requested=0 jobs=1 cache=14 queue=0 cache=199 stale=13 failed=0 captureMs=1 workerMs=881]
+	at dev.winefox.skyfarer.replay.UnifiedPropulsionChecks.require(UnifiedPropulsionChecks.java:11)
+	at dev.winefox.skyfarer.replay.UnifiedPropulsionChecks.continuousCombat(UnifiedPropulsionChecks.java:110)
+	at dev.winefox.skyfarer.replay.UnifiedPropulsionChecks.main(UnifiedPropulsionChecks.java:15)
+> Task :verifyUnifiedPropulsion FAILED
+
+> Task :verifyVanillaPhysics
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+18000 mapped 1.21.1 differential physics steps passed; dive/pull-up, drag, float lookup, epsilon, negative/zero gravity, slow-fall expiry and rocket order.
+
+> Task :verifyVerticalAttacks
+dive contact=17 pitch=61.13945007324219 style=VERTICAL_DIVE exitTicks=35
+climb contact=13 pitch=-51.91439437866211 style=VERTICAL_CLIMB_RIGHT exitTicks=49
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyYsmCompatibility
+5 exact optional YSM 2.6.5 hooks and upstream missing elytra state verified without loading a game.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+FAILURE: Build completed with 7 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyCombatRecovery'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyControllerReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+3: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyEquipmentPropulsion'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+4: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyRiptideDeparture'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+5: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyRiptidePriority'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+6: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyTerrainCombat'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+7: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyUnifiedPropulsion'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+BUILD FAILED in 4m 53s
+48 actionable tasks: 42 executed, 6 up-to-date

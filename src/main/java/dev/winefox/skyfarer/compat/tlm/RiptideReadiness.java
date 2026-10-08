@@ -23,7 +23,8 @@ public final class RiptideReadiness {
         float power=RiptidePropulsion.strength(m,selected);
         boolean changed=level.get()!=m.level()||selected!=trident||hand!=main||armor!=chest||power!=strength;
         if(changed||!eligible||selected.isEmpty()||now<last||now>last+1){ticks=0;}
-        level=new java.lang.ref.WeakReference<>(m.level());trident=selected;main=hand;chest=armor;strength=power;
+        if(level.get()!=m.level())level=new java.lang.ref.WeakReference<>(m.level());
+        trident=selected;main=hand;chest=armor;strength=power;
         if(eligible&&!selected.isEmpty()&&now!=last)ticks=Math.min(RiptidePlanner.WINDUP,ticks+1);
         last=now;
         if((before<10&&ticks==10||before>0&&ticks==0)&&dev.winefox.skyfarer.config.SkyfarerSettings.debugLogging())
@@ -35,7 +36,6 @@ public final class RiptideReadiness {
         &&m.getMainHandItem()==main&&m.getItemBySlot(EquipmentSlot.CHEST)==chest;}
     public int ticks(){return ticks;}
     public float strength(){return strength;}
-    public ItemStack item(){return trident;}
     public boolean consume(EntityMaid m,float wanted){if(!ready(m,wanted))return false;ticks=0;return true;}
     public static void clear(EntityMaid m){STATES.remove(m);}
 }

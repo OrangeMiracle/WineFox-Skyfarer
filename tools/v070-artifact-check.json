@@ -1,0 +1,246 @@
+{
+  "jar": "build\\libs\\winefox_skyfarer-1.21.1-0.7.0.jar",
+  "bytes": 567644,
+  "sha256": "157B2457B289ED9F02D67C3BBAAFF851FD53335FFBBDE7162DD2928DD884313A",
+  "mod_version": "0.7.0",
+  "manifest": "Manifest-Version: 1.0\r\nImplementation-Version: 0.7.0",
+  "forbidden_entries": [],
+  "verification_log": "tools/v070-release-all.log",
+  "verify_tasks": [
+    "verifyAirRecoveryHome",
+    "verifyArchitecture",
+    "verifyAsyncPlanning",
+    "verifyAsyncSweep",
+    "verifyAttackEnvelope",
+    "verifyAttackPolicy",
+    "verifyCombatEntries",
+    "verifyCombatRecovery",
+    "verifyCommandDispatch",
+    "verifyControllerReplay",
+    "verifyDebugTools",
+    "verifyDispatchReplay",
+    "verifyEmergencyReplay",
+    "verifyEquipmentFixes",
+    "verifyEquipmentLifecycle",
+    "verifyEquipmentPropulsion",
+    "verifyFlightMath",
+    "verifyFlightPrediction",
+    "verifyGlideCorridor",
+    "verifyGroundMelee",
+    "verifyHandoffStability",
+    "verifyLaunchAttackReplay",
+    "verifyMaidCombat",
+    "verifyMovingAttack",
+    "verifyPlannerLoad",
+    "verifyRemotePropulsion",
+    "verifyRemoteWake",
+    "verifyRiptideDeparture",
+    "verifyRiptideDuration",
+    "verifyRiptidePriority",
+    "verifyRiptideRelease",
+    "verifyScanCadence",
+    "verifySorties",
+    "verifySpearIntercept",
+    "verifyStabilityLaunch",
+    "verifySurfaceLaunch",
+    "verifySweepingAttacks",
+    "verifySweepingReplay",
+    "verifyTerrainCombat",
+    "verifyUnifiedPropulsion",
+    "verifyVanillaPhysics",
+    "verifyVerticalAttacks",
+    "verifyYsmCompatibility"
+  ],
+  "controller_cases": [
+    {
+      "case": "flat-near",
+      "attack": "92",
+      "hits": "1",
+      "landed": "321",
+      "peak": "32.94",
+      "radius": "60.38",
+      "rockets": "3"
+    },
+    {
+      "case": "flat-normal",
+      "attack": "75",
+      "hits": "1",
+      "landed": "153",
+      "peak": "17.96",
+      "radius": "44.27",
+      "rockets": "3"
+    },
+    {
+      "case": "flat-behind-long-pulse",
+      "attack": "136",
+      "hits": "1",
+      "landed": "245",
+      "peak": "52.75",
+      "radius": "52.74",
+      "rockets": "3"
+    },
+    {
+      "case": "home-continuous",
+      "attack": "56",
+      "hits": "3",
+      "landed": "251",
+      "peak": "41.74",
+      "radius": "47.13",
+      "rockets": "2"
+    },
+    {
+      "case": "flat-short-pulse",
+      "attack": "136",
+      "hits": "1",
+      "landed": "174",
+      "peak": "28.35",
+      "radius": "54.62",
+      "rockets": "2"
+    },
+    {
+      "case": "flat-longest-pulse",
+      "attack": "95",
+      "hits": "1",
+      "landed": "154",
+      "peak": "40.55",
+      "radius": "41.54",
+      "rockets": "1"
+    },
+    {
+      "case": "flat-far",
+      "attack": "20",
+      "hits": "1",
+      "landed": "47",
+      "peak": "16.26",
+      "radius": "48.98",
+      "rockets": "1"
+    },
+    {
+      "case": "follow-continuous",
+      "attack": "54",
+      "hits": "3",
+      "landed": "273",
+      "peak": "17.96",
+      "radius": "50.26",
+      "rockets": "4"
+    },
+    {
+      "case": "slope-cycle",
+      "attack": "147",
+      "hits": "1",
+      "landed": "268",
+      "peak": "17.17",
+      "radius": "49.49",
+      "rockets": "2"
+    },
+    {
+      "case": "small-target-cycle",
+      "attack": "57",
+      "hits": "1",
+      "landed": "162",
+      "peak": "17.96",
+      "radius": "44.63",
+      "rockets": "2"
+    },
+    {
+      "case": "target-despawn",
+      "attack": "75",
+      "hits": "0",
+      "landed": "119",
+      "peak": "17.96",
+      "radius": "44.27",
+      "rockets": "2"
+    },
+    {
+      "case": "task-cancel",
+      "attack": "75",
+      "hits": "0",
+      "landed": "114",
+      "peak": "17.96",
+      "radius": "44.27",
+      "rockets": "2"
+    },
+    {
+      "case": "snow-layer-cycle",
+      "attack": "57",
+      "hits": "1",
+      "landed": "152",
+      "peak": "18.09",
+      "radius": "44.29",
+      "rockets": "2"
+    },
+    {
+      "case": "mixed-partial-cycle",
+      "attack": "79",
+      "hits": "1",
+      "landed": "186",
+      "peak": "18.46",
+      "radius": "44.27",
+      "rockets": "2"
+    },
+    {
+      "case": "slab-cycle",
+      "attack": "57",
+      "hits": "1",
+      "landed": "152",
+      "peak": "18.46",
+      "radius": "44.29",
+      "rockets": "2"
+    },
+    {
+      "case": "ice-inertia-cycle",
+      "attack": "56",
+      "hits": "1",
+      "landed": "181",
+      "peak": "18.04",
+      "radius": "37.81",
+      "rockets": "2"
+    },
+    {
+      "case": "radius-32-cycle",
+      "attack": "75",
+      "hits": "1",
+      "landed": "153",
+      "peak": "17.96",
+      "radius": "44.27",
+      "rockets": "3"
+    },
+    {
+      "case": "surface-and-cave",
+      "attack": "75",
+      "hits": "1",
+      "landed": "153",
+      "peak": "17.96",
+      "radius": "44.27",
+      "rockets": "3"
+    },
+    {
+      "case": "summit-cycle",
+      "attack": "8",
+      "hits": "1",
+      "landed": "145",
+      "peak": "28.34",
+      "radius": "52.59",
+      "rockets": "1"
+    },
+    {
+      "case": "uphill-cycle",
+      "attack": "330",
+      "hits": "1",
+      "landed": "446",
+      "peak": "33.28",
+      "radius": "44.73",
+      "rockets": "2"
+    },
+    {
+      "case": "upward-pillar",
+      "attack": "25",
+      "hits": "1",
+      "landed": "120",
+      "peak": "24.34",
+      "radius": "42.62",
+      "rockets": "2"
+    }
+  ],
+  "result": "BUILD SUCCESSFUL in 6m 46s"
+}

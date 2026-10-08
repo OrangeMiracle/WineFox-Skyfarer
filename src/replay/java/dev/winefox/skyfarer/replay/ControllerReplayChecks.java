@@ -14,8 +14,10 @@ import java.util.*;
 /** Runs the production AirCombatController tick, real selectors, planners, settings and firework manager.
  * Only external engine APIs are fixtures. State transitions are never assigned by the test. */
 public final class ControllerReplayChecks {
+    private static final List<String> failures=new ArrayList<>();
     public static void main(String[] args) throws Exception {
         acquisitionChecks();
+        occlusionChecks();
         run("flat-near",8,0,1,5,false,1);
         run("flat-normal",20,0,1,5,false,1);
         run("flat-behind-long-pulse",12,180,2,11,false,1);
@@ -37,6 +39,8 @@ public final class ControllerReplayChecks {
         run("summit-cycle",28,0,1,5,false,1);
         run("uphill-cycle",28,0,1,5,false,1);
         run("upward-pillar",32,0,1,5,false,1);
+        dev.winefox.skyfarer.async.PlannerSession.stop();
+        if(!failures.isEmpty())throw new AssertionError(String.join("\n",failures));
         System.out.println("Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.");
     }
     private static void run(String name,double targetZ,float yaw,int duration,int jitter,boolean home,int enemies) throws Exception {
@@ -55,9 +59,11 @@ public final class ControllerReplayChecks {
         if(name.equals("uphill-cycle"))for(int z=4;z<50;z++)world.boxes.add(new FlightCorridor.Box(-12,0,z,12,(z-3)*.8,z+1));
         var origin=new Vec3(0,world.ground(0,0,10),0);
         var maid=new EntityMaid(world,origin);maid.owner=new Player(world,origin);maid.yaw=yaw;maid.home=home;maid.inventory.duration=duration;
+        double operatingHeight=origin.y;
         if(name.equals("surface-and-cave"))new LivingEntity(world,new Vec3(0,-6,12));
         for(int i=0;i<enemies;i++) {
             var target=new LivingEntity(world,new Vec3(i*3,world.ground(i*3,targetZ+i*4,20),targetZ+i*4));
+            operatingHeight=Math.max(operatingHeight,target.getY());
             if(name.equals("small-target-cycle"))target.height=.5f;
         }
         boolean interrupted=name.equals("target-despawn")||name.equals("task-cancel"),interruptionSent=false;
@@ -72,6 +78,13 @@ public final class ControllerReplayChecks {
                 maid.velocity=new Vec3(.18,0,-.08);
             controller.tick();
             var state=controller.state(); visited.add(state);
+            if(landingFuel>=0&&hits<expectedHits&&maid.task&&maid.glide&&!maid.ground
+                &&(state==AirCombatState.APPROACH||state==AirCombatState.REPOSITION||state.locksRunTarget())
+                &&world.entities.stream().anyMatch(t->t.id.equals(controller.debugTarget())&&TargetEvaluator.valid(maid,t,true,origin)&&TargetEvaluator.visible(maid,t))){
+                // 0.6.2.9 permits qualified soft-return recovery before touchdown. A completed or
+                // cancelled mission still cannot restart; the complete hit/exit/landing checks remain.
+                landingFuel=-1;
+            }
             if(landingFuel>=0 && (state!=AirCombatState.LANDING && state!=AirCombatState.GROUNDED || maid.inventory.consumed!=landingFuel)) {
                 failure="landing restarted combat/boosting";break;
             }
@@ -119,21 +132,48 @@ public final class ControllerReplayChecks {
             maxHeight=Math.max(maxHeight,maid.getY());maxRadius=Math.max(maxRadius,maid.pos.horizontalDistance());
             var debug=controller.debugSnapshot();
             trace.add(String.format(Locale.ROOT,"%d\t%s\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.2f\t%d\t%d\t%s",tick,state,maid.getX(),maid.getY(),maid.getZ(),maid.velocity.x,maid.velocity.y,maid.velocity.z,maid.pitch,maid.inventory.count,hits,debug.getString("reason")));
-            if(maxHeight>55){failure="runaway altitude "+maxHeight;break;}
+            if(maxHeight-operatingHeight>55){failure="runaway altitude "+maxHeight+" above operating height "+operatingHeight;break;}
             if(maxRadius>100){failure="escaped battle area "+maxRadius;break;}
-            if(maid.ground && visited.contains(AirCombatState.CLIMB) && state!=AirCombatState.LANDING && state!=AirCombatState.GROUNDED) {failure="unplanned ground contact during "+state;break;}
+            if(maid.ground && flightEstablished(visited) && state!=AirCombatState.LANDING && state!=AirCombatState.GROUNDED) {failure="unplanned ground contact during "+state;break;}
             if(tick-lastHit>450&&hits<expectedHits){failure="no hit/progress for 450 ticks";break;}
             if(tick>400&&firstAttack<0){failure="no attack within 400 ticks; state="+state;break;}
             if(maid.teleports>0){failure="normal lifecycle relied on emergency teleport";break;}
-            if(hits==expectedHits&&state==AirCombatState.GROUNDED&&maid.ground&&visited.contains(AirCombatState.CLIMB)){landTick=tick;break;}
+            if(hits==expectedHits&&state==AirCombatState.GROUNDED&&maid.ground&&flightEstablished(visited)){landTick=tick;break;}
         }
         if(failure.isEmpty() && (hits!=expectedHits||landTick<0||!visited.contains(AirCombatState.LANDING)||!interrupted&&!visited.contains(AirCombatState.ATTACK_EXIT)))
             failure="incomplete lifecycle; hits="+hits+" landing="+landTick+" states="+visited;
         Path dir=Path.of("build/reports/controller-replay");Files.createDirectories(dir);Files.write(dir.resolve(name+".tsv"),trace);Files.write(dir.resolve(name+".events.log"),ReplayWorld.events);
         System.out.printf(Locale.ROOT,"%s attack=%d hits=%d landed=%d peak=%.2f radius=%.2f rockets=%d%n",name,firstAttack,hits,landTick,maxHeight,maxRadius,maid.inventory.consumed);
-        if(!failure.isEmpty())throw new AssertionError(name+": "+failure+"; trace="+dir.resolve(name+".tsv"));
+        controller.dispose("REPLAY_FINISHED",true);
+        if(!failure.isEmpty())failures.add(name+": "+failure+"; trace="+dir.resolve(name+".tsv"));
     }
     private static FlightPrediction.State state(EntityMaid m){return new FlightPrediction.State(m.getX(),m.getEyeY(),m.getZ(),m.velocity.x,m.velocity.y,m.velocity.z,m.yaw,m.pitch);}
+    private static boolean flightEstablished(Set<AirCombatState> states){
+        // A certified Launch Attack goes directly from TAKEOFF to ATTACK_RUN without CLIMB.
+        return states.contains(AirCombatState.CLIMB)||states.contains(AirCombatState.ATTACK_RUN);
+    }
+    private static void occlusionChecks() throws Exception {
+        SkyfarerSettings.reset("all");var world=new ReplayWorld();
+        var maid=new EntityMaid(world,new Vec3(0,10,0));maid.owner=new Player(world,Vec3.ZERO);
+        maid.ground=false;maid.glide=true;maid.pose=Pose.FALL_FLYING;
+        var target=new LivingEntity(world,new Vec3(0,10,20));var controller=new AirCombatController(maid);
+        controller.acceptCommand(target);
+        var scan=AirCombatController.class.getDeclaredMethod("scan");scan.setAccessible(true);scan.invoke(controller);
+        // Following a visible target must refresh observation without forcing a target rescan.
+        long seen=SkyfarerSettings.ticks("loiter_time_ticks")+10;world.time=seen;
+        var motion=AirCombatController.class.getDeclaredMethod("sampleTargetMotion");motion.setAccessible(true);motion.invoke(controller);
+        world.boxes.add(new FlightCorridor.Box(-20,0,8,20,30,9));scan.invoke(controller);
+        var approach=AirCombatController.class.getDeclaredMethod("startApproach");approach.setAccessible(true);approach.invoke(controller);
+        var recent=AirCombatController.class.getDeclaredMethod("recentOccludedTarget");recent.setAccessible(true);
+        if(controller.state()!=AirCombatState.LOITER_SEARCH||controller.debugTarget()!=null||!(boolean)recent.invoke(controller))
+            throw new AssertionError("temporary occlusion must preserve bounded search, not an attack target");
+        world.time=seen+SkyfarerSettings.ticks("loiter_time_ticks");
+        if((boolean)recent.invoke(controller))throw new AssertionError("occluded search never expires");
+        world.time=seen;target.alive=false;
+        if((boolean)recent.invoke(controller))throw new AssertionError("dead target retained for search");
+        controller.dispose("REPLAY_OCCLUSION_FINISHED",true);
+        System.out.println("Visible -> occluded search, hidden attack exclusion, expiry and dead-target release passed.");
+    }
     private static void acquisitionChecks() {
         SkyfarerSettings.reset("all");
         var world=new ReplayWorld();world.boxes.clear();
@@ -160,6 +200,7 @@ public final class ControllerReplayChecks {
         if(TargetEvaluator.attackable(maid,maid.owner)||TargetEvaluator.attackable(maid,maid))throw new AssertionError("mark override bypassed owner/self exclusion");
         CommandAccess.designated=(m,t)->false;
         if(TargetEvaluator.attackable(maid,friendly))throw new AssertionError("unmark did not restore friendly protection");
+        controller.dispose("REPLAY_ACQUISITION_FINISHED",true);
         System.out.println("Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.");
     }
 }

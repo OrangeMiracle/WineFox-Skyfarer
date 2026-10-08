@@ -2,7 +2,21 @@
 
 ## 当前交付状态
 
-当前交付为 **0.6.2.11**，在当前本地 0.6.2.10 未提交工作区上继续修改，保留此前成果。没有从远程覆盖或回滚，没有 Funnel；仅编译、定向回归与打包，未启动 Minecraft、未安装到测试实例。
+当前工程为 **0.7.0**，从本地干净提交 `172d9f5`（0.6.2.11）继续收束，未从远程覆盖、未回滚、未引入 Funnel。完整 build/check 与全部 43 项 verify 已通过；没有启动 Minecraft，也没有安装到测试实例。
+
+### 0.7.0 推进边界收束与架构清理（2026-10-08）
+
+- **统一边界**：AirCombatController / TransitFlight 以 PropulsionDemand + PropulsionRoute 调用 FlightPropulsion，资格由 PropulsionCapability 统一。上层不再持有具体推进执行器、遍历火箭时长或提交火箭专属评分闭包；合法 READY 激流先于新的烟花。Riptide 的环境/装备/耐久/等级/时长/释放/spin，Firework 的库存/随机寿命/点火延迟/活动实体/冷却/爆炸属性继续各守其职。显式运输免费火箭政策保留在提供器内，不扩散到战斗。
+- **清理**：删除无生产调用的 LaunchPlanner、旧坐标 RiptidePlanner choose 重载、无证书 FireworkManager boost 重载、重复 PropulsionAvailability、Transit 独立火箭实现和无消费者 lastRequest、不可达 BREAKAWAY/ABORT/EMERGENCY 枚举及分支、无效包装器/评分转发、常量 previous_bonus 调试字段。逐项依据见 [架构审计](docs/ARCHITECTURE_070.md)，仍被生产读取的规划器/兼容钩子不删除。
+- **配置迁移**：删除 `previous_target_bonus`、`climb_height`、`forward_collision_check_distance`；旧值不再读取，也不继续出现在 `/wfs config`，NeoForge 可按新 Spec 校正旧键，无需映射到其他参数。保留的 52 个数值参数均有生产消费者，见 [清单](docs/config-consumers-070.tsv)。
+- **性能/线程**：提供器按当前 tick 复用候选时长、执行重新验证库存；复用 Exit 临时映射，避免重复 Level WeakReference；移除 Transit 重复请求。保持快照/有界 worker/mailbox/主线程重验，未扩大全服预算。新增 verifyArchitecture 检查编译后上层（含 lambda）依赖与 worker DTO 边界，不宣称未经 profiling 的性能提升。
+- **全量回放发现并修复**：曲线 coast 尚 pending 或完整命中/Exit 已可行时，不因名义低速误点火扰乱航线；最终下降通过有限身体扫掠、落点支撑/站立净空认证，预定触地不再被误判成必须点火逃离的墙。紧急方案保留完整寿命/逃逸证书，初始 8 tick 脱险后交回当前恢复决策，避免长期独占控制而向外飞或耗尽速度；已返航且推进无证书时允许认证就近降落。
+- **遮挡回归**：上坡离场后，临时不可见目标曾被误判为战斗结束。仅对已观察、仍合法目标保留最后可见位置，在既有 loiter_time_ticks 内寻找视线；隐藏目标仍不能进入攻击，超时/死亡/返航/卸载清除。未引入新配置。
+- **测试维护**：Controller 回放聚合全部 21 场失败并逐例释放会话；Launch Attack 可以跳过 CLIMB，生命周期据真实 TAKEOFF→ATTACK_RUN 验证。更新已过时的坡面样本数、燃料恢复、READY API 与旧激流 choose 测试，未放松碰撞、命中、落地或资源释放断言。调查失败保留在 tools/v070-*.log 等日志中，只有最终全量结果作为发布证据。
+- **新旧回归冲突**：保留 AirRecoveryHome 已验证的未触地软返航恢复能力；旧 Controller 无条件禁止 LANDING 复战的断言改为识别仍未完成且重新看到合法目标的情形。任务已完成/取消、硬返航和实际触地仍约束释放；高度限额按作战地形计算，仍为 55 格，修正落点夹具的向下搜索范围。
+- **完整验证**：[v070-release-all.log](tools/v070-release-all.log) 的 `BUILD SUCCESSFUL in 6m 46s`；完整编译/build/check，43/43 verify 全执行通过（49 个任务，45 执行、4 已是最新）。Controller 21/21、Command/Transit 7/7、五类移动目标、60 个起飞寿命场景、18,000 步 Vanilla 差分、Riptide/Firework/统一推进、竖向/紧急/Strike→Exit、remote wake/Home、装备/地面/生命周期/调试/兼容全通过。未带场景筛选，未跳过失败测试。
+- **产物**：[winefox_skyfarer-1.21.1-0.7.0.jar](build/libs/winefox_skyfarer-1.21.1-0.7.0.jar)，567,644 bytes，SHA-256 `157B2457B289ED9F02D67C3BBAAFF851FD53335FFBBDE7162DD2928DD884313A`。全部当前版本元数据为 0.7.0，Jar 不含删除类或离线夹具；[校验记录](tools/v070-artifact-check.json)。README、根与 docs PROJECT_INDEX、推进/飞控/异步/配置/验证文档均同步。
+- **实机边界**：验证使用真实生产规划/控制器和原版物理差分，外部 Entity/Level、伤害/动画/事件采用离线夹具；真实 TLM/NeoForge/Mixin 时序、复杂动态世界、第三方 travel、多人 MSPT/GC 仍需实机确认。历史 5 ms/tick 加速压力失败不被本轮标准时序回放抹除。未启动 Minecraft、未自动替换测试实例 Jar。
 
 ### 0.6.2.11 统一推进能力与独立 Riptide READY（2026-10-08）
 

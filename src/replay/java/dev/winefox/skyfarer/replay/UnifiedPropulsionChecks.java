@@ -128,7 +128,7 @@ public final class UnifiedPropulsionChecks {
             wasActive=motor.active();
         }
         require(bursts==2&&m.releaseCallbacks==2&&m.offhand.damage==2&&m.inventory.consumed==0,"continuous air propulsion lost second burst");
-        motor.cancel(m);m.rain=false;require(PropulsionAvailability.source(m).equals("FIREWORK"),"dry source fallback failed");
-        m.inventory.count=0;require(PropulsionAvailability.rejection(m)!=null,"dry empty inventory accepted");planning.close();
+        motor.cancel(m);m.rain=false;require(PropulsionCapability.source(m).equals("FIREWORK"),"dry source fallback failed");
+        m.inventory.count=0;require(PropulsionCapability.rejection(m)!=null,"dry empty inventory accepted");planning.close();
     }
 }

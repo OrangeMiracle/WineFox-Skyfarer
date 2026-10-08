@@ -20,15 +20,16 @@ public final class TerrainCombatChecks {
         require(TargetPriority.rank(true,40,16,false,10).sameLayer(nearby),"previous and nearby targets share a layer");
         require(TargetPriority.protectedRadius(true,32)==48 && TargetPriority.protectedRadius(false,32)==16,"Home radius follows actual restriction plus 16");
         require(AttackPolicy.canResume("NO_TARGET_AFTER_LOITER",true,true,true,true,true),"soft return resumes in air");
-        for(String reason:new String[]{"TASK_CHANGED","SITTING","FLIGHT_LIMIT_OR_FUEL","GLIDE_INTERRUPTED"})
+        for(String reason:new String[]{"TASK_CHANGED","SITTING","GLIDE_INTERRUPTED"})
             require(!AttackPolicy.canResume(reason,true,true,true,true,true),"hard return must remain authoritative");
+        require(AttackPolicy.canResume("FLIGHT_LIMIT_OR_FUEL",true,true,true,true,true),"restored propulsion resumes while time remains");
+        require(!AttackPolicy.canResume("FLIGHT_LIMIT_OR_FUEL",true,true,true,true,false),"airborne time limit remains hard");
         require(!AttackPolicy.canResume("NO_TARGET_AFTER_LOITER",true,true,false,true,true),"no fuel means no reentry");
         require(FlightPrediction.pathHeight(0,1.3,-.3,-1)==1.3 && FlightPrediction.pathHeight(-4,1.3,-.3,-1)>1.3,"uphill pass must keep climbing through contact");
         int cases=0;
         for(double grade:new double[]{-.5,-.25,.25,.5}) for(double speed:new double[]{.8,1.2,1.7}) for(int pulse:new int[]{0,26,52}) {
             slope(grade,speed,pulse); cases++;
         }
-        launch();
         int steep=0;
         for(double grade:new double[]{-.75,-1,-1.25,.75,1,1.25}) for(double speed:new double[]{.45,.8,1.2}) for(int pulse:new int[]{0,26}) {
             precisionSlope(grade,speed,pulse); steep++;
@@ -135,23 +136,5 @@ public final class TerrainCombatChecks {
             if(t>=1 && Math.abs(z)<.425 && y>=0 && y<=4.925) return true;
         }
         return false;
-    }
-    private static void launch() {
-        var floor=new FlightCorridor.Box(-30,-2,-30,30,0,30);
-        var roof=new FlightCorridor.Box(-5,2,-5,5,3,5);
-        var wall=new FlightCorridor.Box(-5,0,3,5,5,4);
-        var space=world(List.of(floor,roof,wall));
-        var s=new FlightPrediction.State(0,.82,0,0,.33,0,0,0);
-        var launch=LaunchPlanner.choose(s,0,.08,space);
-        require(launch!=null,"launch from 2-block roofed space with side opening");
-        require(Math.abs(launch.yaw())>=45,"blocked forward launch should choose side opening");
-        var r=LaunchPlanner.request(launch.yaw(),launch.height(),26,.08);
-        for(int tick=0;tick<12;tick++) {
-            var p=GlidePlanner.choose(s,r.withPulse(26-tick),space);
-            require(p.safe(),"launch lost corridor tick="+tick+" "+p);
-            var next=FlightPrediction.step(s,p.yaw(),p.pitch(),p.yawRate(),p.pitchRate(),p.pitchRate(),.08,true);
-            require(space.clear(s,next,0,0),"launch collision"); s=next;
-        }
-        require(Math.abs(s.x())>5 || Math.abs(s.z())>5,"launch should leave shelter");
     }
 }

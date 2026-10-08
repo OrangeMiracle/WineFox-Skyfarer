@@ -26,10 +26,8 @@ public final class SkyfarerConfig {
         define("targeting", "search_range", 32, 4, 96, "blocks");
         define("targeting", "combat_range", 40, 8, 128, "blocks");
         define("targeting", "hard_combat_range", 56, 12, 192, "blocks");
-        define("targeting", "previous_target_bonus", 30, 0, 200, "score");
         define("targeting", "target_switch_threshold", 15, 0, 100, "score");
         define("targeting", "scan_interval_ticks", 10, 1, 100, "ticks");
-        define("combat", "climb_height", 14, 6, 48, "blocks");
         define("combat", "attack_entry_distance", 18, 8, 48, "blocks");
         define("combat", "breakaway_distance", 12, 6, 40, "blocks");
         define("combat", "loiter_time_ticks", 80, 0, 600, "ticks");
@@ -48,7 +46,6 @@ public final class SkyfarerConfig {
         define("combat", "slope_sample_radius", 16, 3, 32, "blocks");
         define("combat", "slope_sample_step", 0.5, 0.25, 1, "blocks");
         define("safety", "emergency_teleport_range", 96, 32, 512, "blocks");
-        define("safety", "forward_collision_check_distance", 6, 2, 24, "blocks");
         define("safety", "corridor_side_margin", 0.35, 0.05, 1, "blocks");
         define("safety", "corridor_vertical_margin", 0.35, 0.05, 1, "blocks");
         define("safety", "return_timeout_ticks", 300, 60, 1200, "ticks");

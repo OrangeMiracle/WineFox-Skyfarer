@@ -76,29 +76,6 @@ public final class RiptidePlanner {
         }
         return null;
     }
-    public static Plan choose(FlightPrediction.State s,double x,double height,double z,float strength,double gravity,GlidePlanner.Corridor space,SurfaceLaunchPlanner.Water water) {
-        return choose(s,x,height,z,strength,gravity,space,water,0);
-    }
-    public static Plan choose(FlightPrediction.State s,double x,double height,double z,float strength,double gravity,GlidePlanner.Corridor space,SurfaceLaunchPlanner.Water water,int elapsed) {
-        return choose(s,x,height,z,strength,gravity,space,water,elapsed,.55);
-    }
-    public static Plan choose(FlightPrediction.State s,double x,double height,double z,float strength,double gravity,GlidePlanner.Corridor space,SurfaceLaunchPlanner.Water water,int elapsed,double minimumSpeed) {
-        if(!(strength>0)||!Float.isFinite(strength))return null;
-        boolean departure=elapsed==WINDUP;
-        double yaw=Math.toDegrees(Math.atan2(s.x()-x,z-s.z()));
-        // Every tick length is available, not a sparse set of duration presets. Stop at the shortest feasible duration.
-        for(int duration=1;duration<=maximumTicks(strength);duration++) {
-            Plan best=null;
-            for(double turn:departure?new double[]{0,-90,90,180}:new double[]{0})
-            for(double pitch:departure?new double[]{-35,-55,-70}:new double[]{-15,-35,-55}) {
-                var start=departure?aimLaunch(s,yaw+turn,pitch):s;
-                var p=certify(start,new Plan(yaw+turn,pitch,height,x,z,strength,duration,departure,minimumSpeed,0,List.of()),elapsed,gravity,space,water);
-                if(p!=null&&(best==null||p.cost()<best.cost()))best=p;
-            }
-            if(best!=null)return best;
-        }
-        return null;
-    }
     public static FlightPrediction.State aimLaunch(FlightPrediction.State s,double yaw,double pitch) {
         return new FlightPrediction.State(s.x(),s.y(),s.z(),s.vx(),s.vy(),s.vz(),yaw,pitch,s.physics(),s.rocketDelay());
     }

@@ -9,6 +9,9 @@ public final class EmergencyAvoidancePlanner {
     public record Danger(boolean imminent,int ttc,int margin,double divergence) {}
     public record Plan(double yaw,double pitch,double height,int duration,int ticks,List<GlidePlanner.TracePoint> trace) {
         public String mode(){return duration<0?"EMERGENCY_GLIDE_TURN":"EMERGENCY_BOOST_TURN";}
+        /** Execute the initial escape attitude, then let normal recovery plan from live momentum.
+         * The longer certificate still covers the complete attached pulse and coast. */
+        public int controlTicks(){return Math.min(8,ticks);}
     }
     public static int margin(FlightPrediction.State s,double desiredYaw,double rate){
         double speed=Math.sqrt(s.vx()*s.vx()+s.vy()*s.vy()+s.vz()*s.vz());

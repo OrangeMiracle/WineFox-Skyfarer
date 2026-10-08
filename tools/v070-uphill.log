@@ -1,0 +1,49 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+Visible -> occluded search, hidden attack exclusion, expiry and dead-target release passed.
+flat-near attack=92 hits=1 landed=310 peak=32.92 radius=60.38 rockets=2
+flat-normal attack=75 hits=1 landed=153 peak=17.96 radius=44.27 rockets=3
+flat-behind-long-pulse attack=149 hits=1 landed=235 peak=52.75 radius=52.74 rockets=2
+home-continuous attack=56 hits=3 landed=251 peak=41.74 radius=47.13 rockets=2
+flat-short-pulse attack=136 hits=1 landed=174 peak=28.35 radius=54.62 rockets=2
+flat-longest-pulse attack=93 hits=1 landed=157 peak=40.55 radius=41.54 rockets=1
+flat-far attack=20 hits=1 landed=47 peak=16.26 radius=48.98 rockets=1
+follow-continuous attack=54 hits=3 landed=273 peak=17.96 radius=50.26 rockets=4
+slope-cycle attack=147 hits=1 landed=243 peak=17.17 radius=49.49 rockets=2
+small-target-cycle attack=57 hits=1 landed=162 peak=17.96 radius=44.63 rockets=2
+target-despawn attack=75 hits=0 landed=119 peak=17.96 radius=44.27 rockets=2
+task-cancel attack=75 hits=0 landed=114 peak=17.96 radius=44.27 rockets=2
+snow-layer-cycle attack=57 hits=1 landed=152 peak=18.09 radius=44.29 rockets=2
+mixed-partial-cycle attack=79 hits=1 landed=186 peak=18.46 radius=44.27 rockets=2
+slab-cycle attack=57 hits=1 landed=152 peak=18.46 radius=44.29 rockets=2
+ice-inertia-cycle attack=56 hits=1 landed=181 peak=18.04 radius=37.81 rockets=2
+radius-32-cycle attack=75 hits=1 landed=153 peak=17.96 radius=44.27 rockets=3
+surface-and-cave attack=75 hits=1 landed=153 peak=17.96 radius=44.27 rockets=3
+summit-cycle attack=8 hits=1 landed=145 peak=28.34 radius=52.59 rockets=1
+uphill-cycle attack=-1 hits=0 landed=-1 peak=32.13 radius=44.73 rockets=2
+upward-pillar attack=25 hits=1 landed=120 peak=24.34 radius=42.62 rockets=2
+Exception in thread "main" java.lang.AssertionError: uphill-cycle: landing restarted combat/boosting; trace=build\reports\controller-replay\uphill-cycle.tsv
+	at dev.winefox.skyfarer.replay.ControllerReplayChecks.main(ControllerReplayChecks.java:43)
+
+> Task :verifyControllerReplay FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyControllerReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 3m 21s
+2 actionable tasks: 2 executed

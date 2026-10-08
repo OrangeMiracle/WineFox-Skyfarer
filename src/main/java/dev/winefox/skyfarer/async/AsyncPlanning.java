@@ -82,7 +82,6 @@ public final class AsyncPlanning {
     public double sweepPulse(FlightPrediction.State s,SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,int duration,double gravity,double rate,double minimum,boolean exiting,GlidePlanner.Corridor space){
         return (Double)optional(bounded(new PlanningTask.SweepPulse(s,path,aim,duration,gravity,rate,minimum,exiting),space),Double.POSITIVE_INFINITY);
     }
-    public double pulseCost(FlightPrediction.State s,GlidePlanner.Request r,GlidePlanner.Corridor ignored,int duration,double speed,double reserve){return reviewPulse(s,r,ignored,duration,speed,reserve).cost();}
     public CompactTurnPlanner.Plan compact(FlightPrediction.State s,CompactTurnPlanner.Goal goal,int rocket,double gravity,double rate,GlidePlanner.Corridor ignored){
         var p=(CompactTurnPlanner.Plan)optional(bounded(new PlanningTask.Compact(s,goal,rocket,gravity,rate,-1),ignored),new CompactTurnPlanner.Plan(null,0,0,Math.hypot(s.vx(),s.vz()),-25));
         return p==null?null:new CompactTurnPlanner.Plan(CompactTurnPlanner.command(s,goal,gravity,rocket>0,rate,p.brake()),p.cost(),p.excursion(),p.speed(),p.brake());

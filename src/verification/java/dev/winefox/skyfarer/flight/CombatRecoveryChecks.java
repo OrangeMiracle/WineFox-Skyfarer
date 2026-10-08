@@ -36,12 +36,12 @@ public final class CombatRecoveryChecks {
     private static void slopes() {
         for(int radius:new int[]{16,32}) {
             var enlarged=SlopeSampler.sample(0,0,0,radius,.5,(x,z,y)->x*.25);
-            require(enlarged.samples()==radius*16,"configured radius must not be silently capped at twelve");
+            require(enlarged.samples()==radius*20,"configured radius must not be silently capped at twelve");
             require(Math.abs(enlarged.wideX()-.25)<1e-8,"large-range slope fit");
         }
         for(double gx:new double[]{-.8,0,.75}) for(double gz:new double[]{-.7,.35,1.1}) {
             var exact=SlopeSampler.sample(.2,10,.3,6,.5,(x,z,previous)->10+gx*(x-.2)+gz*(z-.3));
-            require(exact.samples()==96,"six-block half-step eight-spoke coverage");
+            require(exact.samples()==120,"six-block 0.4-step eight-spoke coverage");
             require(Math.abs(exact.wideX()-gx)<1e-8 && Math.abs(exact.wideZ()-gz)<1e-8,"oblique plane fit");
             var stairs=SlopeSampler.sample(0,0,0,6,.5,(x,z,previous)->Math.floor((gx*x+gz*z)*2)/2);
             require(Math.abs(stairs.wideX()-gx)<.06 && Math.abs(stairs.wideZ()-gz)<.06,"fractional stair accuracy");

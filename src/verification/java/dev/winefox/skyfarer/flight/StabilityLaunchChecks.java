@@ -5,6 +5,14 @@ import java.util.UUID;
 
 public final class StabilityLaunchChecks {
     public static void main(String[] args)throws Exception{
+        var descent=new FlightPrediction.State(0,5,0,0,-.5,.7,0,40);
+        GlidePlanner.Corridor floor=(a,b,s,v)->Math.min(a.y(),b.y())>.4+v;
+        require(LandingApproach.clear(descent,0,.05,6,.4,0,.08,5,6,floor,(x,y,z)->true),"supported touchdown mistaken for emergency collision");
+        require(!LandingApproach.clear(descent,0,.05,6,.4,0,.08,5,6,floor,(x,y,z)->false),"unsupported touchdown accepted");
+        var landingWall=new FlightCorridor.Box(-4,0,2,4,9,3);
+        GlidePlanner.Corridor blocked=(a,b,s,v)->floor.clear(a,b,s,v)&&!FlightCorridor.intersects(landingWall,a.x(),a.y(),a.z(),b.x(),b.y(),b.z(),.3,.6,.4,s,v);
+        require(!LandingApproach.clear(descent,0,.05,6,.4,0,.08,5,6,blocked,(x,y,z)->true),"landing ignored wall");
+        require(!LandingApproach.clear(descent,0,.05,6,.4,0,.08,5,6,(a,b,s,v)->false,(x,y,z)->true),"unknown landing corridor accepted");
         try(var jar=new java.util.jar.JarFile("build/moddev/artifacts/neoforge-21.1.250-merged.jar")){
             var entity=new org.objectweb.asm.tree.ClassNode();
             new org.objectweb.asm.ClassReader(jar.getInputStream(jar.getJarEntry("net/minecraft/world/entity/Entity.class"))).accept(entity,org.objectweb.asm.ClassReader.SKIP_DEBUG);

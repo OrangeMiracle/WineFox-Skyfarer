@@ -1,7 +1,7 @@
 package dev.winefox.skyfarer.command;
 
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
-import dev.winefox.skyfarer.compat.tlm.PropulsionAvailability;
+import dev.winefox.skyfarer.compat.tlm.PropulsionCapability;
 import dev.winefox.skyfarer.flight.*;
 import dev.winefox.skyfarer.replay.ReplayWorld;
 import net.minecraft.world.entity.player.Player;
@@ -18,7 +18,7 @@ public final class RemotePropulsionChecks {
         // CommandManager depends on the full server. Check both production call sites still use
         // the gate exercised here, rather than pretending this fixture executes ServerTick/Post.
         String manager=java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/dev/winefox/skyfarer/command/CommandManager.java"));
-        require(manager.split("PropulsionAvailability.rejection",-1).length==3,"assignment/grounded order gate disconnected");
+        require(manager.split("PropulsionCapability.rejection",-1).length==3,"assignment/grounded order gate disconnected");
         require(!manager.contains("SkyfarerEquipment.fireworks(maid)"),"obsolete inventory-only command gate");
         dev.winefox.skyfarer.async.PlannerSession.stop();
         System.out.println("Remote normal/creative Home Riptide-only qualification, bounded wake, dry rejection, transit and glide handoff passed");
@@ -27,14 +27,14 @@ public final class RemotePropulsionChecks {
         var w=new ReplayWorld();w.loadedRadius=2048;
         var m=new EntityMaid(w,Vec3.ZERO);m.owner=new Player(w,Vec3.ZERO);m.home=true;m.rain=true;m.inventory.count=0;
         m.offhand=new ItemStack(Items.TRIDENT);m.offhand.strength=3;
-        require(PropulsionAvailability.source(m).equals("RIPTIDE")&&PropulsionAvailability.rejection(m)==null,"wet Riptide-only Home rejected");
+        require(PropulsionCapability.source(m).equals("RIPTIDE")&&PropulsionCapability.rejection(m)==null,"wet Riptide-only Home rejected");
         require(DispatchPolicy.discover(true,true,creative,!creative,24,64,0)&&DispatchPolicy.admitted(true,creative,24,64,0),"Home discovery/admission rejected");
-        m.rain=false;require("no_firework_riptide_environment_invalid".equals(PropulsionAvailability.rejection(m)),"dry/no firework needs explicit rejection");
+        m.rain=false;require("no_firework_riptide_environment_invalid".equals(PropulsionCapability.rejection(m)),"dry/no firework needs explicit rejection");
         var scheduler=new RemoteWakeScheduler();var tickets=new HashSet<UUID>();var loaded=new HashSet<UUID>();var assigned=new HashSet<UUID>();var events=new ArrayList<String>();
         var backend=new RemoteWakeScheduler.Backend(){
             public boolean loaded(UUID id){return loaded.contains(id);}
             public boolean ticket(UUID id){tickets.add(id);return true;}
-            public String assign(UUID id){var rejection=PropulsionAvailability.rejection(m);if(rejection==null){assigned.add(id);tickets.remove(id);}return rejection;}
+            public String assign(UUID id){var rejection=PropulsionCapability.rejection(m);if(rejection==null){assigned.add(id);tickets.remove(id);}return rejection;}
             public void release(UUID id){tickets.remove(id);}
             public void event(UUID id,long generation,String stage,String reason,int attempts){events.add(stage+":"+reason);}
         };
@@ -60,7 +60,7 @@ public final class RemotePropulsionChecks {
         }
         transit.close();require(arrived&&m.inventory.count==0&&m.inventory.consumed==0,"remote flight required inventory fireworks");
         require(m.releaseCallbacks>0&&m.offhand.damage>0,"Transit did not select/release legal Riptide");
-        m.rain=false;m.inventory.count=1;require(PropulsionAvailability.source(m).equals("FIREWORK"),"dry firework fallback missing");
+        m.rain=false;m.inventory.count=1;require(PropulsionCapability.source(m).equals("FIREWORK"),"dry firework fallback missing");
         System.out.println("Home dispatch creative="+creative+" inventoryFireworks=0 wake=accepted transit=arrived glide=preserved");
     }
 }

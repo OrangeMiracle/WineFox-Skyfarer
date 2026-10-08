@@ -1,23 +1,6 @@
 # 配置、指挥、调试与兼容接口
 
-0.6.2.11：推进资格、需求与激流候选统一；独立 10 tick 预蓄力保持 READY，不占实体 item-use；攻击/离场/紧急与 Transit 接入同一能力层。当前规则与历史覆盖关系见 [统一推进与 READY](PROPULSION_06211.md)。下列旧版本段落保留为历史，涉及实体副手持续使用、禁止 Strike/Exit 激流及旧 PlanningTask.Riptide 的描述均已被替代。
-
-0.6.2.10：移动目标使用三组未来拦截点，当前状态重验 Strike→Exit 后提交；准备区围绕预计拦截点保持有界，补能不再向外延伸或抢占可用攻击入口。机制、诊断、比较回放与限制见 [移动目标拦截](MOVING_ATTACK_06210.md)。
-
-0.6.2.9 既有变更：空中恢复使用独立的速度证书与实际 12 tick 恢复段；创造 Home 任务就近落地后释放控制，由 TLM 日程返回。源码因果、接口及验证边界见 [空中恢复与 Home 交接](AIR_RECOVERY_HOME_0629.md)。
-
-0.6.2.8 未新增配置开关。RIPTIDE 的 RECOVERY_BEGIN 表示推力/spin 截止但起飞恢复尚未完成；COMPLETED 在恢复及实际交接检查通过后才记录，否则 HANDOFF_NOT_READY。EXECUTION_REJECTED 附带 snapshot/trajectory/entity/装备交换/开始使用等具体原因。COMMAND_ASSIGN 增加 propulsion；地面订单和已加载候选补记 qualification_failed，缺资源区分 no_firework_riptide_environment_invalid / no_firework_or_usable_riptide。保留 PROPULSION 的 targetDistance、purpose、duration，以及 RIPTIDE 的 duration/maxDuration、departure、thrustElapsed；后者在无推力恢复期仍为释放后的 elapsed，不代表仍在施加推力。详见 [装备与生存](EQUIPMENT_SURVIVAL.md)。
-
-0.6.2.6 的 RIPTIDE 诊断增加 selectedHand/item、usedHand、startTick、charge/remaining、sameUse、wet、enchantLevel、实际 RELEASE_CALLBACK impulse/spinStarted，以及明确的 END 拒因。CHARGING 每 5 ticks 采样；STATE_TRANSITION 与 USE_STOP 的有界调用栈说明切换和取消来源。原生事件否决或回调缺失记录 RELEASE_VETOED_OR_CALLBACK_MISSING，不静默补发冲量。详见 [释放审计](EQUIPMENT_SURVIVAL.md#0626-激流使用与释放审计)。
-
-0.6.2.2 新增 equipment.extra_elytra_items（字符串列表，0.6.2.5 默认含 Cataclysm 胸甲 ID），示例：["cataclysm:ignitium_elytra_chestplate"]。只识别身份，仍要求物品自己的 canElytraFly；未安装或拼错的 ID 忽略。SERVER 配置 reload 生效，reset all 恢复默认列表，数值 set 命令不编辑列表。WINGS_REPLACED 与 RIPTIDE 生命周期事件加入 debuglog。0.6.2.3 明确 UNBREAKABLE 优先，装备提示按持久事件去重及双层冷却限频。0.6.2.4 用独立的 EQUIPMENT_CHECK / EQUIPMENT_SPARE / EQUIPMENT_RESULT 代替受对话去重影响的 WINGS_UNFIT；首次、变化、每 200 ticks 记录实际列表、item ID、listMatch/equivalent、damage/maxDamage、damageable、UNBREAKABLE/MAX_DAMAGE/DAMAGE component、remaining、canFly、备用槽拒因和最终 equipmentQualified/reason。兼容 ID 必须填写日志实际加载的文件，不是仅保留注释示例。完整用法见 [装备与生存](EQUIPMENT_SURVIVAL.md)。
-核对版本：**0.6.2.7，2026-10-07**，飞控基于 0.6.1。本文面向维护者，描述当前源码事实；源码变化时必须同步维护。总入口见 [PROJECT_INDEX.md](PROJECT_INDEX.md)，飞控细节见 [FLIGHT_CONTROL_OVERVIEW.md](FLIGHT_CONTROL_OVERVIEW.md)。本文中的 tick 是游戏逻辑 tick，20 TPS 时 20 ticks = 1 秒；格/tick 不是格/秒。
-
-0.6.2.5 将额外鞘翅列表默认值设为 `["cataclysm:ignitium_elytra_chestplate"]`，没有 Cataclysm 时安全忽略，不提供额外飞行能力；已有配置中的显式列表（包括空列表）继续保留，`reset all` 恢复此默认列表。新增 `PROPULSION` 日志记录候选选择、证书等待/拒绝、实际湿润条件、可用强度、火箭冷却与 active 状态；`RIPTIDE` 记录地面前摇、跳跃、实际释放及路径重验拒绝，可区分环境、库存、规划和执行阶段。
-
-0.6.1 未新增可调物理伪属性：gravity/缓降从实体冻结，滑翔阻力使用 1.21.1 常量。`energy_reserve` / `attack_energy_reserve` 是路线最差预测储备的补能门槛，不是轨迹可达性开关。HUD `energyReserve` 在普通攻击证书/曲线回放返回后显示最差 reserve；`ATTACK_PHYSICS_VETO:<reason>` 表示完整物理认证拒绝，需结合 `contact_missed`、`exit_incomplete`、`sweep_<tick>` 与异步等待判断。详细每步 envelope 目前是 Worker 结果 DTO，未新增网络包或 HUD 曲线。
-
-0.6.2.1 没有新增可调数值键。`EMERGENCY_DETECTED` 输出 TTC、margin、速度与航向差；`EMERGENCY_WAIT` 输出临撞等待原因与紧急队列；`EMERGENCY_CERTIFIED` 区分滑翔/烟花和认证时域。`FLIGHT_LIFECYCLE` / `FALL_FLYING_CLEAR` 记录释放/清旗来源、状态、速度、高度及目标/订单。`TRANSIT_WAITING_FIRST_TICK` 是安全的未初始化调试快照。详情见 [稳定性与崩溃分析](STABILITY_LAUNCH_0621.md)。
+当前版本 **0.7.0**。推进所有权、删除与迁移见 [架构审计](ARCHITECTURE_070.md)，构建结果见 [验证](VALIDATION.md)。源码为最终权威。
 
 ## 1. 配置的入口与生效方式
 
@@ -56,10 +39,8 @@
 | targeting.search_range | 32 | 4–96 | 格 | T 本地/上一候选附近索敌查询半径；作战中心和指令目标还有独立查询。 |
 | targeting.combat_range | 40 | 8–128 | 格 | T 常规新目标相对活动中心范围基准；实际不小于 protectedRadius。 |
 | targeting.hard_combat_range | 56 | 12–192 | 格 | T 已追击目标范围基准；实际不小于 effective combat + 16。 |
-| targeting.previous_target_bonus | 30 | 0–200 | 分数 | **遗留，无当前行为消费者**。上次目标现由战略层级保留，不再累加此值；DebugSnapshot previous_bonus 固定 0。 |
 | targeting.target_switch_threshold | 15 | 0–100 | 分数 | T 同战略层且同幻翼级别的换目标迟滞。 |
 | targeting.scan_interval_ticks | 10 | 1–100 | ticks | C 常规 acquire/飞行/返航恢复索敌 ScanCadence。 |
-| combat.climb_height | 14 | 6–48 | 格 | **遗留，对当前行为无效**。arcPoint() 只在 preferred 非空分支读取它，但唯一调用处 LOITER_SEARCH 已先把非空 preferred 转入 APPROACH；实际走到 arcPoint 时不会执行该读取。 |
 | combat.attack_entry_distance | 18 | 8–48 | 格 | C 攻击入口距离参考；会结合前摇、速度和其他最小距离计算。 |
 | combat.breakaway_distance | 12 | 6–40 | 格 | C 离场原始参考。Settings.attackExitDistance() = 此值×2/3，默认 8；Exit 长度另结合速度/转向，不能视为固定离场时间。 |
 | combat.loiter_time_ticks | 80 | 0–600 | ticks | C 无目标盘旋期限，之后返航。 |
@@ -78,7 +59,6 @@
 | combat.slope_sample_radius | 16 | 3–32 | 格 | C 提交近/远坡面采样的半径上限。 |
 | combat.slope_sample_step | 0.5 | 0.25–1 | 格 | C 提交坡面采样间隔；Sampler 实际截到 .25–.4 以连续跟踪陡坡，越小纯计算与快照请求成本越高。 |
 | safety.emergency_teleport_range | 96 | 32–512 | 格 | C 远离活动中心恢复阈值基准；实际范围会与 T.hardRange + 16 取大值。 |
-| safety.forward_collision_check_distance | 6 | 2–24 | 格 | **遗留，无消费者**。当前动态预测走廊不读取此值。 |
 | safety.corridor_side_margin | 0.35 | 0.05–1 | 格 | C 普通 Glide 请求身体横向余量；不同紧急/创造/接触策略可有独立余量。 |
 | safety.corridor_vertical_margin | 0.35 | 0.05–1 | 格 | C 普通 Glide 请求身体上下余量；不是所有检测统一膨胀值。 |
 | safety.return_timeout_ticks | 300 | 60–1200 | ticks | C 返航超过时限尝试安全落点传送/Home 恢复。 |
@@ -316,3 +296,7 @@ HUD 当前字段包含名称/UUID 前缀/维度/选中序号、状态、原因/�
 ### 0.6.2.10 攻击搜索诊断
 
 ATTACK_SEARCH 每女仆通常 20 ticks 限频（commit 另记），显示目标实际位移、提前量、距离、重试数、候选统计和 Rejoin 原因。ATTACK_CONTINUATION_REJECT 区分执行阶段丢失的接触/离场。noContact 表示未认证接触，包含接触前碰撞，不能一律当成射程不足。字段含义见 [移动目标专项](MOVING_ATTACK_06210.md#诊断)。
+
+## 0.7.0 配置迁移
+
+移除无行为消费者的 `previous_target_bonus`、`climb_height`、`forward_collision_check_distance`，不再由 `/wfs config` 暴露。旧值无需映射；NeoForge 配置校正可删除这些旧键。依据见 [审计](ARCHITECTURE_070.md)。

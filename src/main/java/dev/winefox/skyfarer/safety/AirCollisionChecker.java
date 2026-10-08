@@ -47,6 +47,14 @@ public final class AirCollisionChecker {
         }
         return best;
     }
+    public static boolean supportedLanding(EntityMaid maid,double x,double y,double z){
+        var point=new Vec3(x,y,z);
+        if(!loaded(maid,point.add(0,.3,0),point.add(0,-.3,0)))return false;
+        var floor=groundBelow(maid,point.add(0,.3,0),.6);
+        if(!Double.isFinite(floor)||Math.abs(y-floor)>.1)return false;
+        if(!maid.level().getFluidState(BlockPos.containing(x,floor+.01,z)).isEmpty())return false;
+        return maid.level().noCollision(maid,maid.getType().getDimensions().makeBoundingBox(point));
+    }
     public static boolean loaded(EntityMaid maid, Vec3 from, Vec3 to) {
         int steps = Math.max(1, (int)Math.ceil(from.distanceTo(to) / 4));
         for (int i = 0; i <= steps; i++) if (!maid.level().hasChunkAt(BlockPos.containing(from.lerp(to, i / (double)steps)))) return false;

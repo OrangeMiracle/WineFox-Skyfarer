@@ -1,12 +1,6 @@
-# WineFox: Skyfarer 工程总索引
+# WineFox: Skyfarer 0.7.0 工程总索引
 
-0.6.2.11：推进资格、需求与激流候选统一；独立 10 tick 预蓄力保持 READY，不占实体 item-use；攻击/离场/紧急与 Transit 接入同一能力层。当前规则与历史覆盖关系见 [统一推进与 READY](PROPULSION_06211.md)。下列旧版本段落保留为历史，涉及实体副手持续使用、禁止 Strike/Exit 激流及旧 PlanningTask.Riptide 的描述均已被替代。
-
-0.6.2.10：移动目标使用三组未来拦截点，当前状态重验 Strike→Exit 后提交；准备区围绕预计拦截点保持有界，补能不再向外延伸或抢占可用攻击入口。机制、诊断、比较回放与限制见 [移动目标拦截](MOVING_ATTACK_06210.md)。
-
-0.6.2.9 既有变更：空中恢复使用独立的速度证书与实际 12 tick 恢复段；创造 Home 任务就近落地后释放控制，由 TLM 日程返回。源码因果、接口及验证边界见 [空中恢复与 Home 交接](AIR_RECOVERY_HOME_0629.md)。
-
-这是**项目总索引、当前项目事实总览和新开发会话的第一阅读入口**，面向维护者与后续 Codex。玩家安装与使用介绍保留在 [README](../README.md)。本文按 2026-10-08 的源码核对；构建版本为 **0.6.2.11**。
+当前代码、推进边界、删除清单与配置迁移见 [0.7.0 审计](ARCHITECTURE_070.md)，完整构建证据见 [验证](VALIDATION.md)。版本化专题是历史证据；当前规则以本索引和源码为准。
 
 ## 先读：长期维护规则
 
@@ -33,25 +27,9 @@
 
 ## 1. 项目定位与版本事实
 
-| 项目 | 当前事实与出处 |
-| --- | --- |
-| 名称 / ID | WineFox: Skyfarer / `winefox_skyfarer`；[入口类](../src/main/java/dev/winefox/skyfarer/WineFoxSkyfarer.java) |
-| 工作模式 ID | `winefox_skyfarer:skyfarer`；[SkyfarerTask](../src/main/java/dev/winefox/skyfarer/compat/tlm/SkyfarerTask.java) |
-| 平台 | Minecraft 1.21.1，NeoForge；构建固定 NeoForge 21.1.250 |
-| Java / 构建 | Java 21；Gradle Wrapper；ModDev 插件 2.0.148；[build.gradle](../build.gradle)、[gradle.properties](../gradle.properties) |
-| 必需依赖 | `libs/touhoulittlemaid-1.5.3-neoforge+mc1.21.1.jar`、`libs/spear-backport-neoforge-1.8.0-1.21.1.jar` |
-| 可选兼容 | YSM；`tools/ysm-reference.jar` 只用于编译参考；兼容检查针对其 2.6.5 接口，不是必需依赖 |
-| 构建版本 | `build.gradle` 的 `version='0.6.2.11'`，Jar Manifest 的 `Implementation-Version` 来自它；[neoforge.mods.toml](../src/main/resources/META-INF/neoforge.mods.toml) 同步为 0.6.2.11。修正了此前 0.6.0/0.5.4 不一致；发版仍须核对实际 Jar |
-| 运行依赖范围 | 元数据限定 MC `[1.21.1]`、NeoForge `[21.1.250,21.2)`、TLM `[1.5.3,1.6)`、Spears `[1.8.0,1.9)`，均为 BOTH；范围声明不等于每个版本均已实测 |
-| 许可证 | [LGPL-3.0-only](../LICENSE) |
+当前版本 **0.7.0**，基于本地 `172d9f5` 的 0.6.2.11；Minecraft 1.21.1 / NeoForge 21.1.250 / TLM 1.5.3 / Spears 1.8.0。Gradle 与 Mod 元数据一致，无 Funnel，无 Cataclysm 硬依赖。
 
-核心玩法是让东方女仆使用鞘翅、烟花和 Spears 长矛执行自主空战，并通过遥控器、指挥镜和调试工具管理她们。目标是能持续进攻、合理选择路线并安全离场；不是靠普通战斗直接写速度或瞬移来伪造命中。
-
-0.6.1.1 从用户确认的本地 `606f79d` 恢复 0.6.1 架构，移除 0.6.2/0.6.3 Funnel。新增有界 ±50/60/70° 曲线/坡线候选，继续使用 VanillaElytra、AttackCertificate/Rejoin 和全路线能量/离场认证。两种指挥镜服务端 pick 排除全部 EntityMaid；`RemoteWakeScheduler` 负责可重试的公平分批发现及 generation 释放。此次只执行编译和指定范围的检查；历史 0.6.1 全量通过记录不能冒充当前全量结果。
-
-装备与生存规则见 [EQUIPMENT_SURVIVAL](EQUIPMENT_SURVIVAL.md)：长矛即可启用工作模式；起飞另需剩余耐久至少 20 且真正能飞的鞘翅及原有烟花条件。低耐久先换备用，无备用在空中安全返航、地面普通长矛近战。可配置额外鞘翅 ID；雨中/水面恢复可选择经完整预测的激流辅助推进。
-
-0.6.2.1 历史基线基于本地 `deaebca`，新增按真实动量和转向余量提前避障、完整认证的最后手段 EMERGENCY_BOOST_TURN、保留高空滑翔的任务生命周期、Launch Attack 与更快的陡角收平；修复真实崩溃栈中的 TransitFlight debug 首 tick 空指针。完整实现与证据边界见 [0.6.2.1 稳定性说明](STABILITY_LAUNCH_0621.md)。
+长矛可启用工作模式；起飞需真正可滑翔的合格鞘翅及可用推进或已认证的无推进路线。Unbreakable 不触发低耐久，正常可损坏鞘翅采用剩余 20 门槛。低耐久可换备用；否则空中返航、落地普通左键战斗。远程资格允许合法激流或烟花。
 
 ## 2. 当前已存在的功能
 
@@ -144,6 +122,8 @@ Java 包根为 `src/main/java/dev/winefox/skyfarer/`。目录名称不能直接�
 | [VanillaElytra](../src/main/java/dev/winefox/skyfarer/flight/VanillaElytra.java) / [PhysicsContext](../src/main/java/dev/winefox/skyfarer/flight/PhysicsContext.java) / [PhysicsProvider](../src/main/java/dev/winefox/skyfarer/flight/PhysicsProvider.java) | 1.21.1 mapped 源码自由飞行公式；gravity/缓降冻结 DTO；实体/Level 身份绑定采集 | Provider 只在主线程；step 只读 DTO，不发明空气阻力属性 |
 | [EnergyReserveEnvelope](../src/main/java/dev/winefox/skyfarer/flight/EnergyReserveEnvelope.java) | Approach→Strike→Exit 每步未来需求与最差 reserve | Worker 中的评分/补能指标；普通 AttackCertificate 和曲线 Rejoin 的动力学认证拥有最终否决权 |
 | [SweepingAttackPlanner](../src/main/java/dev/winefox/skyfarer/flight/SweepingAttackPlanner.java) | 当前动量、接触方向、目标 → C1 连续入口/离场曲线与闭环回放 | 候选/评分/接入重验证在 Worker；当前曲线指令与进度判断是主线程轻量跟踪 |
+| [FlightPropulsion](../src/main/java/dev/winefox/skyfarer/compat/tlm/FlightPropulsion.java) | Demand/Route → 统一选择、认证与执行控制权 | 主线程；Riptide 与 Firework 各守自身生命周期，Transit 共享执行边界 |
+| [LandingApproach](../src/main/java/dev/winefox/skyfarer/flight/LandingApproach.java) / [PropulsionRoute](../src/main/java/dev/winefox/skyfarer/flight/PropulsionRoute.java) | 最终下降触地认证 / Turn、Curve、Glide 需求形状 | 前者有界检查身体和支撑；后者为不可变数值需求，不含 Entity/Level |
 | [HeadingController](../src/main/java/dev/winefox/skyfarer/flight/HeadingController.java) / [FireworkManager](../src/main/java/dev/winefox/skyfarer/flight/FireworkManager.java) | 规划姿态 / 已验证寿命代价和背包 → 朝向 / 实际火箭及消耗 | 主线程；前者每 tick 起始姿态避免多次指令累加转向，后者每控制器维护活动火箭与冷却 |
 | [CommandManager](../src/main/java/dev/winefox/skyfarer/command/CommandManager.java) | 玩家标记、女仆记录、目标与区域 → 分配、赶路、战斗交接、回收 | 主线程服务；玩家退出/死亡/卸载/关服对应清理；不按所有女仆机械选列表第一项 |
 | [TransitFlight](../src/main/java/dev/winefox/skyfarer/command/TransitFlight.java) | 已分配目标、女仆状态 → 普通免费推进或创造高速赶路 | 每次指挥赶路实例；主线程执行 + 独立异步会话；交接/结束 close，不与空战同时控制实体 |
@@ -153,7 +133,7 @@ Java 包根为 `src/main/java/dev/winefox/skyfarer/`。目录名称不能直接�
 
 ## 6. 状态机总览
 
-[AirCombatState](../src/main/java/dev/winefox/skyfarer/ai/AirCombatState.java) 共 20 个值，真实行为在控制器方法中。下面是主要可达路径，箭头不表示无条件转移：
+[AirCombatState](../src/main/java/dev/winefox/skyfarer/ai/AirCombatState.java) 共 17 个值，真实行为在控制器方法中。下面是主要可达路径，箭头不表示无条件转移：
 
 ```text
 GROUNDED → TARGET_ACQUIRE → TARGET_SELECTED → TAKEOFF_PREP → TAKEOFF → CLIMB
@@ -168,7 +148,7 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 水中且具备脱离资格 → WATER_ESCAPE → APPROACH / 原返航流程 / GROUNDED
 ```
 
-`BREAKAWAY`、`ABORT`、`EMERGENCY` 保留枚举与处理分支，但当前普通路径没有主动 `transition` 进入它们。`beginBreakaway()` 通常进入 `ATTACK_EXIT`。`ASSESS_NEXT_ATTACK_ENTRY` 是调试原因字符串，不是另一个枚举状态。
+0.7.0 删除不可达的 `BREAKAWAY`、`ABORT`、`EMERGENCY`；`beginBreakaway()` 进入 `ATTACK_EXIT`，紧急为该状态内的认证策略。调试传递状态名，不持久化旧枚举。
 
 索敌按**标记层级 → 上一目标/保护范围层级 → 同层幻翼 → 路线分数与切换滞后**比较；失败换目标另外使用避免集合，只有被避免目标可选时允许重试。不能将“幻翼优先”扩成全局无条件追击。详细状态目的、进入/退出、数据、Planner、回退及边界见 [飞控总览](FLIGHT_CONTROL_OVERVIEW.md)。
 
@@ -223,7 +203,7 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 | `sync_interval_ticks` / `log_interval_ticks` | 5 / 100 ticks | 调试同步 / 周期诊断，不是所有事件日志的统一频率 |
 | `debuglog` | false | 诊断日志开关；与调试棒绑定/HUD 显示不是同一个开关 |
 
-`previous_target_bonus`、`forward_collision_check_distance`、`climb_height` 是当前保留但不驱动有效运行路径的参数；不要在排障时依赖它们调参。特别是 `arcPoint()` 确实由 LOITER 调用，但调用前已排除 `preferred != null`，因此其中读取 `climbHeight()` 的有目标分支不会执行。详细依据见配置参考。
+0.7.0 已删除三个无效参数 `previous_target_bonus`、`forward_collision_check_distance`、`climb_height`。原因与配置迁移见 [审计](ARCHITECTURE_070.md)。
 
 ## 9. 调试与验证入口
 
@@ -231,7 +211,7 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 - HUD：状态、原因、目标、蓄力、姿态与异步指标。`captureMs` 是累计快照采集墙钟时间，`workerMs` 是各任务累计墙钟耗时，**不是 CPU profiler 结果**；`stale` 包含被失效取消的 pending，不是每 tick 过期比例。
 - 世界调试：红色目标线、蓝色引导、黄色身体预测通道、绿色入口方块与方向、青绿色拟合曲线；当前 HUD 女仆亮绿色粗透视框。不同线表示不同数据，不能用蓝色单一 waypoint 代替完整预测轨迹。
 - 指挥目标标记：普通亮红橙、创造亮紫，角框 + `▼` + 序号；穿墙简化，只有标记者可见。它和调试棒的女仆选择框是独立系统。
-- 入口命令：`./gradlew.bat build` 触发 `check` 及 26 项 verify；只编译可用 `classes`。当前环境包装脚本为 `tools/build.ps1`，参数和限制见 [验证文档](VALIDATION.md)。
+- 入口命令：`./gradlew.bat build` 触发 `check` 及 43 项 verify；只编译可用 `classes`。当前环境包装脚本为 `tools/build.ps1`，参数和限制见 [验证文档](VALIDATION.md)。
 - 完整验证包括 21 个控制器生命周期、2 个特殊攻击入口、2 个镜像山腰、7 个赶路生命周期，以及物理差分与包络验证；本轮实际结果与日志见 [buildHistory](../buildHistory.md)。离线通过不是对任意世界/模组组合的全覆盖证明。
 
 ## 10. 当前开发状态与限制
@@ -241,7 +221,7 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 | 已实现 | 骑空士空战、直线/曲线与坡面攻击、持续作战、指挥调度/区块票据、调试体系、共享异步流水线，以及 0.6.1 mapped 物理预测/冻结上下文/全程能量包络 |
 | 正在长期维护 | 预测与实际执行一致性、取消/旧结果边界、兼容 Mixin、配置消费者、离线回放，以及这套 `docs/`；不是承诺后台另有自动维护任务 |
 | 当前边界 | 预测不覆盖第三方 travel Mixin、外部火箭或外力；完整攻击认证时域最多 160 ticks。原生效果/实体 tick 时序与复杂模组组合仍需实机确认 |
-| 已知遗留 | 三个不驱动当前行为的配置，以及保留但当前没有普通入口的状态分支；不要为“文档看起来齐全”编造作用或自动删除兼容字段 |
+| 本轮清理 | 删除三个无效配置、三个不可达状态和无生产消费者的旧入口；具体证据见 0.7.0 架构审计 |
 | 性能边界 | 快照约 2 ms 是全服单 tick 累计采集软预算，不包含所有 Mod 工作；即时世界查询、实体扫描和创造极高速实际位移仍在主线程。缓存可短暂陈旧，依赖验收和实时安全检查 |
 | 验证边界 | 离线世界与外部 API 是夹具，不能完全复现真实区块时序、服务端调度、碰撞形状模组或网络同步；合成负载不是 MC MSPT/GC 基准 |
 | 需要实机验证 | 异步延迟对复杂地形命中与连续作战的影响、多女仆 MSPT/内存/GC、区块加载/卸载/回家竞态、高速赶路、YSM 各模型视觉与客户端同步 |
@@ -256,7 +236,7 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 | 不起飞、水中卡住、起飞立即急转 | [飞控总览](FLIGHT_CONTROL_OVERVIEW.md) | prepare / launchFlight / waterEscape、SurfaceLaunchPlanner；verifySurfaceLaunch、verifyControllerReplay |
 | 盘旋、不攻击、错误返航/跟主人 | 飞控总览、配置参考 | approach / compactTurn / CombatAnchor / TargetEvaluator；完整生命周期回放 |
 | 山腰、斜坡、曲线提前离场、掠过 | 飞控总览 | AttackLanePlanner、SlopeSampler、SweepingAttackPlanner / passedContact / Rejoin；verifySweepingAttacks、verifySweepingReplay |
-| 火箭补能迟滞/过冲/连续作战变差 | 飞控总览、[异步架构](ASYNC_PLANNING.md) | FireworkManager、manageEnergy、Pulse/Compact/SweepPulse slot 与兼容性；verifyCombatEntries、Controller replay |
+| 推进补能迟滞/过冲/连续作战变差 | 飞控总览、[推进审计](ARCHITECTURE_070.md)、[异步架构](ASYNC_PLANNING.md) | FlightPropulsion、各提供器、manageEnergy、Demand/Route 与 slot 兼容性；verifyUnifiedPropulsion、verifyCombatEntries、Controller replay |
 | 主线程卡顿、任务一直 waiting、GC | 异步架构、[验证体系](VALIDATION.md) | capture / pump / enqueue、MaidTerrainSource、PlannerExecutor；verifyAsyncPlanning、verifyPlannerLoad，再做实机测量 |
 | 远处唤醒、标记分配、落地回家 | 配置参考、飞控总览 | CommandManager、RemoteWakeScheduler、Registry、Tickets、TransitFlight、CommandHomeRecallMixin；verifyRemoteWake、verifyCommandDispatch、verifyDispatchReplay |
 | 双击、友好目标、小碰撞箱 | 飞控总览、配置参考 | SpearPassHistory、MaidSpearCollisions、Spears mixins；verifyMaidCombat、verifySpearIntercept |

@@ -1,0 +1,48 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyControllerReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+home-continuous attack=92 hits=3 landed=806 peak=34.12 radius=93.65 rockets=8
+Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.
+
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyArchitecture
+0.7 architecture: provider-free upper control, closed worker DTOs, dead config/state removal and live config retention passed.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyUnifiedPropulsion
+phase=APPROACH duration=4 fullTrace=17
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+phase=REPOSITION duration=4 fullTrace=17
+phase=AIR_RECOVERY duration=4 fullTrace=17
+phase=EXIT duration=4 fullTrace=17
+phase=TRANSIT duration=4 fullTrace=17
+phase=EMERGENCY duration=3 fullTrace=16
+intercept motion=0.0 duration=1 completeStrikeExitTrace=100 exitDuration=1
+intercept motion=0.08 duration=1 completeStrikeExitTrace=99 exitDuration=1
+intercept motion=-0.08 duration=1 completeStrikeExitTrace=99 exitDuration=1
+emergency wall turn yaw=-135.0 duration=1
+actual emergency glide=unsolvable Riptide=7 thrustTicks completed=true rockets=0
+continuous combat targets=2 hits=2 safeExit=true releases=3 rockets=0
+Unified propulsion phases, strike/exit/deadline rejection, emergency corridor, shortest duration, repeated READY and source fallback passed
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 1m 2s
+8 actionable tasks: 6 executed, 2 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

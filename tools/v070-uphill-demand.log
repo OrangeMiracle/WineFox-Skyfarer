@@ -1,0 +1,15 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyControllerReplay
+Cave-only idle, hidden preferred rejection, visible upper body and live aim offsets passed.
+Visible -> occluded search, hidden attack exclusion, expiry and dead-target release passed.
+uphill-cycle attack=209 hits=1 landed=364 peak=38.43 radius=65.95 rockets=3
+Production controller full lifecycle replay passed: acquire -> takeoff -> approach -> attack/hit -> exit -> reacquire -> return -> landing. No game launched.
+
+BUILD SUCCESSFUL in 30s
+2 actionable tasks: 2 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

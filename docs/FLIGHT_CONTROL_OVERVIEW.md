@@ -1,27 +1,6 @@
 # 飞控系统总设计与当前实现
 
-0.6.2.11：推进资格、需求与激流候选统一；独立 10 tick 预蓄力保持 READY，不占实体 item-use；攻击/离场/紧急与 Transit 接入同一能力层。当前规则与历史覆盖关系见 [统一推进与 READY](PROPULSION_06211.md)。下列旧版本段落保留为历史，涉及实体副手持续使用、禁止 Strike/Exit 激流及旧 PlanningTask.Riptide 的描述均已被替代。
-
-0.6.2.10：移动目标使用三组未来拦截点，当前状态重验 Strike→Exit 后提交；准备区围绕预计拦截点保持有界，补能不再向外延伸或抢占可用攻击入口。机制、诊断、比较回放与限制见 [移动目标拦截](MOVING_ATTACK_06210.md)。
-
-0.6.2.9 既有变更：空中恢复使用独立的速度证书与实际 12 tick 恢复段；创造 Home 任务就近落地后释放控制，由 TLM 日程返回。源码因果、接口及验证边界见 [空中恢复与 Home 交接](AIR_RECOVERY_HOME_0629.md)。
-
-0.6.2.8：激流普通起飞实际执行推进后的 24 tick 无动力恢复，推进截止和交接都须满足速度/高度下限，并预测转向及下一次蓄力余量；完成后才允许普通飞控/机会攻击接管。一次起飞只认证当地出发，不以远目标作为必须到达的终点。激流失败搜索在本次起飞中锁存，备用异步规划不再饿死。普通/创造远程指令共用实时推进资格（合法激流或烟花），取消旧烟花硬门槛，保留已有免费 TransitFlight。详细数值、证据与边界见 [装备与生存](EQUIPMENT_SURVIVAL.md)。
-
-0.6.2.7：普通激流起飞单独认证离地净空、eye+6 起飞高度和可继续飞行状态，近目标不再作为刹停终点；攻击接近仍检查目标余量。激流以最短安全整数 tick 时长执行，按原版 I/II/III 最大 10/20/30 ticks、每 tick 0.2 速度增量；推进后从实际状态重新做攻击认证。无动力起飞不能只认证短暂跳跃，必须具有末段可用速度/高度；离地重验失败明确安全恢复。完整日志因果与物理扩展见 [装备与生存](EQUIPMENT_SURVIVAL.md#0627-近目标起飞与可控时长推进)。
-
-0.6.2.6 激流执行以实体实际副手 use session/remaining ticks 驱动前摇，经原生 releaseUsingItem 释放事件进入女仆适配回调，确认实际冲量和 spin；正常完成与路径中断分离，后者不再标为 LAUNCH_COMPLETE。并未放宽规划/碰撞门槛，实机证据和诊断见 [装备与生存](EQUIPMENT_SURVIVAL.md#0626-激流使用与释放审计)。
-
-0.6.2.5 推进顺序：滑翔已足够时不消耗推进；需要补能时先认证激流，再考虑烟花，激流不复用火箭冷却/对齐门槛。起飞先尝试地面前摇→普通跳跃→滑翔→激流释放，再退回烟花或经过预测的普通起飞；激流 spin 结束后重新认证机会目标的 Strike→Exit，失败继续 CLIMB/APPROACH。已经承诺的 Strike/Exit 与 active rocket 不插入激流。环境、库存、证书等待和执行拒因均有 PROPULSION/RIPTIDE 记录。
-
-0.6.2.2 增加装备安全门槛、落地长矛普通近战、可选鞘翅身份配置，以及不侵入已承诺攻击的激流辅助推进。控制器和指挥赶路均先尝试备用换装；低耐久空中返航保留滑翔。0.6.2.3 明确不可损坏装备豁免；普通长矛使用真实左键范围并兼容 TLM 距离加成，保留近身盲区和后撤；装备气泡改为持久事件去重与错峰限频。0.6.2.4 将普通导航跳跃与托管飞行区分，装备不合格的地面离地过程不再接管飞控、清除路径；资格失败按实际原因记录。详见 [装备与生存](EQUIPMENT_SURVIVAL.md)。
-核对日期：2026-10-08。源码基线：Gradle 项目版本 `0.6.2.11`。本文描述当前源码，不是未来设计提案；mapped 物理依据与完整路线认证详见 [VANILLA_PHYSICS.md](VANILLA_PHYSICS.md)。
-
-本文面向修改飞控算法、状态机和路径规划，以及排查飞行行为的维护者。新会话先读 [PROJECT_INDEX.md](PROJECT_INDEX.md)，线程池、快照、缓存与结果有效性细节继续读 [ASYNC_PLANNING.md](ASYNC_PLANNING.md)。配置、HUD 和命令见 [CONFIG_DEBUG_REFERENCE.md](CONFIG_DEBUG_REFERENCE.md)，验证入口见 [VALIDATION.md](VALIDATION.md)。
-
-**本文属于实现的一部分。** 改动控制流程、状态条件、预测公式、Planner、线程边界或参数含义时同步更新。若本文与源码冲突，以源码为准并修正文档。历史迭代原因可查 [buildHistory.md](../buildHistory.md)，不要把旧版本描述套用于当前实现。
-
-0.6.2.1 的紧急转向、Launch Attack、交接/卸载恢复和最新崩溃分析见 [稳定性与起飞攻击](STABILITY_LAUNCH_0621.md)。
+当前版本 **0.7.0**。推进所有权、删除与迁移见 [架构审计](ARCHITECTURE_070.md)，构建结果见 [验证](VALIDATION.md)。源码为最终权威。
 
 ## 导航
 
@@ -117,7 +96,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 水中恢复：满足资格时从地面或托管飞行 -> WATER_ESCAPE
           出水后 -> startApproach / 原返航流程 / 落地释放
 
-其他分支：LOITER_SEARCH、BREAKAWAY、ABORT、EMERGENCY
+其他分支：LOITER_SEARCH；紧急机动在 ATTACK_EXIT 内执行
 ```
 
 图表示主要逻辑边，不保证每条边隔一个完整 tick。`TARGET_SELECTED`、承诺攻击后调用 `attack()`、离场结束后的 `approach()` 等可以在同一个 tick 完成多个步骤；日志和回放需保留中间转移。
@@ -126,8 +105,6 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 - `ASSESS_NEXT_ATTACK_ENTRY` 是进入 `APPROACH` 的诊断 reason，不是枚举状态。
 - `PULL_UP` 不是当前状态。离场是 `ATTACK_EXIT`，可直线爬升、转弯爬升、转弯平飞、直线平飞或继续已选曲线。
-- `BREAKAWAY` 有兼容分支，但当前正常 `beginBreakaway()` 直接进入 `CHAIN_ATTACK` 或 `ATTACK_EXIT`。不能把它写成每次攻击必经阶段。
-- 当前源码中没有常规主动 `transition(ABORT/EMERGENCY)` 入口；两者保留分支语义，不应假定调试时一定能观察到。
 - `AirCombatState.controlsAir()` 与 `AirCombatController.controlsAir()` 不同：运行时实际接管依据后者的 `managed` 标记。
 
 ### 3.2 全状态共同约束
@@ -136,7 +113,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 **托管期间。** 每 tick 清理 TLM 导航、`WALK_TARGET/PATH/LOOK_TARGET/TARGET_POS` 和地面移动输入；滑翔时设置 `FALL_FLYING` 姿态。这样地面跟随行为不会持续把空中攻击航向拉向主人。实际模型动画是客户端兼容问题，服务端姿态不能保证每个第三方模型都有鞘翅动画。
 
-**目标与续航。** `ATTACK_RUN/DIVE/SPEAR_CHARGE/CHAIN_ATTACK/BREAKAWAY` 锁定一轮攻击目标；`AttackPolicy.finishCycle()` 还包括 `ATTACK_EXIT`。燃料耗尽或最大滞空时间到达时先设置 `pendingReturn`，已承诺循环允许完成离场再返航。设备/工作资格失效、滑翔中断等则可更早转返航。
+**目标与续航。** `ATTACK_RUN/DIVE/SPEAR_CHARGE/CHAIN_ATTACK` 锁定一轮攻击目标；`AttackPolicy.finishCycle()` 还包括 `ATTACK_EXIT`。燃料耗尽或最大滞空时间到达时先设置 `pendingReturn`，已承诺循环允许完成离场再返航。设备/工作资格失效、滑翔中断等则可更早转返航。
 
 **落地与边界。** 托管飞行在起飞准备之外触地，立即 `release()`；若不是返航，reason 是 `GROUND_CONTACT_RECOVER`，不会假装保持空中攻击状态。超范围安全判断同时参考战斗中心距离与当前合法目标距离，转弯暂时远离中心不自动打断一次近目标攻击。
 
@@ -169,25 +146,22 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 ### 4.4 `TAKEOFF_PREP`
 
-- **目的：** 保证站立身体能离地；优先搜索同一战略层内更适合起飞上刺的合法目标，以完整 Launch Attack 认证选择目标和姿态，无解回退普通起飞。
-- **进入/输入：** 来自 `TARGET_SELECTED`；目标、当前姿态/速度、起跳预测点、重力、库存 Flight 时长。
-- **Worker：** 先由 `LaunchAttackPlanner` 搜索每目标 27 条上升曲线，并在地面预热滑翔体积的 Rejoin；准备等待有界。普通起飞用 `SurfaceLaunchPlanner.choose()`，枚举相对朝向 `0/±45/±90/180°` 和 pitch `-88/-70/-50/-25/0/15°`，验证完整推进加滑翔恢复；使用预计滑翔体积，而非站立头高作为空中通道尺寸。
-- **主线程：** 先真实扫掠站立眼点上方约 `0.45` 格；构造预期跳起状态（脚底基点 + `0.82`、`vy=(.42-gravity)*.98`）；逐库存 duration 比较计划；转向选定姿态，准备满 4 ticks 调用原版 JumpControl。
-- **退出/失败：** 起跳 -> `TAKEOFF`；目标失效、跳起被堵或计划无解 -> 释放。等待异步必需结果时抵消该状态本 tick 的计时，不消耗准备窗口。
+- 主线程先检查鞘翅和真实站立跳跃净空，向推进层提交局部可持续起飞需求。合法 READY 激流优先，不把近目标当刹停终点，也不要求一次推进到远目标。
+- 激流无解或有界等待耗尽后，搜索同战略层最多四个合法目标的 Launch Attack；不适合则普通起飞。提供器负责候选库存与物理差异，主线程只使用姿态/路线证书。
+- Worker 预测使用跳起滑翔身体与实际 gravity；所有方案必须证明离地、接触/恢复及安全接管。无解保持地面或正常回退，不伪造飞行。
+- 阶段计时回退不能反复重开耗尽的首选推进搜索，阻断后备方案。
 
 ### 4.5 `TAKEOFF`
 
-- **目的：** 真正离地后启动鞘翅和选定烟花，避免“预测能起飞但火箭作用于错误姿态”。
-- **输入/Worker：** 实际离地状态、准备计划及烟花 duration；若位置/垂直速度偏离准备容差，则重新请求起飞计划。
-- **主线程：** `ElytraFlightController.startGliding()` 检查地面、水、骑乘、漂浮效果、鞘翅；按选定角度转身，对当前第一步再做 live 身体检查，成功生成附着火箭并消耗一枚库存。
-- **退出：** Launch Attack 当前 Rejoin 通过且目标仍合法时，开始原生蓄力并进入 `ATTACK_RUN`；待定最多三空中 ticks 或无解后回退普通起飞。普通推进成功 -> `CLIMB`，前 6 ticks 的离地姿态由 `SurfaceLaunchPlanner` 控制（已执行第一步，保存剩余 5 ticks）。
-- **失败：** 缺计划释放；默认超过 `takeoff_timeout_ticks=60` -> 返航。已生成火箭不叠加新火箭。
+- 激流分支由提供器完成普通跳跃、离地滑翔、当前状态重验与副手 READY 释放；推力和恢复段由同一预测控制律执行，然后进入 CLIMB。
+- 其他分支重新验证离地状态及原计划。Launch Attack 通过当前 Rejoin 才启动原生 Spears；待定时间有界，失败回普通起飞。
+- 普通方案由推进层执行已认证的附着推进或无推进起飞，前 6 ticks 保留离地引导并逐步检查实际净空。仍有起飞 timeout。
 
 ### 4.6 `WATER_ESCAPE`
 
 - **目的：** 入水时恢复飞行，避免继承攻击/返航状态后永远卡住。
 - **进入/输入：** 主线程通过真实 `maid.isInWaterOrBubble()`；保存 `getSwimManager().wantToSwim()` 及此前返航原因，停止充能、清理锁定目标和旧路线。
-- **Worker：** 水中允许水体、仍拒绝固体/熔岩/边界/未知空间的 `SurfaceLaunchPlanner`。水中移动按 TLM `wantToSwim` 对应的当前速度位移及 `.9` 阻力预测；已有火箭按剩余寿命评估，否则按库存所有寿命评估。
+- **Worker：** 水中允许水体、仍拒绝固体/熔岩/边界/未知空间的 `SurfaceLaunchPlanner`。水中移动按 TLM `wantToSwim` 对应的当前速度位移及 `.9` 阻力预测；激流先经统一需求与自身水中预测认证；附着推力后备使用 SurfaceLaunchPlanner，已有火箭按剩余寿命评估，否则按提供器候选的所有寿命评估。
 - **主线程：** 开启 wantToSwim、离开水底时起跳；最多向上查 32 格已加载水柱，求出水高度 +4；真实姿态/火箭/当前步碰撞均在主线程执行。
 - **退出：** 出水后恢复旧游泳意愿；触地释放；空中重新滑翔后，原本返航则恢复返航，否则扫描并进入下一次攻击评估。
 - **失败：** 资格或鞘翅失效、当前步变化导致碰撞、无通道、超时 `max(80, takeoff_timeout_ticks*2)` -> 释放并回退原游泳行为。这里不是穿墙/穿熔岩特权。
@@ -253,12 +227,6 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 - **退出：** 最多 `min(40, post_attack_charge_ticks)` ticks、累计行程 18 格、最多两个后续命中；charge 结束、无可行次目标或恢复走廊不成立 -> `ATTACK_EXIT`。
 - **特殊：** 搜索和可见性/实体过滤仍在主线程；规划不会修改主目标战略优先级。默认 3 秒 charge 是上限之一，二段追击自身只有最多 40 ticks 的预算。
 
-### 4.14 `BREAKAWAY`
-
-- **目的：** 保留的离场交接分支。
-- **行为：** 分支调用 `breakaway()`，清空恢复原点，立即转 `ATTACK_EXIT` 并选择离场。
-- **实际入口：** 当前 `beginBreakaway()` 不先设置此枚举，直接按命中结果开始 chain 或 exit。它仍出现在 `locksRunTarget/finishCycle` 等兼容判定中。
-
 ### 4.15 `ATTACK_EXIT`
 
 - **目的：** 顺着已经可行的出口尽快脱离，并立即评估下一轮；不把“持续抬头”当成唯一动作。
@@ -284,26 +252,14 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 - **Worker：** 方向偏差 >40° 且距离 >10 格时先 Compact 转弯，再 Glide 到落点上空；普通能量规则可为安全返航补能。
 - **主线程：** 查找真实已加载、无液体且站立身体能容纳的落点。初次、每 20 ticks 或目的地变化 >12 格时重查；跟随模式主人不存在/不同维度则沿当前前向安全下降。
 - **退出：** 有落点且水平距离 <10 格 -> `LANDING`；已落地释放。默认 `return_timeout_ticks=300` 后 Home 尝试在已加载安全落点 teleport；跟随调用 TLM `teleportToOwner`。
-- **重新开战：** 尚未 LANDING，仍能滑翔、有装备和燃料、工作合法、滞空预算足够，且返航原因属于 `NO_TARGET_AFTER_LOITER/ALIGNMENT_TIMEOUT/EXIT_PATH_TIMEOUT/COMBAT_AREA_EMERGENCY_RANGE` 时可重扫，在硬范围 +8 内重新进场。并非所有返航原因都允许取消返航。
+- **重新开战：** 尚未触地，仍能滑翔、有装备和燃料、工作合法、滞空预算足够，且返航原因属于 `NO_TARGET_AFTER_LOITER/ALIGNMENT_TIMEOUT/EXIT_PATH_TIMEOUT/COMBAT_AREA_EMERGENCY_RANGE/FLIGHT_LIMIT_OR_FUEL` 时可重扫，在硬范围 +8 内重新进场。并非所有返航原因都允许取消返航。
 
 ### 4.18 `LANDING`
 
 - **目的：** 明确允许接触地面，把身体姿态恢复与地面行为交接完成。
 - **输入/控制：** 已找到的落点；关闭长矛，只使用 HeadingController 朝落点下降，不调用普通能量补能。
 - **规划：** 不启动新的攻击路径；主线程可按返航节拍更新落点。`validateImmediateMotion()` 特意跳过该状态，否则接近地面会被误判为必须抬头。
-- **退出/失败：** 触地释放；返航总超时安全回收仍适用。LANDING 不允许重新扫到目标后立即加速复战。
-
-### 4.19 `ABORT`
-
-- **目的/当前状态：** 保留失败转返航入口，当前普通控制路径未直接设置此状态。
-- **输入/行为：** 以当前 diagnostic 为原因调用 `beginReturn()`；无独立 Worker 算法。
-- **维护要求：** 若新增入口，确认该 reason 是否允许在 `AttackPolicy.canResume()` 再开战，避免永久重试同一失败循环。
-
-### 4.20 `EMERGENCY`
-
-- **目的/当前状态：** 保留由 `returnToAnchor()` 处理的紧急返航分支，当前无常规主动转入点。
-- **区别：** `GlidePlanner.Mode.AIRBRAKE/REVERSAL/NO_CLEAR_PATH` 是实际生效的紧急机动结果，不要求状态枚举变成 `EMERGENCY`。一般安全机动由 `terrainSafety()` 转入 `ATTACK_EXIT` 或留在当前返航流程。
-- **维护要求：** 排查紧急制动应检查 planner mode 和 `CORRIDOR_*` reason，而非只搜 EMERGENCY 状态。
+- **退出/失败：** 触地释放；返航总超时安全回收仍适用。软返航尚未触地时，如果重新看到合法目标、装备/推进/工作资格与滞空预算均满足 canResume，可恢复空战。Command 完成、Home 本地收尾、装备故障等硬返航不允许取消。
 
 ## 5. 目标、战斗中心与锁定
 
@@ -425,56 +381,13 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 快照有年龄，动态放方块、爆炸、其他 Mod 外力、区块加载状态变化都可能让旧预测失效；因此不能删除当前步 live guard 或最终伤害射线来追求“完全异步”。[CorridorProbe](../src/main/java/dev/winefox/skyfarer/safety/CorridorProbe.java) 仍是主线程实时适配器，与 Worker 的 `CollisionSnapshot.Space` 不可混用。
 
-## 8. 能量、烟花和补能时机
+## 8. 统一推进与能量
 
-### 8.1 当前能量模型
+`manageEnergy`/曲线跟随先评估 coast；飞控向 `FlightPropulsion` 提交需求与 Turn/Curve/Glide 路线，合法且通过全段认证的 READY 激流优先，烟花后备。普通等待有界、紧急不等待未准备资源。低速本身不能推翻已经可命中的滑翔曲线；pending 不等于 coast 失败。
 
-可用比机械能近似为：
+激流拥有推进期间的姿态与剩余路线认证；附着推力继续使用既有 Vanilla 积分器，预测参数只由推进服务提供。火箭完整随机寿命、冷却、爆炸惩罚、库存和点火延迟留在提供器。激流环境、装备、READY、可控时长与副手释放留在激流层。没有把两者视作同一种力。
 
-```text
-E = gravity * (eyeY - referenceY) + 0.5 * (vx² + vy² + vz²)
-reserve(t) = E(t) - 0.5 * minimumSpeed(t)²
-routeReserve = min(reserve(t))，覆盖 Approach → Strike → Exit
-```
-
-参考高度是未来路线需求：普通路线纳入剖面、接触与出口，曲线取剩余采样路径最高点；不引用脚下谷底或绝对世界高度。这个非守恒 heuristic 用于排序与补能，最终可达性由冻结物理逐 tick 回放决定；正 reserve 不能覆盖碰撞、错失接触或出口未完成，负 reserve 也不是不可达证明。`minimum_boost_speed=.8`、`energy_reserve=.08` 是普通默认门槛；精确攻击使用 `.4/.02`，且最低攻击速度至少达到武器伤害门槛 +.05。攻击并不追求始终最大速度。
-
-完整攻击预测上限 160 ticks；必须完成接触、离场行程、至少接触后 16 ticks 与火箭燃尽后 16 次无动力移动，结束水平速度至少 .3 且不低于请求门槛。出口高度按既有 ATTACK_EXIT 语义为导向与储备需求，完成条件仍是有界行程和安全通道，不强迫盘旋抵达一个已经掠过的空间点。时域耗尽不能当成部分路线成功。普通姿态选择的 24-tick 窗口不等于这份完整证书。
-
-`manageEnergy()` 先验证无新烟花能否继续，再检查朝向、入口长度和恢复通道；库存火箭都不安全时宁可重定位。它不会在 LANDING、REPOSITION、CHAIN_ATTACK 做普通巡航补能。Compact/曲线跟踪有各自受限补能分支。
-
-### 8.2 随机烟花寿命不能按固定 CD 替代
-
-[RocketProfile](../src/main/java/dev/winefox/skyfarer/flight/RocketProfile.java) 的有效推进区间：
-
-```text
-minimumTicks(duration) = 10 * (1 + duration) + 1
-maximumTicks(duration) = minimumTicks + 11
-expectedTicks(duration) = minimumTicks + 5.5
-```
-
-每个 Flight duration 有 12 个可能的整数推进时长。起飞、攻击补能和恢复规划必须覆盖全部，而非只验证均值；活动火箭则读取真实 `life/lifetime`，剩余为 `max(0,lifetime-life+1)`。预测程序遵循火箭在女仆移动后更新速度的顺序；EntityTick.Pre 新建火箭下 tick 才首次推进，0/1 tick 的 `rocketDelay` 单独冻结，不扣掉一次有效推进。
-
-`FireworkManager` 有默认 30 ticks CD，活动火箭期间也拒绝叠加。选择只在主线程遍历可提取的真实库存，按 duration 合并规划成本；带爆炸效果加 1000 成本但不是绝对禁用。成功 addFreshEntity 后才真正提取一件，失败时撤销新火箭。地面释放和显式 dispose 会丢弃所管理的活动火箭；合法空中 release 进入返航，不直接撤销滑翔。
-
-保守预算有上限：SurfaceLaunch 拒绝最大寿命 >64 ticks，Glide 完整 forecast 拒绝剩余推进 >80 ticks，Compact 基准 `max(32,rocket+rocketDelay+16)>96` 则不接受。额外 Mod 自定义超长烟花不被假定为可安全预测。
-
-源码：[FireworkManager](../src/main/java/dev/winefox/skyfarer/flight/FireworkManager.java)、[GlidePlanner.reviewPulse/forecast](../src/main/java/dev/winefox/skyfarer/flight/GlidePlanner.java)。
-
-### 8.3 防止“接近时失速，最后一发火箭飞过头”
-
-当前实现有几道独立门槛，日志排查要分开：
-
-- coast 结果还在异步等待时，提前排队各库存 duration 的 pulse review，不能等待 coast 完成后才开始全部计算。
-- 精确攻击距矛尖触及还有 >4 格、闭合速度 <.8、能量 <.16 且预测 miss 较大时，允许提前尝试补能。
-- APPROACH 无动力预测安全、水平速度 >.45、已达到攻击高度 -.2 且距目标不足“火箭速度入口长度 +6”时，不用突然增速毁掉前摇窗口；低于目标时不因眼前可滑翔就套用这个禁补能 heuristic。
-- 脉冲从现在一直验证到随机寿命结束和无动力恢复；如果会在前摇/瞄准完成前经过目标且 miss>.04，拒绝该火箭。
-- 低能量攻击因旧出口吸收不了火箭而被拒绝时，可评估直线/±45° 的新出口，而非立刻放弃接触。
-- ATTACK_EXIT 已安全且水平速度 >.6 或正在上升时不为普通储备再补能；Compact 目标必须固定，不能因补能而无限增长目标高度。
-- ATTACK_EXIT 在无新火箭预测不安全、水平速度 <.65、下降且距地 <4 格时，其恢复不再由 20° 对齐 heuristic 禁止点火：只有 Worker 证明全部随机寿命的受限转向、身体通道和燃尽后恢复安全时才补能。原因是等待对齐会让低速女仆在离场转弯中耗尽高度；离场行程上限与完成条件不变。普通进攻的对齐规则保持。
-- 如果正在下降、速度 <.65、离地 <6 且原攻击不安全，可验证局部 Compact 脉冲并转 `REPOSITION` 恢复。
-
-`pulseReview` 的 `async_pending`、`cooldown_*`、`active_pulse`、`pulse_trajectory_rejected` 与真正没有烟花是不同情况。增加 CD 或强制补能不能替代对这些分支的分析。
+完整需求矩阵、READY 生命周期与物理差异见 [0.7.0 架构](ARCHITECTURE_070.md)。`EnergyReserveEnvelope` 仍衡量整段未来需求；碰撞、接触和完整 Strike→Exit 是硬否决条件。预测伤害不能直接扣血。
 
 ## 9. 长矛实际命中与多目标连续攻击
 
@@ -584,7 +497,14 @@ expectedTicks(duration) = minimumTicks + 5.5
 - 本文记录实现和既有验证入口，不宣称每种自然地形都能命中；有限候选和有限已加载空间可以正确返回无安全路线。
 - 曲线、坡面、普通 Glide、Compact 和 Chain 是组合控制，尚非统一全局最优路线求解器。不存在整维度导航图或保证最终可达的绕障搜索。
 - 快照更新有间隔；实体碰撞、特殊方块动态逻辑、第三方运动实现和渲染仍需实机确认。安全 guard 降低旧结果风险，不等于全世界动态变化的数学保证。
-- `BREAKAWAY/ABORT/EMERGENCY` 的保留分支和配置中未被当前飞控读取的字段不能当现役行为调参点；改动前查实际调用者。
+- 0.7.0 已删除不可达枚举与三个无效配置，迁移依据见架构审计。
 - `prediction_length_multiplier` 增长的是接入了 PredictionHorizon 的预测采样；不能声称所有 Planner、曲线长度、搜索半径和快照预算同时按该倍率放大。
 - 主线程仍承担目标实体扫描、实际接触、有限高度/着陆探测和当前步真实碰撞，创造高倍率 live 扫掠是显著需要实机剖析的边界。合成负载数字不是 MC MSPT/GC 优化率。
 - 用户负责 Minecraft 实机测试。当前工程维护规则是不安装/启动 Minecraft，仅构建与离线验证；构建与更新报告写 [buildHistory.md](../buildHistory.md)。
+
+
+### 0.7.0 最终下降与紧急交接
+
+LANDING 使用 LandingApproach 有界复核实际下降轨迹；仅有支撑、站立净空合格的预定触地可作为安全终点，不把地面接触一律当作应点火逃离的障碍。紧急路线仍完整认证，但初始脱险姿态只占用 8 tick，之后由当前恢复状态重新决策，保留实际活动推进预测。详见 [架构审计](ARCHITECTURE_070.md)。
+
+暂时遮挡的已观察合法目标可在 loiter_time_ticks 内复用有界 CompactTurn 恢复视线；固定观察点、推进需求和实际路线保持一致，隐藏目标本身不进入攻击候选。可见记忆每 5 tick 最多刷新一次，过期/返航/释放清除。

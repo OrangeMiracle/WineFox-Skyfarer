@@ -3,9 +3,8 @@ package dev.winefox.skyfarer.flight;
 /** Numerical flight scenarios only. No Minecraft classes, launcher, assets or world. */
 public final class FlightPredictionChecks {
     public static void main(String[] args) {
-        require(RocketProfile.score(1, 12, false) < RocketProfile.score(3, 12, false), "Short correction chooses short rocket");
-        require(RocketProfile.score(3, 46, false) < RocketProfile.score(1, 46, false), "Long climb chooses long rocket");
-        require(RocketProfile.score(1, 12, true) > RocketProfile.score(3, 12, false), "Prefer a non-explosive rocket");
+        require(RocketProfile.minimumTicks(0)==11 && RocketProfile.maximumTicks(3)==52,"native duration bounds");
+        for(int duration=0;duration<=3;duration++)require(RocketProfile.maximumTicks(duration)-RocketProfile.minimumTicks(duration)==11,"all twelve random lifetimes remain possible");
         int failures = 0;
         for (double speed : new double[]{0.8, 1.2, 1.7}) for (int rocket : new int[]{0, 1, 8, 20, 26, 31, 40, 46, 51})
             for (double height : new double[]{1.3, 5.3}) for (int rescue : new int[]{20, 26, 31}) if (!pass(speed, rocket, height, rescue)) failures++;

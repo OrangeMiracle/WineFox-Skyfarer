@@ -15,30 +15,30 @@ public final class EquipmentPropulsionChecks {
             require(pushed.vx()==s.vx()+x&&pushed.vy()==s.vy()+y&&pushed.vz()==s.vz()+z,"native additive impulse mismatch");vectors++;
         }
         var start=new FlightPrediction.State(0,80,0,0,-.1,.7,0,-15);
-        var clear=RiptidePlanner.choose(start,0,85,120,3,.08,(a,b,s,v)->true,SurfaceLaunchPlanner.DRY);
-        require(clear!=null&&clear.trace().size()==RiptidePlanner.WINDUP+clear.duration()+RiptidePlanner.RECOVERY+1,"full charge/thrust/recovery missing");
+        var clear=RiptidePlanner.choose(start,new PropulsionDemand(PropulsionDemand.Phase.APPROACH,0,85,120,.55),3,.08,(a,b,s,v)->true,SurfaceLaunchPlanner.DRY);
+        require(clear!=null&&clear.trace().size()==clear.duration()+RiptidePlanner.RECOVERY+1,"full READY thrust/recovery missing");
         double previous=0;
         for(float strength:new float[]{1.5f,2.25f,3f}) {
-            var plan=RiptidePlanner.choose(start,0,85,120,strength,.08,(a,b,s,v)->true,SurfaceLaunchPlanner.DRY);
+            var plan=RiptidePlanner.choose(start,new PropulsionDemand(PropulsionDemand.Phase.APPROACH,0,85,120,.55),strength,.08,(a,b,s,v)->true,SurfaceLaunchPlanner.DRY);
             require(plan!=null&&plan.strength()==strength,"riptide level missing from prediction");
             var release=RiptidePlanner.push(start,strength);
             double speed=Math.sqrt(release.vx()*release.vx()+release.vy()*release.vy()+release.vz()*release.vz());
             require(speed>previous,"stronger riptide did not change velocity");previous=speed;
         }
-        require(RiptidePlanner.choose(start,0,85,12,3,.08,(a,b,s,v)->true,SurfaceLaunchPlanner.DRY)==null,"overshoot allowed");
-        require(RiptidePlanner.choose(start,0,85,120,3,.08,(a,b,s,v)->b.z()<15,SurfaceLaunchPlanner.DRY)==null,"wall allowed");
+        require(RiptidePlanner.choose(start,new PropulsionDemand(PropulsionDemand.Phase.APPROACH,0,85,12,.55),3,.08,(a,b,s,v)->true,SurfaceLaunchPlanner.DRY)==null,"overshoot allowed");
+        require(RiptidePlanner.choose(start,new PropulsionDemand(PropulsionDemand.Phase.APPROACH,0,85,120,.55),3,.08,(a,b,s,v)->b.z()<1,SurfaceLaunchPlanner.DRY)==null,"wall allowed");
         // Native sky test must consult isRainingAt (sky + heightmap + biome), not global rain alone.
         checkCalls("net/minecraft/world/entity/Entity.class","isInWaterOrRain","isInRain");
         checkCalls("net/minecraft/world/entity/Entity.class","isInRain","isRainingAt");
         checkCalls("net/minecraft/world/level/Level.class","isRainingAt","canSeeSky");
         checkCalls("net/minecraft/world/level/Level.class","isRainingAt","getHeightmapPos");
-        checkCalls("dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.class","strengths","isInWaterOrRain");
+        checkCalls("dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.class","prechargeItem","isInWaterOrRain");
         checkCalls("dev/winefox/skyfarer/compat/tlm/GroundSpearCombat.class","tick","doHurtTarget");
-        checkCalls("dev/winefox/skyfarer/ai/AirCombatController.class","manageEnergy","tryRiptide");
-        checkCalls("dev/winefox/skyfarer/ai/AirCombatController.class","prepare","tryRiptide");
+        checkCalls("dev/winefox/skyfarer/ai/AirCombatController.class","manageEnergy","choosePropulsion");
+        checkCalls("dev/winefox/skyfarer/ai/AirCombatController.class","prepare","tryPreferredPropulsion");
         checkCalls("dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.class","strength","getTridentSpinAttackStrength");
         checkCalls("dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.class","tick","startGliding");
-        checkCalls("dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.class","tick","releaseUsingItem");
+        checkCalls("dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.class","tick","releaseUsing");
         checkCalls("dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.class","ownsUse","getUsedItemHand");
         checkCalls("dev/winefox/skyfarer/mixin/MaidRiptideReleaseMixin.class","wfs$release","releaseAuthorized");
         checkCalls("dev/winefox/skyfarer/mixin/RiptideUseAuditMixin.class","wfs$auditStop","riptideUseStopped");

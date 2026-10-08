@@ -3,8 +3,6 @@ package dev.winefox.skyfarer.compat.tlm;
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 import dev.winefox.skyfarer.async.AsyncPlanning;
 import dev.winefox.skyfarer.flight.*;
-import net.minecraft.world.item.Items;
-import net.minecraft.core.component.DataComponents;
 import java.util.List;
 
 /** One live qualification and candidate arbitration boundary; physics remains provider-specific.
@@ -33,13 +31,13 @@ public final class PropulsionCapability {
         public String source(){return !riptide.isEmpty()?"RIPTIDE":!fireworks.isEmpty()?"FIREWORK":"NONE";}
     }
     public static Snapshot inspect(EntityMaid maid){
-        var durations=new java.util.TreeSet<Integer>();var inv=maid.getAvailableInv(false);
-        for(int i=0;i<inv.getSlots();i++){
-            var stack=inv.getStackInSlot(i);
-            if(!stack.is(Items.FIREWORK_ROCKET)||inv.extractItem(i,1,true).isEmpty())continue;
-            var data=stack.get(DataComponents.FIREWORKS);durations.add(data==null?0:data.flightDuration());
-        }
-        return new Snapshot(RiptidePropulsion.strengths(maid),durations.stream().limit(3).toList(),maid.isInWaterOrRain());
+        return new Snapshot(RiptidePropulsion.strengths(maid),FireworkManager.durations(maid),maid.isInWaterOrRain());
+    }
+    public static String source(EntityMaid maid){return inspect(maid).source();}
+    /** Saved registry records cannot know live weather. Admission always takes a fresh snapshot. */
+    public static String rejection(EntityMaid maid){
+        var snapshot=inspect(maid);
+        return snapshot.available()?null:snapshot.wet()?"no_firework_or_usable_riptide":"no_firework_riptide_environment_invalid";
     }
     private int waiting;
     private PropulsionDemand.Phase phase;

@@ -1,0 +1,87 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :jarJar NO-SOURCE
+> Task :jar UP-TO-DATE
+> Task :assemble UP-TO-DATE
+> Task :compileTestJava NO-SOURCE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :test NO-SOURCE
+> Task :compileControllerReplay
+
+> Task :verifyAirRecoveryHome
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+air recovery state=APPROACH wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=REPOSITION wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=ATTACK_EXIT wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=LANDING wet=true release=1 rockets=0 altitude=10.85686970093614
+air recovery state=APPROACH wet=false release=0 rockets=1 altitude=4.7756137855153575
+Home kept loaded; initiallyGrounded=false releasedTick=134 position=(11.793180744040413,0.0,14.620500219478261)
+Home kept loaded; initiallyGrounded=true releasedTick=1 position=(0.0,0.0,0.0)
+Air recovery / dry rejection / continuously-loaded 900-block Home local landing and control release passed
+
+> Task :verifyAsyncPlanning
+Moving certificate: 648 bounded candidates, current-state rejoin, native windup, missing cells, boundary and wall veto passed
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Async boundary checks passed: immutable DTOs, world-border keys, strict unknown cells, main-only capture, identical math, generation/target/config/dimension invalidation, cancellation, bounded queues and restart.
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyAsyncSweep
+Snapshot curve=RIGHT_ARC contact=54
+tick 0 pending gen=2 cells=0 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=0
+tick 1 pending gen=2 cells=0 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=0
+tick 2 pending gen=2 cells=100 requested=92 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=70
+tick 3 pending gen=2 cells=200 requested=1 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=80
+tick 4 pending gen=2 cells=201 requested=0 jobs=1 cache=0 queue=0 cache=0 stale=0 failed=0 captureMs=0 workerMs=86
+tick 5 ready=true gen=2 cells=201 requested=0 jobs=0 cache=1 queue=0 cache=1 stale=0 failed=0 captureMs=0 workerMs=90
+review=false hit=false contact=-1 last=State[x=1.7667133615315642, y=6.732693365890213, z=8.917079799137479, vx=-0.10862632808650705, vy=-0.2558443908394545, vz=0.29365764047092635, yaw=26.09014129638672, pitch=-44.427005767822266, physics=null, rocketDelay=0]
+
+> Task :compileVerificationJava UP-TO-DATE
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses UP-TO-DATE
+
+> Task :verifyAttackEnvelope
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Attack envelope checks passed: downhill/uphill, cliff, translation, low/high speed, long approach, coast/inventory/12 lifetimes, active expiry, exit reserve, horizon and physics veto.
+
+> Task :verifyAttackPolicy
+Attack cycle, maneuver boundary, entry opportunity and repeated recovery checks passed.
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyCombatEntries
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+low-energy-summit hit=130 landed=394 upward=true maxSlowTicks=1 rockets=3
+upward-entry hit=22 landed=307 upward=true maxSlowTicks=0 rockets=3
+
+> Task :verifyCombatRecovery FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: configured radius must not be silently capped at twelve
+	at dev.winefox.skyfarer.flight.CombatRecoveryChecks.require(CombatRecoveryChecks.java:8)
+	at dev.winefox.skyfarer.flight.CombatRecoveryChecks.slopes(CombatRecoveryChecks.java:39)
+	at dev.winefox.skyfarer.flight.CombatRecoveryChecks.main(CombatRecoveryChecks.java:10)
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyCombatRecovery'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 47s
+13 actionable tasks: 9 executed, 4 up-to-date
