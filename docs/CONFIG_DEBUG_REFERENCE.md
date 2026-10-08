@@ -1,6 +1,6 @@
 # 配置、指挥、调试与兼容接口
 
-0.6.2.7 未新增配置开关。PROPULSION 增加 targetDistance、purpose（DEPARTURE/APPROACH）、duration；RIPTIDE 增加 duration/maxDuration、departure、thrustElapsed，持续加力 THRUST 每 5 ticks 记录。执行拒因区分 SNAPSHOT_MISSING、TRAJECTORY_REJECTED、ENTITY_OR_ANCHOR_REJECTED 与环境/物品/spin 丢失。时长上限与扩展物理见 [装备与生存](EQUIPMENT_SURVIVAL.md#0627-近目标起飞与可控时长推进)。
+0.6.2.8 未新增配置开关。RIPTIDE 的 RECOVERY_BEGIN 表示推力/spin 截止但起飞恢复尚未完成；COMPLETED 在恢复及实际交接检查通过后才记录，否则 HANDOFF_NOT_READY。EXECUTION_REJECTED 附带 snapshot/trajectory/entity/装备交换/开始使用等具体原因。COMMAND_ASSIGN 增加 propulsion；地面订单和已加载候选补记 qualification_failed，缺资源区分 no_firework_riptide_environment_invalid / no_firework_or_usable_riptide。保留 PROPULSION 的 targetDistance、purpose、duration，以及 RIPTIDE 的 duration/maxDuration、departure、thrustElapsed；后者在无推力恢复期仍为释放后的 elapsed，不代表仍在施加推力。详见 [装备与生存](EQUIPMENT_SURVIVAL.md)。
 
 0.6.2.6 的 RIPTIDE 诊断增加 selectedHand/item、usedHand、startTick、charge/remaining、sameUse、wet、enchantLevel、实际 RELEASE_CALLBACK impulse/spinStarted，以及明确的 END 拒因。CHARGING 每 5 ticks 采样；STATE_TRANSITION 与 USE_STOP 的有界调用栈说明切换和取消来源。原生事件否决或回调缺失记录 RELEASE_VETOED_OR_CALLBACK_MISSING，不静默补发冲量。详见 [释放审计](EQUIPMENT_SURVIVAL.md#0626-激流使用与释放审计)。
 
@@ -172,7 +172,7 @@ effectiveHard   = max(Settings.hardCombatRange(), effectiveCombat + 16)
 - 每 10 ticks 检查待派遣记录；每玩家每轮最多发起 2 次唤醒，全球最多 8 个 wake，各 100 ticks 到期。[RemoteWakeScheduler](../src/main/java/dev/winefox/skyfarer/command/RemoteWakeScheduler.java) 先处理从未尝试者，再按上次尝试顺序轮转；达到上限时不把未入队者标为 attempted。失败记录从尝试起冷却 200 ticks 后可重试，同一任务不会永久跳过它。
 - 标记增删、自然失效、死亡都刷新 revision/generation 并撤销旧 wake；任务空、创造目标卸载、登出、换维度和关服释放未接单票据。成功接单将发现票据移交订单的滚动窗口，生存订单直接释放；一只接单不终止其他候选的调度。回 Home 后下一任务重新建立尝试历史。
 - 持久化的 `skyfarer=false` 不再永久否决发现。旧/未知记录可以在范围内分批醒来核实，只有当前实体的主人、工作及装备符合条件才分配；命令和 attempted 均不存入 registry。TLM seed 忽略无位置记录。
-- 同维度、本人所属、当前骑空士、存活、有 AI、非坐下/睡眠/乘客/拴绳/打开 GUI，并有鞘翅、矛、库存烟花才可初次接单。
+- 同维度、本人所属、当前骑空士、存活、有 AI、非坐下/睡眠/乘客/拴绳/打开 GUI，并有合格鞘翅、矛及可用推进才可初次接单。推进为真实水/雨环境下可用激流三叉戟，或库存烟花；两种镜共用实时资格，不从 registry 推测雨况。地面再次核对，空中不会因为失雨直接清除滑翔。
 - 生存镜：跟随女仆无额外 Home 半径门槛；Home 默认玩家三维距离 ≤128。创造镜：**跟随/Home 都受 1000 格默认三维范围限制**；0 为无限。已接任务不会仅因玩家后来移远被范围条件撤销。
 - 分配对每只女仆独立评分：`markBonus − distance×0.04 − headingAngle×0.25 + previous?20:0 + route`；64 格内且目标实际加载时 route 取 TargetEvaluator.score×0.1。不强制五个标记一一分配，不保证均匀分摊。
 - 普通战斗扫描另使用最高标记战略层；该层内部仍按幻翼/路线/失败策略选择。标记列表变化会在非赶路、非承诺攻击的安全点重评；不能打断正在完成的刺击动作。
@@ -181,7 +181,7 @@ effectiveHard   = max(Settings.hardCombatRange(), effectiveCombat + 16)
 
 [TransitFlight](../src/main/java/dev/winefox/skyfarer/command/TransitFlight.java) 使用自己的异步规划 session，不复用战斗控制器状态。生存指令三维距离 ≤48 格交接，创造指令 ≤32 格交接。在赶路完成前固定分配目标，不因沿途普通怪物或新标记转头。
 
-创造模式通过 [CreativeTransitPlanner](../src/main/java/dev/winefox/skyfarer/command/CreativeTransitPlanner.java) 提供独立高速移动：基准 `BASE_SPEED=1.7`，倍率 1–100，目标高度受 cruiseHeight 公式及维度顶棚限制；水平距离 64 格开始下降，接近交接范围缩小速度。**此阶段确实会设置移动速度**；“所有飞行只改朝向、不改速度”仅适用于常规战斗，不适用于创造赶路。赶路不消耗背包烟花，仍要求出发时携带战斗所需烟花。交接移除免费推进并限制速度。
+创造模式通过 [CreativeTransitPlanner](../src/main/java/dev/winefox/skyfarer/command/CreativeTransitPlanner.java) 提供独立高速移动：基准 `BASE_SPEED=1.7`，倍率 1–100，目标高度受 cruiseHeight 公式及维度顶棚限制；水平距离 64 格开始下降，接近交接范围缩小速度。**此阶段确实会设置移动速度**；“所有飞行只改朝向、不改速度”仅适用于常规战斗，不适用于创造赶路。赶路不消耗背包烟花；出发时必须有可用激流或烟花，不能把无烟花等同无推进。交接移除免费推进并限制速度。
 
 创造每 tick 真正移动前在主线程核验当前身体整段扫掠；最多 12 次逐次半速尝试，失败回局部飞控。此真实即时检查不是异步几何结论的可省略副本，尤其 100 倍速可能跨过多个块。
 
@@ -248,7 +248,7 @@ HUD 当前字段包含名称/UUID 前缀/维度/选中序号、状态、原因/�
 
 异步任务失败另有 `[WFS] Async planner failed; result discarded: ...` 错误，不依赖 debuglog。错误从主线程 Source.failed 输出，同一异常字符串按 200 epoch 限频；发生 worker 异常并不允许回退成主线程重算。定位补能先看 `energyDecision`、`pulseReview`、`cooldown`；定位远程生命周期看 `COMMAND_ASSIGN`、`COMMAND_TRANSIT`、`COMMAND_RELEASE`、`COMMAND_HOME_RETURN`，同时检查实际 chunk entity-ticking 状态。
 
-远程唤醒新增 `REMOTE_WAKE owner=... maid=... generation=... stage=... reason=... attempted=... active=...`：`candidate_discovered / candidate_rejected` 仅在原因变化时记录；随后有 `wake_queued`、`ticket_created / ticket_failed`、`entity_loaded`、`qualification_failed / assignment_accepted`、`timeout`、`released`。失败原因区分 owner、dimension、work_mode、sitting、sleeping、passenger、leashed、gui_open、elytra、spear、fireworks 等；`attempted_until` 为本次重试冷却时刻。`released reason=transferred_to_order` 表示 wake 槽已释放、票据归订单管理；实际撤票看 `COMMAND_TICKET stage=released`。`COMMAND_TICKET stage=replace` 记录 wanted/held/success，创建失败的块不会被伪记为已持有；空或未完整创建的票据窗口不判定 ready。
+远程唤醒新增 `REMOTE_WAKE owner=... maid=... generation=... stage=... reason=... attempted=... active=...`：`candidate_discovered / candidate_rejected` 仅在原因变化时记录；随后有 `wake_queued`、`ticket_created / ticket_failed`、`entity_loaded`、`qualification_failed / assignment_accepted`、`timeout`、`released`。失败原因区分 owner、dimension、work_mode、sitting、sleeping、passenger、leashed、gui_open、wings_资格、spear、no_firework_riptide_environment_invalid、no_firework_or_usable_riptide 等；`attempted_until` 为本次重试冷却时刻。`released reason=transferred_to_order` 表示 wake 槽已释放、票据归订单管理；实际撤票看 `COMMAND_TICKET stage=released`。`COMMAND_TICKET stage=replace` 记录 wanted/held/success，创建失败的块不会被伪记为已持有；空或未完整创建的票据窗口不判定 ready。
 
 ## 6. 网络与兼容边界
 

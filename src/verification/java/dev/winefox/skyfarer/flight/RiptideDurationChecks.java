@@ -21,10 +21,20 @@ public final class RiptideDurationChecks {
         var jump=new FlightPrediction.State(0,.82,0,0,.3332,0,0,0);
         var nearAim=new FlightPrediction.Aim(0,-3,10,.3,7.8,0,0,0,0,2.25,.1,10);
         require(LaunchAttackPlanner.choose(jump,List.of(new LaunchAttackPlanner.Target(new UUID(0,1),nearAim)),List.of(),.08,5,.2,8,(a,b,s,v)->true,(a,b,t)->true)==null,"scenario unexpectedly permits uphill Launch Attack");
-        for(double distance:new double[]{6,10,32}) {
+        int departureDuration=0;
+        for(double distance:new double[]{6,10,32,64,256,900}) {
             var p=RiptidePlanner.choose(jump,0,7.3,distance,3,.08,(a,b,s,v)->Math.min(a.y(),b.y())>.55,SurfaceLaunchPlanner.DRY,RiptidePlanner.WINDUP);
             require(p!=null&&p.departure()&&p.duration()<30,"near target wrongly blocks ordinary departure "+distance);
             require(p.trace().getLast().y()>=6.3,"hop incorrectly accepted as departure");
+            require(RiptidePlanner.departureReady(p.trace().get(p.duration()),p),"thrust cutoff lacks sustainable energy");
+            require(RiptidePlanner.departureReady(p.trace().getLast(),p),"recovery handoff lacks sustainable energy");
+            require(p.duration()>5,"old five-tick hop still accepted");
+            if(departureDuration>0)require(p.duration()==departureDuration,"departure budget depends on task distance");
+            departureDuration=p.duration();
+            for(int n=1;n<p.duration();n++)for(double pitch:new double[]{-35,-55,-70}) {
+                var shorter=new RiptidePlanner.Plan(0,pitch,7.3,0,distance,3,n,true,0,List.of());
+                require(RiptidePlanner.certify(RiptidePlanner.aimLaunch(jump,0,pitch),shorter,RiptidePlanner.WINDUP,.08,(a,b,s,v)->true,SurfaceLaunchPlanner.DRY)==null,"departure not shortest sustainable duration");
+            }
         }
         // A shorter burst must rescue the SAME direction/goal when max duration hits a wall or overshoots.
         boolean wallRescued=false,overshootRescued=false;

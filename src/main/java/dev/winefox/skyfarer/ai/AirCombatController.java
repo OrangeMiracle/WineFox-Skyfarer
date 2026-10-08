@@ -398,6 +398,9 @@ public final class AirCombatController {
                     else {waypoint=new Vec3(goal.x,departureHeight,goal.z);transition(AirCombatState.TAKEOFF,"RIPTIDE_LAUNCH_WINDUP");}
                     return;
                 }
+                // Pending fallback work rewinds stateTicks. Do not restart the exhausted Riptide
+                // search on each such rewind and starve the ordinary/rocket launch branch.
+                riptideLaunchFailed=true;
             }
             var v=maid.getDeltaMovement();
             var start=new FlightPrediction.State(maid.getX(),maid.getY()+.82,maid.getZ(),v.x,(.42-gravity())*.98,v.z,maid.getYRot(),maid.getXRot(),planning.physics());
@@ -1411,7 +1414,7 @@ public final class AirCombatController {
         if((pending||best!=null)&&++riptideWaitTicks< (launch?40:12)) {
             if(riptideWaitTicks==1)propulsionLog("RIPTIDE_WAITING_CERTIFICATE",strengths,launch);return 1;
         }
-        propulsionLog(best!=null?"RIPTIDE_EXECUTION_REJECTED":pending?"RIPTIDE_WAIT_BUDGET":"RIPTIDE_NO_SAFE_PATH",strengths,launch);
+        propulsionLog(best!=null?"RIPTIDE_EXECUTION_REJECTED:"+riptide.beginRejection():pending?"RIPTIDE_WAIT_BUDGET":"RIPTIDE_NO_SAFE_PATH",strengths,launch);
         riptideWaitTicks=0;return 0;
     }
     private void propulsionLog(String reason,List<Float> strengths,boolean launch) {

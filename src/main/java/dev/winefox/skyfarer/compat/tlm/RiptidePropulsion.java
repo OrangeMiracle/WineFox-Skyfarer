@@ -29,6 +29,8 @@ public final class RiptidePropulsion {
     public int selectedDuration(){return plan==null?0:plan.duration();}
     public boolean completed(){return released&&"COMPLETED".equals(endReason);}
     private String endReason="";
+    private String beginRejection="NONE";
+    public String beginRejection(){return beginRejection;}
     public void context(String state){context=state;}
     private boolean ownsUse(EntityMaid m){return m.isUsingItem()&&m.getUsedItemHand()==InteractionHand.OFF_HAND&&m.getUseItem()==used&&m.getOffhandItem()==used;}
     private boolean startUse(EntityMaid m,String event) {
@@ -76,10 +78,14 @@ public final class RiptidePropulsion {
         return true;
     }
     public boolean begin(EntityMaid m,RiptidePlanner.Plan candidate,FlightPrediction.State s,AsyncPlanning planning,HeadingController heading) {
+        beginRejection="AIR_USE_OR_ENVIRONMENT_UNAVAILABLE";
         if(candidate==null||!ready(m)||m.onGround()||!m.isFallFlying()||m.isUsingItem())return false;
         var proof=planning.certifyRiptide(s,candidate,0,m.isInWaterOrBubble());
-        if(proof==null||!entitiesClear(m,proof,0)||!equip(m,proof.strength()))return false;
+        if(proof==null){beginRejection=planning.riptideRejection();return false;}
+        if(!entitiesClear(m,proof,0)){beginRejection="ENTITY_OR_ANCHOR_REJECTED";return false;}
+        if(!equip(m,proof.strength())){beginRejection="OFFHAND_EQUIP_REJECTED";return false;}
         plan=proof;
+        beginRejection="START_USE_REJECTED";
         heading.steerAngles(m,plan.yaw(),plan.pitch(),8,8);return startUse(m,"WINDUP");
     }
     /** Charge on the ground, then a normal JumpControl jump; release only AFTER leaving the floor.
@@ -89,11 +95,15 @@ public final class RiptidePropulsion {
         return new FlightPrediction.State(m.getX()+v.x,m.getY()+.82,m.getZ()+v.z,v.x*.91,(.42-physics.gravity())*.98,v.z*.91,m.getYRot(),m.getXRot(),physics.nextTick());
     }
     public boolean beginLaunch(EntityMaid m,RiptidePlanner.Plan candidate,AsyncPlanning planning,HeadingController heading) {
+        beginRejection="LAUNCH_USE_OR_ENVIRONMENT_UNAVAILABLE";
         if(candidate==null||!ready(m)||!m.onGround()||m.isUsingItem()||m.isInWaterOrBubble())return false;
-        if(!jumpClear(m))return false;
+        if(!jumpClear(m)){beginRejection="JUMP_BODY_BLOCKED";return false;}
         var proof=planning.certifyRiptide(RiptidePlanner.aimLaunch(jumpStart(m,planning.physics()),candidate.yaw(),candidate.pitch()),candidate,RiptidePlanner.WINDUP,false);
-        if(proof==null||!entitiesClear(m,proof,RiptidePlanner.WINDUP)||!equip(m,proof.strength()))return false;
+        if(proof==null){beginRejection=planning.riptideRejection();return false;}
+        if(!entitiesClear(m,proof,RiptidePlanner.WINDUP)){beginRejection="ENTITY_OR_ANCHOR_REJECTED";return false;}
+        if(!equip(m,proof.strength())){beginRejection="OFFHAND_EQUIP_REJECTED";return false;}
         plan=proof;launchCharging=true;jumpRequested=false;
+        beginRejection="START_USE_REJECTED";
         heading.steerAngles(m,plan.yaw(),plan.pitch(),180,90);return startUse(m,"LAUNCH_WINDUP");
     }
     private static boolean jumpClear(EntityMaid m) {
@@ -125,8 +135,13 @@ public final class RiptidePropulsion {
             launchCharging=false;elapsed=RiptidePlanner.WINDUP;
         }
         // Only WineFox's owned spin/thrust is shortened. Momentum and FALL_FLYING survive cutoff.
-        if(released&&elapsed>=plan.end()){cancel(m,"COMPLETED");return false;}
-        if(released&&(!m.isInWaterOrRain()||strength(m,used)!=plan.strength()||!m.isAutoSpinAttack())){cancel(m,"THRUST_ENVIRONMENT_ITEM_OR_SPIN_LOST");return false;}
+        if(released&&elapsed>=(plan.departure()?plan.handoff():plan.end())){
+            cancel(m,plan.departure()&&!RiptidePlanner.departureReady(s,plan)?"HANDOFF_NOT_READY":"COMPLETED");return false;
+        }
+        boolean recovering=released&&elapsed>=plan.end();
+        if(recovering){
+            if(elapsed==plan.end()){clearSpin(m);log(m,"RECOVERY_BEGIN");}
+        } else if(released&&(!m.isInWaterOrRain()||strength(m,used)!=plan.strength()||!m.isAutoSpinAttack())){cancel(m,"THRUST_ENVIRONMENT_ITEM_OR_SPIN_LOST");return false;}
         if(m.onGround()||!m.isFallFlying()||m.getOffhandItem()!=used
             ){cancel(m,"GROUND_GLIDE_OR_STACK_CHANGED");return false;}
         var proof=planning.certifyRiptide(s,plan,elapsed,m.isInWaterOrBubble());
@@ -140,7 +155,7 @@ public final class RiptidePropulsion {
             try {m.releaseUsingItem();} finally {RELEASING.remove();}
             if(!released){cancel(m,"RELEASE_VETOED_OR_CALLBACK_MISSING");return false;}
             log(m,"RELEASED");
-        } else if(released&&lastThrustAt!=m.level().getGameTime()) {
+        } else if(released&&!recovering&&lastThrustAt!=m.level().getGameTime()) {
             thrust(m);if((elapsed-RiptidePlanner.WINDUP)%5==0)log(m,"THRUST");
         }
         return true;
@@ -169,10 +184,11 @@ public final class RiptidePropulsion {
         if(plan==null)return;
         endReason=reason;log(m,"END:"+reason);
         if(ownsUse(m))m.stopUsingItem();
-        if(released){var spin=(LivingRiptideAccessor)m;spin.wfs$spinTicks(0);spin.wfs$spinDamage(0);spin.wfs$spinItem(ItemStack.EMPTY);spin.wfs$livingFlag(4,false);}
+        if(released)clearSpin(m);
         // Stop owned WineFox propulsion only. Velocity and FALL_FLYING are never reset here.
         plan=null;used=ItemStack.EMPTY;launchCharging=false;jumpRequested=false;
     }
+    private static void clearSpin(EntityMaid m){var spin=(LivingRiptideAccessor)m;spin.wfs$spinTicks(0);spin.wfs$spinDamage(0);spin.wfs$spinItem(ItemStack.EMPTY);spin.wfs$livingFlag(4,false);}
     public void transition(EntityMaid m,String from,String to,String reason){if(active())log(m,"STATE_TRANSITION "+from+"->"+to+":"+reason);context=to;}
     private static int level(ItemStack stack){return stack.getEnchantments().entrySet().stream().filter(e->e.getKey().is(Enchantments.RIPTIDE)).mapToInt(e->e.getIntValue()).max().orElse(0);}
     private void log(EntityMaid m,String event){if(dev.winefox.skyfarer.config.SkyfarerSettings.debugLogging())

@@ -10,13 +10,14 @@ import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.phys.Vec3;
+import java.util.List;
 
 /** Full controller departure through charge, jump, release, every thrust tick and post-burst flight. */
 public final class RiptideDepartureChecks {
     static void require(boolean b,String why){if(!b)throw new AssertionError(why+" events="+ReplayWorld.events.stream().skip(Math.max(0,ReplayWorld.events.size()-12)).toList());}
     public static void main(String[] args)throws Exception {
         System.setProperty("wfs.replayTickMillis","5");SkyfarerConfig.DEBUG_LOGGING.set(true);
-        run(10,true);run(6,true);run(32,true);run(32,false);continuous();
+        run(10,true);run(6,true);run(32,true);run(60,true);run(32,false);rejectedLaunchFallback();continuous();
         PlannerSession.stop();System.out.println("Actual controller near/far Riptide departures, complete metered thrust, post-burst flight and dry firework fallback passed");
     }
     static void continuous() {
@@ -47,20 +48,25 @@ public final class RiptideDepartureChecks {
         var w=new ReplayWorld();w.loadedRadius=256;var m=new EntityMaid(w,Vec3.ZERO);m.owner=new Player(w,new Vec3(8,0,8));
         m.rain=wet;m.inventory.count=wet?0:64;m.offhand=new ItemStack(Items.TRIDENT);m.offhand.strength=3;
         var target=new LivingEntity(w,new Vec3(0,0,distance));var c=new AirCombatController(m);
+        if(distance>32){CommandAccess.targets=x->List.of(target);CommandAccess.designated=(x,t)->t==target;CommandAccess.anchor=x->target.position();c.acceptCommand(target);}
         var manager=(RiptidePropulsion)RiptidePriorityChecks.field(c,"riptide");
         int duration=0,releaseTick=-1,completedTick=-1;
         for(int tick=1;tick<180;tick++) {
             w.advance(tick);var before=m.velocity;int pushes=m.pushCalls;c.tick();
             if(m.pushCalls>pushes)require(Math.abs(m.velocity.subtract(before).length()-RiptidePlanner.THRUST)<1e-6,"execution thrust differs from predicted per-tick impulse");
-            if(manager.active())duration=manager.selectedDuration();
+            if(manager.active()&&completedTick<0)duration=manager.selectedDuration();
             if(m.releaseCalls>0&&releaseTick<0)releaseTick=tick;
-            if(manager.completed()&&completedTick<0)completedTick=tick;
+            if(manager.completed()&&completedTick<0){
+                completedTick=tick;
+                require(m.velocity.horizontalDistance()>=.9&&m.getY()>=5,"handoff has insufficient speed/height");
+                require(tick>=releaseTick+duration+RiptidePlanner.DEPARTURE_RECOVERY,"recovery guidance skipped");
+            }
             if(wet&&completedTick<0)require(!c.spearAttackActive(),"uncertified Strike during departure");
             if(releaseTick>=0&&tick<=releaseTick+duration)require(m.pushCalls==Math.min(tick-releaseTick+1,duration),"actual impulse count diverged from duration");
             if(wet&&completedTick>=0) {
-                require(m.spinTicks==0&&m.pushCalls==duration&&m.offhand.damage==1,"cutoff/spin/durability mismatch");
+                if(tick==completedTick)require(m.spinTicks==0&&m.pushCalls==duration&&m.offhand.damage==1,"cutoff/spin/durability mismatch");
                 require(m.glide&&!m.ground,"ordinary departure collapsed to ground");
-                if(tick>=completedTick+12){require(m.getY()>3,"departure had no usable height");break;}
+                if(tick>=completedTick+40){require(m.getY()>3,"departure had no usable height after normal controller turn");break;}
             }
             if(!wet&&m.inventory.consumed>0)break;
             if(m.using)m.usedTicks++;
@@ -76,10 +82,22 @@ public final class RiptideDepartureChecks {
         }
         if(wet){
             require(releaseTick>0&&completedTick>=releaseTick+duration&&duration<30,"near/far ordinary Riptide departure failed distance="+distance);
-            require(m.inventory.consumed==0&&m.releaseCalls==1,"departure recharged or burned a rocket");
+            require(m.inventory.consumed==0&&m.releaseCalls>=1,"departure burned a rocket or never released");
             require(ReplayWorld.events.stream().anyMatch(s->s.contains(m.id.toString())&&s.contains("RIPTIDE_LAUNCH_COMPLETE")),"no completed departure transition");
         }else require(m.releaseCalls==0&&m.inventory.consumed>0,"dry trident prevented rocket fallback");
         System.out.println("departure targetDistance="+distance+" wet="+wet+" duration="+duration+" thrustCalls="+m.pushCalls+" altitude="+m.getY()+" state="+c.state()+" rockets="+m.inventory.consumed);
         c.dispose("TEST_END",false);
+        CommandAccess.targets=x->List.of();CommandAccess.designated=(x,t)->false;CommandAccess.anchor=x->null;
+    }
+    static void rejectedLaunchFallback() {
+        var w=new ReplayWorld();w.loadedRadius=256;var m=new EntityMaid(w,Vec3.ZERO);m.owner=new Player(w,new Vec3(8,0,8));
+        m.rain=true;m.vetoUseStart=true;m.inventory.count=64;m.offhand=new ItemStack(Items.TRIDENT);m.offhand.strength=3;
+        new LivingEntity(w,new Vec3(0,0,32));var c=new AirCombatController(m);
+        for(int tick=1;tick<180&&m.inventory.consumed==0;tick++){
+            w.advance(tick);c.tick();
+            if(!m.ground&&!m.glide){m.pos=m.pos.add(m.velocity);m.velocity=new Vec3(m.velocity.x*.91,(m.velocity.y-.08)*.98,m.velocity.z*.91);}
+        }
+        require(m.inventory.consumed>0&&m.releaseCalls==0,"rejected Riptide keeps restarting and starves rocket launch");
+        c.dispose("TEST_END",false);System.out.println("exhausted Riptide execution -> ordinary firework departure passed");
     }
 }

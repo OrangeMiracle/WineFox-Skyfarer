@@ -179,7 +179,10 @@ public final class CommandManager {
     private static String assign(ServerPlayer player,Session session,EntityMaid maid,boolean continuing,boolean creativeMission) {
         if(ORDERS.containsKey(maid.getUUID()))return null;
         String failure=qualification(player,maid);
-        if(failure!=null)return failure;
+        if(failure!=null){
+            if(maid.level().getGameTime()%40==0)wakeLog(player.getUUID(),maid.getUUID(),session.revision,"qualification_failed",failure,0);
+            return failure;
+        }
         var controller=SkyfarerRuntime.get(maid);if(controller!=null&&controller.state().locksRunTarget())return "committed_attack";
         UUID selected=null;Vec3 destination=null;double best=-Double.MAX_VALUE;
         for(var id:session.marks.ids()) {
@@ -203,7 +206,7 @@ public final class CommandManager {
         order.revision=session.revision;
         if(order.creative)CommandTickets.update(order.level,maid.getUUID(),maid.position(),order.destination);
         else CommandTickets.release(maid.getUUID()); // A discovery ticket must not become an unlimited survival ticket.
-        if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] COMMAND_ASSIGN maid={} target={} creative={} transit={} distance={}",maid.getUUID(),selected,order.creative,order.transit,maid.position().distanceTo(destination));
+        if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] COMMAND_ASSIGN maid={} target={} creative={} transit={} distance={} propulsion={}",maid.getUUID(),selected,order.creative,order.transit,maid.position().distanceTo(destination),dev.winefox.skyfarer.compat.tlm.PropulsionAvailability.source(maid));
         if(order.transit&&controller!=null)controller.handoffToTransit();
         else if(session.level.getEntity(selected) instanceof LivingEntity target)SkyfarerRuntime.ensure(maid).acceptCommand(target);
         return null;
@@ -222,7 +225,7 @@ public final class CommandManager {
         if(maid.guiOpening)return "gui_open";
         if(!SkyfarerEquipment.ensureWings(maid))return "wings_"+SkyfarerEquipment.wingQualification(maid);
         if(!SkyfarerEquipment.spear(maid))return "spear";
-        return SkyfarerEquipment.fireworks(maid)?null:"fireworks";
+        return dev.winefox.skyfarer.compat.tlm.PropulsionAvailability.rejection(maid);
     }
     private static void wakeLog(UUID owner,UUID maid,long generation,String stage,String reason,int attempted){
         if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] REMOTE_WAKE owner={} maid={} generation={} stage={} reason={} attempted={} active={}",owner,maid,generation,stage,reason,attempted,WAKES.active());
@@ -249,7 +252,13 @@ public final class CommandManager {
         var owner=o.level.getServer().getPlayerList().getPlayer(o.owner);var s=SESSIONS.get(o.owner);
         if(owner==null||owner.serverLevel()!=maid.level()||!eligible(owner,maid)||!SkyfarerEquipment.elytra(maid)||!SkyfarerEquipment.spear(maid)) {cancel(maid.getUUID());return false;}
         if(o.creative&&!activeCreative(s)){cancel(maid.getUUID());return false;}
-        if(!o.creative&&!o.transit&&maid.onGround()&&!SkyfarerEquipment.fireworks(maid)){cancel(maid.getUUID());return false;}
+        if(maid.onGround()&&!o.finishing) {
+            String failure=dev.winefox.skyfarer.compat.tlm.PropulsionAvailability.rejection(maid);
+            if(failure!=null){
+                wakeLog(o.owner,maid.getUUID(),o.revision,"qualification_failed",failure,0);
+                cancel(maid.getUUID());return false;
+            }
+        }
         var activeController=SkyfarerRuntime.get(maid);
         if(s!=null&&!s.marks.isEmpty()&&DispatchPolicy.refreshOrder(o.transit,o.finishing,o.revision!=s.revision,
             activeController!=null&&activeController.state().locksRunTarget())){

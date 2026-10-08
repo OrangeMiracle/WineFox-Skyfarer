@@ -6,13 +6,14 @@ import java.util.List;
 /** WineFox metered Riptide: native charge/release entry, bounded per-tick thrust, vanilla travel.
  * A departure is certified for flight readiness, not for stopping before a nearby attack target. */
 public final class RiptidePlanner {
-    public static final int WINDUP=10, RECOVERY=12;
+    public static final int WINDUP=10, RECOVERY=12, DEPARTURE_RECOVERY=24;
     public static final float THRUST=.2f;
     /** Native I/II/III strengths 1.5/2.25/3 map to 10/20/30 ticks; unknown effects remain bounded. */
     public static int maximumTicks(float strength){return strength>0&&Float.isFinite(strength)?10*Math.max(1,Math.min(3,Math.round(strength/.75f-1))):0;}
     public record Plan(double yaw,double pitch,double height,double goalX,double goalZ,float strength,int duration,boolean departure,double cost,List<FlightPrediction.State> trace) {
         public Plan {trace=List.copyOf(trace);}
         public int end(){return WINDUP+duration;}
+        public int handoff(){return end()+(departure?DEPARTURE_RECOVERY:RECOVERY);}
     }
     private RiptidePlanner() {}
     public static VanillaElytra.Look impulse(double yaw,double pitch,float strength) {
@@ -63,15 +64,39 @@ public final class RiptidePlanner {
         if(p.duration()<1||p.duration()>maximumTicks(p.strength())||elapsed<0)return null;
         var path=new ArrayList<FlightPrediction.State>();path.add(s);double cost=0;
         double dx=-Math.sin(Math.toRadians(p.yaw())),dz=Math.cos(Math.toRadians(p.yaw()));
-        for(int tick=elapsed;tick<p.end()+RECOVERY;tick++) {
+        for(int tick=elapsed;tick<p.handoff();tick++) {
             var next=step(s,p,tick,gravity,water.wet(s));
             if(!space.clear(s,next,.2,.15))return null;
             // Leave room for a fresh spear windup / landing turn instead of overshooting the destination.
             if(!p.departure()&&(p.goalX()-next.x())*dx+(p.goalZ()-next.z())*dz<6)return null;
             cost+=Math.pow(Math.max(0,p.height()-next.y()),2)*.01;
             s=next;path.add(s);
+            // A departure must already have usable height AND speed when thrust stops.
+            // Recovery cannot borrow an optimistic future climb to certify a weak hop.
+            if(p.departure()&&tick==p.end()-1&&!departureReady(s,p))return null;
         }
         if(water.wet(s)||Math.hypot(s.vx(),s.vz())<.55||s.y()<p.height()-1||p.departure()&&s.vy()<-.5)return null;
+        if(p.departure()&&(!departureReady(s,p)||!turnReserve(s,p,gravity,space,water)))return null;
         return new Plan(p.yaw(),p.pitch(),p.height(),p.goalX(),p.goalZ(),p.strength(),p.duration(),p.departure(),cost+Math.abs(s.y()-p.height())*.02,List.copyOf(path));
+    }
+    public static boolean departureReady(FlightPrediction.State s,Plan p) {
+        return s.y()>=p.height()-1&&Math.hypot(s.vx(),s.vz())>=.9&&s.vy()>=-.35;
+    }
+    /** Leave enough energy for a bounded turn and another native charge, without another boost.
+     * One safe side is sufficient; the normal controller must still certify its actual next action. */
+    private static boolean turnReserve(FlightPrediction.State start,Plan p,double gravity,GlidePlanner.Corridor space,SurfaceLaunchPlanner.Water water) {
+        boolean safe=false;
+        for(double turn:new double[]{-60,60}) {
+            var s=start;boolean clear=true;
+            for(int tick=0;tick<WINDUP+8;tick++) {
+                double yaw=FlightPrediction.turn(s.yaw(),p.yaw()+turn,8);
+                double pitch=FlightPrediction.turn(s.pitch(),0,8);
+                var next=SurfaceLaunchPlanner.step(s,yaw,pitch,gravity,false,water.wet(s));
+                if(!space.clear(s,next,.2,.15)||water.wet(next)||next.y()<p.height()-3){clear=false;break;}
+                s=next;
+            }
+            safe|=clear&&Math.hypot(s.vx(),s.vz())>=.65;
+        }
+        return safe;
     }
 }

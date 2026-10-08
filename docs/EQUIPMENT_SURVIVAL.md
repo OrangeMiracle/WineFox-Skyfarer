@@ -1,8 +1,22 @@
 # 装备、生存与激流推进
 
-源码版本 **0.6.2.7**，核对日期 2026-10-07。沿用 0.6.2.1 飞控，不引入 Funnel。源码为最终事实。
+源码版本 **0.6.2.8**，核对日期 2026-10-07。沿用 0.6.2.1 飞控，不引入 Funnel。源码为最终事实。
 
-## 0.6.2.7 近目标起飞与可控时长推进
+## 0.6.2.8 可持续起飞与远程推进资格
+
+实机 latest.log / debug.log 为同一 0.6.2.7 会话。latest.log 628、649–651 显示距离约 9.52 格选了 5 tick、实际释放完成后立刻 CLIMB→ATTACK_EXIT/CORRIDOR_REVERSAL；664–677 随后低速、触地。源码只在预测的 12 tick 恢复末端检查水平速度 ≥0.55，而执行器在推进截止就交接，没有执行该恢复控制。现不把预测中的未来恢复当作已经取得的飞行能力。[证据摘录](../tools/riptide-sustainable-evidence.txt)。
+
+起飞专用认证在**推进截止及交接**都要求：eye 高度 ≥ departureHeight−1、水平速度 ≥0.9 格/tick、vy ≥−0.35；departureHeight 仍为起飞 eye+6，完全独立于目标距离和目标高度。推进后沿同一预测控制律实际执行 **24 ticks 无推进恢复**，每 tick 从真实状态重验；到期再检查实际交接状态。另在预测末端测试左右 60° 的有界转向，各 18 ticks（10 tick 下一次前摇＋8 tick 转向），至少一侧全段扫掠安全、高度不低于 departureHeight−3，末速 ≥0.65。这是能量/转向余量，不能代替后续具体 Strike→Exit 认证。无级搜索仍从 1 tick 开始，不硬编码必须使用 9 ticks；当前平地回放自然选中 9 ticks，空中小补能仍可选 1–4 ticks。
+
+恢复期间不再加力、不要求仍在雨中，也不把它当激流 cooldown；只是起飞证书尚未完成，暂不插入攻击。spin 在推力截止清理，速度/FALL_FLYING 保留。真正交接后正常 CLIMB/APPROACH、机会攻击认证与下一次短激流均可继续。低空发生新危险时仍可中断并进入已有安全恢复。
+
+latest.log 731–734 在同一距离连续出现 EXECUTION_REJECTED→WAITING。源码发现 fallback 的 Pending 会退回 stateTicks，重新启动已耗尽的激流搜索；现为本次起飞记住耗尽，继续 Launch Attack/普通烟花或滑翔认证。后续新起飞重置该标志。新增执行拒因细分，不再只有笼统 EXECUTION_REJECTED。
+
+远目标发呆日志中另有大量 NO_LEGAL_TARGET，且 1342–1344 记录 wings=READY、fireworks=false、candidate_discovered/loaded，之后没有 COMMAND_ASSIGN。旧代码已加载候选资格失败直接返回、不记拒因；源码明确有初次接单必须烟花及普通订单地面重检必须烟花两道旧门槛。现统一走 `PropulsionAvailability`：实际水/雨资格下可用激流优先，否则烟花；两者都无则区分 `no_firework_riptide_environment_invalid` / `no_firework_or_usable_riptide`。普通/创造镜及 loaded/wake 共用真实实体资格，registry 不保存天气许可，订单地面再次核对，结束后的 Home recall 不被此重检打断。接单记录 propulsion，已加载资格拒绝每 40 ticks 记录，wake 拒绝仍立即记录。旧日志缺少拒因，不能据此认定每个 NO_LEGAL_TARGET 都来自烟花门槛；原战略范围/敌友规则保留。
+
+TransitFlight 本来就为普通/创造赶路提供免费、受预测认证的推进，不消耗背包烟花；本次不改变该既有机制。交接后清理免费火箭，再由战斗飞控选择实际库存激流/烟花。无烟花不再在接单前被拦下；不放宽 wake/票据上限，也不新增永久加载。
+
+## 0.6.2.7 近目标起飞与可控时长推进（历史；起飞恢复以 0.6.2.8 为准）
 
 **日志因果。** 指定实例 latest.log/debug.log 为同一 0.6.2.6 会话，不能重复累计：8 次 RIPTIDE_NO_SAFE_PATH、3 次 NO_LAUNCH_PLAN；另有成功蓄力和真实释放的记录。latest.log 855–863、884–889 显示先拒绝激流候选，再 CORRIDOR_JUMP，刚滑翔即 NO_LAUNCH_PLAN 并进入安全返航。“约 10 格”来自用户复现，旧日志未记数值距离；新版 PROPULSION 补记 targetDistance。摘录：[riptide-metered-evidence.txt](../tools/riptide-metered-evidence.txt)。
 
@@ -97,7 +111,7 @@ extra_elytra_items = ["cataclysm:ignitium_elytra_chestplate"]
 
 候选异步等待时，空中最多等待 11 个决策 tick，地面最多 39 个决策 tick，避免每次后台尚未完成就先点火；超出预算、物理无解或执行重验失败时允许烟花后备。未承诺 Strike 的 APPROACH 不再因请求含 aim 而完全跳过激流；已承诺 Strike/Exit 仍不能随意插入另一套推进。
 
-三叉戟可来自副手或 TLM 当前可用背包；选中后与原副手交换，保留长矛主手。TLM getAvailableBackpackInv 包含当前开放的女仆库存槽，非仅外置背包。按 EnchantmentHelper 读取真实强度，排除不可取出/无法交换/即将损坏物品。激流结束后三叉戟保留在副手。**没有人工冷却，也不读取火箭 cooldown**；仍不得打断使用中的物品或原生 20 tick spin。12 tick 恢复属于安全预测窗口，不额外阻止下一次决策。取消未释放使用后，只要重新符合条件即可再次规划。环境变化、物品变化、前摇不足或预测不安全均拒绝释放且不消耗耐久；已释放速度和滑翔标志不撤销。
+三叉戟可来自副手或 TLM 当前可用背包；选中后与原副手交换，保留长矛主手。TLM getAvailableBackpackInv 包含当前开放的女仆库存槽，非仅外置背包。按 EnchantmentHelper 读取真实强度，排除不可取出/无法交换/即将损坏物品。激流结束后三叉戟保留在副手。**没有人工冷却，也不读取火箭 cooldown**；仍不得打断使用中的物品或其他原生 spin。空中补能的 12 tick 恢复仅属于安全预测窗口；起飞的 24 tick 恢复由执行器真实完成后交接，不是额外激流冷却。取消未释放使用后，只要重新符合条件即可再次规划。环境变化、物品变化、前摇不足或预测不安全均拒绝释放且不消耗耐久；已释放速度和滑翔标志不撤销。
 
 起飞资格不再先要求烟花。TAKEOFF_PREP 优先认证激流：**地面预转向 → 地面至少 10 tick 前摇 → 原有 JumpControl 起跳 → 实际离地后开启 Elytra → 当前状态再次认证 → 激流释放**。地面前摇与跳跃身体空间在主线程检查，离地以后的激流/旋转/恢复路径使用滑翔尺寸数值快照，Worker 不读取实体。选择时计入地面自由转向，释放后仍遵守有动量的受限转向。此顺序使用原版合法的空中释放，未伪造地面冲量，也不执行仅地面释放才有的 1.1999999 格抬升。
 

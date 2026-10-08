@@ -1,8 +1,14 @@
 # 验证、离线回放与构建
 
-核对日期：2026-10-07。实现版本 0.6.2.7，基于本地 0.6.2.6 工作区继续修改。本轮只做编译、激流与受影响起飞路径定向检查和打包，未执行 build/check 或全量 verify，未启动 Minecraft。
+核对日期：2026-10-07。实现版本 0.6.2.8，基于本地 0.6.2.7 工作区继续修改。本轮只做编译、激流/远程推进与受影响起飞路径定向检查和打包，未执行 build/check 或全量 verify，未启动 Minecraft。
 
-0.6.2.7 当前证据：`tools/riptide-metered-acceptance.log` 中 compileJava、verifyRiptideDuration、verifyRiptideDeparture、verifyRiptideRelease、verifyRiptidePriority、verifyEquipmentLifecycle、verifyEquipmentPropulsion、verifyLaunchAttackReplay、jar 成功。覆盖 6/10/32 格普通激流起飞、近目标上升攻击无解、干燥时烟花 fallback、III 的 1/2/3/4/12/19 tick 候选与最短性、19 tick 实际加力/快照刷新/动量截止；保留使用事件、副手、碰撞和正常 Launch Attack 回归。追加 `tools/riptide-duration-obstacles.log` 独立区分更长方案撞墙与越过目标两类反例，也通过。当前 Mod 为 WineFox 可控推进扩展，原版全冲量差分只核对向量公式，不宣称复制原版完整冲刺。物品/实体/天气外部适配仍为离线夹具。
+0.6.2.8 当前证据：[riptide-sustainable-acceptance.log](../tools/riptide-sustainable-acceptance.log) 中 compileJava、verifyRiptideDuration、verifyRiptideDeparture、verifyRiptideRelease、verifyRiptidePriority、verifyRemotePropulsion、verifyRemoteWake、verifyLaunchAttackReplay、jar 均通过（七项针对性 verify）。6/10/32/60 格真实控制器回放从主矛副戟前摇、跳跃、9 tick 推力、24 tick 实际恢复，延长至交接后 40 ticks，无触地、无库存火箭消耗；近目标后续可正常再选 4 tick 激流。交接检查水平速度 ≥0.9、高度 ≥5；60 格为合法标记目标，没有绕过战略规则。数值规划另覆盖 256/900 格目标与近目标相同起飞时长，保留 III 的 1/2/3/4/12/19 tick 空中选择、短时长救回撞墙/overshoot，以及逐个更短起飞时长不可行断言。
+
+新增拒绝开始使用事件的真实 prepare 回放，确认有限激流尝试耗尽后仍能执行烟花起飞；原副手/释放否决/失雨/使用手覆盖/长矛恢复、火箭 cooldown 内选择激流仍通过。普通机会目标 Launch Attack 与无解普通起飞保持通过。
+
+verifyRemotePropulsion 使用生产 PropulsionAvailability、DispatchPolicy、RemoteWakeScheduler 和 TransitFlight，外部库存/雨/实体加载由夹具提供，验证两种镜 Home admission、干燥无烟花精确拒因和撤 wake 票、恢复湿润后重新 wake/assignment、零库存烟花赶路及滑翔交接。CommandManager 的完整 ServerTick/订单容器未由该夹具执行，仅编译并做两处资格调用的源码连接检查；不能把它描述成完整 Minecraft 远程实测。既有 verifyRemoteWake 另验证两女仆/两轮任务、13 候选分批、失败公平性、NBT 重建、全局上限和清理。TransitFlight 仍采用既有免费推进，这项回放不声称赶路本身执行了激流释放。
+
+0.6.2.7 历史证据：`tools/riptide-metered-acceptance.log` 中 compileJava、verifyRiptideDuration、verifyRiptideDeparture、verifyRiptideRelease、verifyRiptidePriority、verifyEquipmentLifecycle、verifyEquipmentPropulsion、verifyLaunchAttackReplay、jar 成功。覆盖 6/10/32 格普通激流起飞、近目标上升攻击无解、干燥时烟花 fallback、III 的 1/2/3/4/12/19 tick 候选与最短性、19 tick 实际加力/快照刷新/动量截止；保留使用事件、副手、碰撞和正常 Launch Attack 回归。追加 `tools/riptide-duration-obstacles.log` 独立区分更长方案撞墙与越过目标两类反例，也通过。当前 Mod 为 WineFox 可控推进扩展，原版全冲量差分只核对向量公式，不宣称复制原版完整冲刺。物品/实体/天气外部适配仍为离线夹具。
 
 0.6.2.6 历史证据：`tools/riptide-release-acceptance.log` 中 compileJava、verifyRiptideRelease、verifyEquipmentPropulsion、verifyRiptidePriority、verifyEquipmentLifecycle、verifyLaunchAttackReplay、jar 通过。新增主矛副戟、明确 OFF_HAND、实际 charge 延迟 4 ticks、释放回调仅一次、原生 spin 结束后的主手使用恢复，以及开始/释放事件否决、失雨、手被覆盖取消。真实原版 releaseUsingItem→onUseItemStop→releaseUsing 与新增 Mixin 回调连接用依赖字节码核对；外部物品事件与 JumpControl 为夹具，未启动实际 Mixin 游戏环境。当前实例日志的 28 次规划拒绝和一次实际释放后路径中断另见 [证据摘录](../tools/riptide-release-evidence.txt)，不将其误报为“均未蓄力”。
 
@@ -44,7 +50,7 @@
 在仓库根目录用 PowerShell：
 
 ```powershell
-# 完整发布检查：build → check → 所有 38 项 verify 任务
+# 完整发布检查：build → check → 所有 39 项 verify 任务
 & .\tools\build.ps1 -Stage maintenance-release -Tasks @('build', '--continue')
 
 # 有针对性的并发、几何和生命周期检查
@@ -61,7 +67,7 @@
 
 [tools/build.ps1](../tools/build.ps1) 只有 `-Stage` 与 `-Tasks` 两个参数，没有 `-ExtraArgs`。它在已安装路径存在时设置 JDK 21.0.10；为本机 Windows 的 AF_UNIX 限制设置 `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir`，让 JDK 回退 TCP；调用根目录 wrapper，日志写入 `tools/<Stage>.log`，显示尾部 65 行并保留 Gradle 返回码。移植到其他机器需核对本地 JDK/该环境专用设置，不把此路径当作项目必装目录。
 
-`build` 同时构建 Jar 和检查；仅 `assemble` 或 `jar` 成功不代表回归通过。`test` 目前是 `NO-SOURCE`，真正检查是 38 个 `JavaExec` 任务，它们的 `main()` 抛 `AssertionError` 判失败，不依赖 Java `-ea`。需要强制复跑时按 Gradle 方式传 `--rerun-tasks`；不要同时启动多个构建去争用相同的 `build/classes/controllerReplay` 和报告文件。
+`build` 同时构建 Jar 和检查；仅 `assemble` 或 `jar` 成功不代表回归通过。`test` 目前是 `NO-SOURCE`，真正检查是 39 个 `JavaExec` 任务，它们的 `main()` 抛 `AssertionError` 判失败，不依赖 Java `-ea`。需要强制复跑时按 Gradle 方式传 `--rerun-tasks`；不要同时启动多个构建去争用相同的 `build/classes/controllerReplay` 和报告文件。
 
 ## 2. 三类证据必须区分
 

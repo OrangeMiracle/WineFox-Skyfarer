@@ -2,7 +2,17 @@
 
 ## 当前交付状态
 
-当前交付为 **0.6.2.7**，在当前本地 0.6.2.6 源码之上修复。仅编译与针对性验证，不包含 Funnel；未启动 Minecraft。
+当前交付为 **0.6.2.8**，在当前本地 0.6.2.7 源码之上修复。仅编译与针对性验证，不包含 Funnel；未启动 Minecraft。
+
+### 0.6.2.8 可持续激流起飞、备用分支与远程资格（2026-10-07）
+
+- **实机定位**：latest.log/debug.log 确认 0.6.2.7，同一会话不重复累计。距离约 9.52 格时实际完成 5 tick 激流，但立即 CORRIDOR_REVERSAL，后续低速触地；代码只在预测恢复末端检查 ≥0.55 水平速度，实际未执行恢复就交接。另有同距离 EXECUTION_REJECTED→WAITING 重复；远程日志出现 loaded discovery、wings READY/fireworks=false、NO_LEGAL_TARGET，旧 loaded 资格失败返回被静默丢弃。摘录 [riptide-sustainable-evidence.txt](tools/riptide-sustainable-evidence.txt)。没有将所有远目标无合法目标日志一概归因于距离或激流预算。
+- **可持续起飞**：推进截止及 24 tick 实际无动力恢复后均检查高度、水平速度 ≥0.9、下降余量，预测末端还验证至少一侧 60° 转向＋下一次蓄力余量；全程 Vanilla travel/身体扫掠。恢复期间不插入追敌/长矛，真实交接状态不足记录 HANDOFF_NOT_READY。仍逐 tick 从短到长选推进，不强迫固定 9 tick；6/10/32/60 格控制器回放自然选中 9 tick，交接后 40 ticks 未触地，近目标可再用 4 tick 补能。远目标起飞只证明当地出发，数值 256/900 格同样不要求一发抵达。
+- **备用分支**：本次起飞记住激流候选耗尽，fallback 的异步 Pending 不再重启失败激流并饿死后续普通/烟花起飞。实际开始使用被否决的回放证明烟花分支最终执行。增加开始使用、物品交换、实体/anchor、snapshot/trajectory 细分拒因。
+- **远程资格**：初次分配及地面订单核对统一 PropulsionAvailability，合法湿润环境＋可用激流可以无烟花接单；普通/创造镜、loaded/wake 同用，不读取 registry 天气。无推进明确区分环境无效和无可用物品，已有地面订单不继续发呆；空中不因失雨解除滑翔，完成后的 Home recall 保留。COMMAND_ASSIGN 输出推进来源，loaded 资格失败补日志。TransitFlight 原有免费赶路、正常/创造交接与票据限额保持不变，未把 Riptide 冒充火箭物理。
+- **定向验证**：[riptide-sustainable-acceptance.log](tools/riptide-sustainable-acceptance.log) 中 compileJava、verifyRiptideDuration、verifyRiptideDeparture、verifyRiptideRelease、verifyRiptidePriority、verifyRemotePropulsion、verifyRemoteWake、verifyLaunchAttackReplay、jar 全部成功。包括短推进最小性、墙/overshoot、真实副手使用及事件否决、无火箭冷却限制、普通/创造 Home 零烟花资格与 TransitFlight 交接，以及既有唤醒公平性/NBT/票据生命周期和 Launch Attack 回归。没有执行全量 39 项 verify 或 build/check。
+- **边界**：实体/天气/加载由离线夹具提供，生产选择器/执行器/调度器/TransitFlight 被实际执行；完整 CommandManager ServerTick 与真实 Minecraft/Mixin/第三方场景未启动，CommandManager 使用编译和资格调用连接检查。不能把离线通过当作已完成实机复现。
+- **交付**：[winefox_skyfarer-1.21.1-0.6.2.8.jar](build/libs/winefox_skyfarer-1.21.1-0.6.2.8.jar)，528,513 bytes，SHA-256 `3378A568769A9315BB03DB607AFE0DA390674BDE5465BC54019495345627F27F`；Jar Manifest 与 Mod 元数据均为 0.6.2.8。README、docs、版本索引及诊断说明同步；未自动安装或启动 Minecraft。
 
 ### 0.6.2.7 近目标起飞与可控时长激流（2026-10-07）
 

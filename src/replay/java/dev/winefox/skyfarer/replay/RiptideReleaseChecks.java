@@ -56,10 +56,15 @@ public final class RiptideReleaseChecks {
             require(m.releaseCalls==1&&m.releaseCallbacks==1&&m.spinTicks>0&&trident.damage==1&&!m.using&&m.pushCalls==1,"native release did not apply impulse/spin exactly once");
             var velocity=m.velocity;RiptidePropulsion.releaseAuthorized(m,trident,71980);
             require(m.velocity==velocity&&trident.damage==1,"duplicate unowned release fired");
-            // Native spin expires independently of item use. The manager must finish without a release retry.
-            m.spinTicks=0;w.advance(w.getGameTime()+manager.selectedDuration());
+            // Complete the actual thrust AND certified recovery, without retrying release.
             var planning=(AsyncPlanning)RiptidePriorityChecks.field(c,"planning");var heading=(HeadingController)RiptidePriorityChecks.field(c,"heading");
-            require(!manager.tick(m,EquipmentLifecycleChecks.state(m),planning,heading)&&manager.completed(),"normal spin completion not recognized");
+            for(int i=0;manager.active()&&i<80;i++) {
+                EquipmentLifecycleChecks.move(m,FlightPrediction.step(EquipmentLifecycleChecks.state(m),m.yaw,m.pitch,180,90,90,.08,false));
+                if(m.spinTicks>0)m.spinTicks--;
+                w.advance(w.getGameTime()+1);planning.begin(w.getGameTime(),"RELEASE_RECOVERY",null,0);heading.beginTick(m);
+                manager.tick(m,EquipmentLifecycleChecks.state(m),planning,heading);
+            }
+            require(manager.completed(),"normal recovery completion not recognized");
             require(m.releaseCalls==1&&!m.using,"spin completion restarted release/use");
             SpearCompat.startCharge(m);require(m.using&&m.getUsedItemHand()==InteractionHand.MAIN_HAND&&m.getUseItem()==spear&&m.usedTicks==0,"spear state not restored");
             SpearCompat.stopCharge(m);require(!m.using,"spear stop failed");
