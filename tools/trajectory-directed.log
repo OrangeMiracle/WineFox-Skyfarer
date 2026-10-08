@@ -1,0 +1,61 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :compileControllerReplay
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyTrajectoryContinuity
+Trajectory contracts: time-aligned suffix, finite original timestamp, physics/force/drift rejection, switch cost and phase invalidation passed
+Late-contact regression: contact=93, old 80-tick follow rejects, full 120-tick follow certifies
+Compact propulsion: current goal retained, live stepping matches the full certified thrust/coast trace, collision veto passed
+Control arbitration: guided owner, same-tick overwrite rejection, safety preemption, no dual ignition passed
+dual-static first=4 hit=27 exit=53 continuous=31 workerBlackout=-1 collision=false
+dual-moving first=8 hit=30 exit=56 continuous=29 workerBlackout=-1 collision=false
+worker-blackout first=8 hit=28 exit=54 continuous=28 workerBlackout=10 collision=false
+obstacle-blackout first=8 hit=-1 exit=45 continuous=9 workerBlackout=10 collision=false
+
+> Task :verifyEmergencyReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Cold async emergency wall=14.0 detected=0 boost=-1 collision=false; complete escape, inventory pulses=0
+Cold async emergency wall=20.0 detected=0 boost=-1 collision=false; complete escape, inventory pulses=0
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyStabilityLaunch
+side wall ttc=6 margin=31 glide=null boost=EMERGENCY_BOOST_TURN
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+launch height=6 distance=10 pitch=-50.0 duration=0 contact=10
+launch height=10 distance=10 pitch=-30.0 duration=0 contact=10
+launch height=14 distance=10 pitch=-30.0 duration=0 contact=10
+Stability/launch targeted physics checks passed
+
+> Task :verifyArchitecture
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+0.7 architecture: provider-free upper control, closed worker DTOs, dead config/state removal and live config retention passed.
+
+> Task :verifyRiptideDuration
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+metered height=80.0 duration=1 max=30
+metered height=82.0 duration=1 max=30
+metered height=84.0 duration=2 max=30
+metered height=86.0 duration=3 max=30
+metered height=90.0 duration=5 max=30
+metered height=120.0 duration=12 max=30
+metered height=160.0 duration=19 max=30
+Metered Riptide: per-tick shortest duration, near-target departure, full recovery, wall/overshoot shortening and roof rejection passed
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 17s
+10 actionable tasks: 8 executed, 2 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

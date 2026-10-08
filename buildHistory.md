@@ -2,7 +2,20 @@
 
 ## 当前交付状态
 
-当前工程为 **0.7.0**，从本地干净提交 `172d9f5`（0.6.2.11）继续收束，未从远程覆盖、未回滚、未引入 Funnel。完整 build/check 与全部 43 项 verify 已通过；没有启动 Minecraft，也没有安装到测试实例。
+当前工程为 **0.7.1**，从本地干净提交 `387aa78`（0.7.0）继续修改，未从远程覆盖或回滚本地成果。按本次要求仅编译、七项直接相关定向验证及少量真实控制器离线回放；没有运行全量 build/check、启动 Minecraft 或安装到测试实例。0.7.0 的 43 项全量结果保留在其历史章节。
+
+### 0.7.1 航迹承诺、控制仲裁与延迟安全（2026-10-08）
+
+- **实机证据**：只读检查用户提供实例的 latest.log（5,213 行），确认黄色通道是已有动力学 trace，不天然等于攻击证书。08:51:06.934 的路线预计第 90 tick 接触，下一 tick 却以 `hit=false traceTicks=81` 退出。源码存在候选/Rejoin 120 tick 与 follow 80 tick 不一致；固定第 93 tick 接触反例证明差异。统一执行预算，160 tick 上限、身体/接触/完整离场条件不变。[摘录](tools/trajectory-log-evidence.txt)。
+- **执行承诺**：新增 TrajectoryCommitment，把路径身份与异步 job、有限 Proof 分开。最多 6 tick 原时间戳后缀必须匹配真实 State/Aim、物理、推进倒计时与阶段；超龄/偏离时只重验选中路径，最多 160 步、≤20 tick cells，不访问世界或搜索新候选。删除空 trace 的 `safe=true` 等待占位。真实碰撞抢占立即撤销旧证明，目标/配置/物理/阶段变化仍要求重新认证。
+- **控制权**：HeadingController 明确 `SAFETY > PROPULSION > ROUTE`；活动激流不再落入烟花后备，开始 guided 后同 tick 的普通攻击/结束判断和 terrain 控制不覆盖它。推进结束继续原阶段与 Compact Goal，删除无条件 invalidate/startApproach。重定位等待继续固定目标反馈；Riptide 与 Firework Turn 共用同一 Goal/rate，保留各自实际推力与寿命模型。
+- **主动换路**：有效攻击期间可选改进每 16 tick 请求，pending 不撤销旧路线。新旧路线均从当前状态完整复核，12 tick 最短承诺窗口、接触剩余窗口、成本优势与姿态切换成本共同决定是否替换。换路不重置原生蓄力会话、攻击计时、目标或命中历史。
+- **异步延迟**：修复 Search/Rejoin 包装导致选中通道未优先采集；几何提案/seed/在途工作窗口统一为 24 ticks，执行前仍需当前完整认证。选中路径与激流所用 cells 达 8 tick 请求刷新，普通背景仍 20 tick；原采集、队列和线程预算不变。安全 rollout 不再因仅用于宽敞度评分的外层缺失样本被错误丢弃，硬碰撞检查未放宽。
+- **安全反例驱动**：新增“攻击途中动态墙体 + 实际 Worker 全部阻塞 12 ticks”最初仍发生碰撞，保留 [失败日志](tools/trajectory-preempt-1.log)。修复为最多一个旧姿态与六个新姿态、每个 12 tick 的实时身体扫掠等待（最多 84 步）；不授权点火，不冒充完整逃逸证书，保留最后当前步防线。早转向可使冷启动由烟花脱险变为滑翔脱险，测试检查完整证书/50 tick 无碰撞/末态离墙/真实消耗；独立数值检查继续保留 coast 无解而完整烟花可救的反例。
+- **验证**：[trajectory-directed.log](tools/trajectory-directed.log) 的 Continuity、EmergencyReplay、StabilityLaunch、Architecture、RiptideDuration 通过；[trajectory-package.log](tools/trajectory-package.log) 的历史 5 ms/tick 连续双目标压力完成 2 命中、安全 Exit、5 次激流释放、0 烟花；[trajectory-release.log](tools/trajectory-release.log) 最终 compileJava、Continuity、AsyncPlanning、jar 成功。最终四例新增控制器回放：静止第 27 tick 命中、移动第 30 tick 命中；Worker 停顿例第 29 tick 命中且安全离场；动态墙体例安全抢占并飞到第 45 tick。均无硬身体碰撞。证明寿命/状态变化拒绝、收益门槛、控制权抢占、Compact 推进逐步一致性和异步生命周期也通过；未全量测试。
+- **观测与文档**：HUD/日志增加预测来源、控制 owner、路径 id、证明年龄、换路次数和明确拒因，区分候选过期、证书不可用和安全抢占。更新 README、根/docs 索引、飞控、异步、物理、调试、验证，并新增 [航迹连续性专题](docs/TRAJECTORY_CONTINUITY.md)；无新配置。
+- **交付**：[winefox_skyfarer-1.21.1-0.7.1.jar](build/libs/winefox_skyfarer-1.21.1-0.7.1.jar)，**583,748 bytes**，SHA-256 `6A2910FB5323D27876E73AB30F976A881FA7A105453C5D635C5531F5C544838E`。Manifest 与 Mod 元数据均为 0.7.1，含新承诺类，不含离线夹具或依赖替身；[校验记录](tools/trajectory-artifact-check.json)。
+- **边界**：历史失败及本次调查失败都保留，普通时序通过没有替代 Worker 延迟验证。原生 Spears/Mixin/TLM 时序、目标急转、实际更优路线切换、动态世界、多女仆 MSPT 仍需实机确认；不宣称无限延迟或任意地形都安全，也没有实机命中率/性能提升数据。未启动或自动替换 Minecraft。
 
 ### 0.7.0 推进边界收束与架构清理（2026-10-08）
 

@@ -1,0 +1,9 @@
+{
+  "file": "build\\libs\\winefox_skyfarer-1.21.1-0.7.1.jar",
+  "bytes": 583748,
+  "sha256": "6A2910FB5323D27876E73AB30F976A881FA7A105453C5D635C5531F5C544838E",
+  "version": "0.7.1",
+  "entries": 290,
+  "contains_commitment": true,
+  "offline_fixtures": false
+}

@@ -7,13 +7,26 @@ import net.minecraft.world.phys.Vec3;
 
 /** Controls look direction. Vanilla Elytra/rocket physics gradually follows it; never rotates velocity. */
 public final class HeadingController {
+    public enum Owner { ROUTE, PROPULSION, SAFETY }
+    private Owner owner = Owner.ROUTE;
+    private int rejected;
     private Vec3 desired = Vec3.ZERO;
     private double turnAngle;
     private float tickYaw, tickPitch, tickBodyYaw;
     public void beginTick(LivingEntity entity) {
         tickYaw = entity.getYRot(); tickPitch = entity.getXRot(); tickBodyYaw = entity.yBodyRot;
+        owner = Owner.ROUTE; rejected = 0;
     }
+    public Owner owner() { return owner; }
+    public int rejectedCommands() { return rejected; }
+    /** Higher authority can preempt, but ordinary same-tick state handoffs cannot steal a motor. */
+    private boolean claim(Owner next) {
+        if (next.ordinal() < owner.ordinal()) { rejected++; return false; }
+        owner = next; return true;
+    }
+    public void release(Owner previous) { if (owner == previous) owner = Owner.ROUTE; }
     public void steer(LivingEntity entity, Vec3 point, boolean attack, boolean pullUp) {
+        if (!claim(Owner.ROUTE)) return;
         desired = point.subtract(entity.getEyePosition()).normalize();
         if (desired.lengthSqr() < 1.0E-6) return;
         Vec3 velocity = entity.getDeltaMovement();
@@ -30,6 +43,10 @@ public final class HeadingController {
     public Vec3 desired() { return desired; }
     /** Apply exactly the first step used by the predictor, including explicit emergency limits. */
     public void steerAngles(LivingEntity entity, double yaw, double pitch, double yawRate, double pitchRate) {
+        steerAngles(entity, yaw, pitch, yawRate, pitchRate, Owner.ROUTE);
+    }
+    public void steerAngles(LivingEntity entity, double yaw, double pitch, double yawRate, double pitchRate, Owner authority) {
+        if (!claim(authority)) return;
         entity.setYRot((float)FlightPrediction.turn(tickYaw, yaw, yawRate));
         entity.setXRot((float)FlightPrediction.turn(tickPitch, Math.clamp(pitch, -88, 85), pitchRate));
         double p = Math.toRadians(pitch), a = Math.toRadians(yaw);

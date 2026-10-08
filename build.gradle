@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 group = 'dev.winefox.skyfarer'
-version = '0.7.0'
+version = '0.7.1'
 base { archivesName = 'winefox_skyfarer-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
@@ -329,3 +329,18 @@ tasks.register('verifyArchitecture', JavaExec) {
     systemProperty 'log4j.configurationFile', file('tools/offline-log4j2.xml').toURI().toString()
 }
 tasks.named('check') { dependsOn verifyArchitecture }
+
+tasks.register('verifyTrajectoryContinuity', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.TrajectoryContinuityChecks'
+}
+tasks.named('check') { dependsOn verifyTrajectoryContinuity }
+
+// Explicit stress diagnostic; not part of the routine all-check lifecycle suite.
+tasks.register('verifyTrajectoryStress', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.UnifiedPropulsionChecks'
+    args 'stress'
+}

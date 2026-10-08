@@ -1,6 +1,6 @@
 # 异步规划与线程边界
 
-当前版本 **0.7.0**。推进所有权、删除与迁移见 [架构审计](ARCHITECTURE_070.md)，构建结果见 [验证](VALIDATION.md)。源码为最终权威。
+当前版本 **0.7.1**。执行承诺与有限证明见 [航迹连续性](TRAJECTORY_CONTINUITY.md)，既有推进边界见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
 
 ## 1. 当前架构
 
@@ -73,7 +73,7 @@
 - 总线程数为 `max(2, min(4, availableProcessors - 2))`。其中 1 个专门负责几何候选，余下 1–3 个处理控制预测；线程名 `WFS-Planner-N`，daemon，空闲 30 秒允许退出。池是惰性建立，不是每 tick 建线程。
 - 几何池接收 `Slope`、`Lane`、`LaunchAttack` 和没有 path 的 `Sweep`；其余任务进入控制池。两个池分别 `ArrayBlockingQueue(32)`，排队总上限 64；这不含正在执行的 2–4 个任务。
 - 拒绝策略是 `AbortPolicy`。submit 捕获队列满异常并返回 null、累计 `rejected`；主线程走等待/回退，**不能改为 `CallerRunsPolicy` 或同步重算整套搜索**。
-- 单 session 最多 24 个 pending slot。兼容的在途任务在 6 ticks 内继续复用；不兼容或太旧时取消并替换。没有为每次查询创建 Future。
+- 单 session 最多 24 个 pending slot。普通兼容工作复用 6 ticks，几何提案可等待 24 ticks；同路径 follow 的短期等待不因自然倒计时反复取消，交付时仍严格验证。不兼容或太旧时取消替换。没有为每次查询创建 Future。
 - `Ticket.cancel()` 设置 AtomicBoolean，移除仍排队的任务。运行中的计算在 `Space.get()` 查询碰撞 cell 时检查取消和中断并协作退出；不是任意 Java 指令处强制终止。
 - Worker 将完成结果写入 volatile outcome。取消结果不应用；计算的 RuntimeException 作为 failure 返回，由主线程丢弃并限频记录 `[WFS] Async planner failed; result discarded: ...`。相同错误至多每 200 个采集 epoch 重复报告，错误内容改变可立即报告。
 - 服务停止调用 `PlannerSession.stop()`，关闭所有 session 并 `shutdownNow()` 两个池、取消排队票据。下次提交可重新建池。
@@ -107,7 +107,7 @@
 | 活跃 session 公平份额 | 每 epoch 最多 `max(1,256/participants)` cells | 参与者为仍有 pending/requested 或最近 2 epochs 查询的 session；轮换处理起点 |
 | 待采集 cell | 每 session 最多 512 | 选中走廊优先，其次邻格/其他候选/刷新；近当前位置者先 |
 | 已缓存 cell | 每 session 最多 768 | 按 LinkedHashMap 插入顺序淘汰；不是完整 LRU |
-| 刷新 | cell 年龄达 20 ticks，每次 pump 最多加入 8 个刷新请求 | 受全局预算继续限制，不保证第 20 tick 已刷新 |
+| 刷新 | 普通 cell 年龄达 20 ticks，每次 pump 最多加入 8 个背景请求；选中路径/活动激流所触及的 cell 达 8 ticks 时请求优先刷新 | priority=0 的实际采集也按 8 tick 判重；仍受全局预算限制，不保证即时刷新 |
 | 过期 | enqueue 时移除年龄大于 80 ticks 的 cell | 已提交快照不可回写；当前真实位移仍需 live guard |
 | Worker 缺失记录 | 每个 Space 最多 192 个不同 cell | 单次缺失集有限；严格计算与发现计算可以分别产生集合 |
 
@@ -145,18 +145,19 @@
 | --- | --- |
 | 普通结果 | 基于原任务提交 tick，最多 4 ticks；请求兼容；当前位置差 ≤4 格、航向差 ≤24°、速度各分量绝对差之和 ≤1.2 |
 | 坡面 `Slope` | 最多 20 ticks；目标采样中心误差 ≤0.5 格、采样半径/步长一致 |
-| 候选几何 `Sweep(path=null)` | 最多 12 ticks；位置差 ≤16 格、航向差 ≤90°；作为几何候选，不能直接承诺攻击 |
-| 几何 seed | 在兼容的候选 slot 内固定最多 12 ticks；明确无解释放 seed，移动无解缓存最多 3 ticks |
+| 候选几何 `Sweep(path=null)` | 最多 24 ticks；位置差 ≤16 格、航向差 ≤90°；作为几何提案，不能直接承诺攻击；非拟点火提案不因活动火箭自然倒计时而取消，执行仍检验当前真实推力 |
+| 几何 seed | 在兼容的候选 slot 内固定最多 24 ticks；明确无解释放 seed，移动无解缓存最多 3 ticks |
 | `Rejoin` / `AttackCertificate` 接触缓存 | 在一般门槛之上，年龄 ≤2 ticks，位置差 ≤2.5 格，yaw/pitch 差各 ≤8°，速度 L1 差 ≤0.35 |
-| `Rejoin` 提案及移动几何即时重验 | 不直接执行旧结果；主线程对一个选中路径用当前 State/Aim 和 ≤20 tick cells 完整重验，全部新火箭寿命仍认证。移动曲线可先做一次无新增火箭重验，成功时省去第二次 Worker 往返；静止曲线保留原 Worker 接入入口 |
-| Pending 复用 | 6 ticks 内且兼容；否则取消并换新 |
-| Debug trace | 仅读 generation 相同、年龄 ≤8 ticks 的完成缓存，不新提交预测 |
+| `Rejoin` 提案及几何即时重验 | 不直接执行旧结果；主线程对选中路径用当前 State/Aim 和 ≤20 tick cells 完整重验，全部新火箭寿命仍认证。移动/静止曲线都可先做一次无新增火箭重验，失败再走 Worker Rejoin |
+| 承诺曲线 follow 证明 | 原模拟起始时刻起最多 6 ticks；对齐 trace 对应时刻的 State/Aim/推力/物理，而非与旧起点比较；失败则仅重验选中路径，最多 160 步，仍需接触与完整 Exit |
+| Pending 复用 | 普通任务 6 ticks；几何提案 24 ticks；同路径同阶段 follow 可保留 6 ticks 等待，交付证明仍执行严格时间对齐验证 |
+| Debug trace | 候选/普通预测仅读 generation 相同、年龄 ≤8 ticks 的完成缓存；承诺/激流显示实际执行证明，明确来源和年龄；不新提交预测 |
 
 上述 age 从 **提交时刻** 算，不能从 Worker 完成时刻重新延长。还比较按年龄推进后的 PhysicsContext 和启动延迟；Glide 请求不能跨“仍有火箭/已无火箭”复用。cache 最多 96 条。普通 Glide 返回兼容缓存时会滚动提交下一次刷新，避免一个姿态僵持完整 4 ticks。
 
 `PlanningTask.compatible` 还比较目标位置、目标速度、前摇、攻击范围、重力/转向率/碰撞余量等相关字段。例如 Aim 位置容差 1 格、速度每轴 0.2、前摇 4 ticks；不是只看 UUID。Compact 的当前恢复原点允许 2 格小幅变化，避免每 tick 移动让补能结果永远失配；远距离传送仍被拒绝。
 
-曲线候选返回后必须走 `Rejoin`，用此时真实运动状态重新滚动预测并检验 safe/hit；不允许拿 12 ticks 前的几何选择直接点火切攻击。任务参数、曲线身份和火箭状态变化也参与兼容性检查。运行中真实方块可能改变，快照不会即时感知，仍依赖下述主线程执行防线。
+曲线候选返回后必须完成当前状态的 Rejoin/同等完整复核，检验 safe/hit；24 tick 的几何提案绝不能直接点火切攻击。任务参数、曲线身份和实际火箭状态变化也参与执行检查。选中曲线可跨后台刷新持续存在，但其 Proof 不得跨配置、阶段或物理变化。运行中真实方块可能改变，快照不会即时感知，仍依赖下述主线程执行防线。
 
 ## 7. Pending 时怎样继续飞
 
@@ -164,8 +165,8 @@
 
 - Lane、起飞、Exit 等必需结果会向上抛出 Pending，由控制器处理；等待起飞不耗尽地面准备计时。
 - 一般 Glide 使用便宜的反馈俯仰作为暂时指令，safe=false；forecast 未到则不宣称安全，补能成本未到为 ∞。
-- Compact 和已经接受曲线的跟踪会根据**当前**状态重算局部首步控制，而不是重复套旧首步命令或重新搜索整组候选。Compact 使用标量反馈；曲线 `command()` 仍通过 `Path.nearest()` 遍历有界采样段，因此不能称为严格 O(1)。曲线跟踪的暂时结果不是新的 safe-hit 承诺，不得据此接受一条新攻击路线。
-- 连续转弯候选等待时，控制器最多 8 ticks 保持向目标的温和转向/当前高度，并继续管理能量；pending 每 tick 领取，完成搜索后再采用 12-tick 重评估节奏。
+- Compact 和已经接受曲线的跟踪会根据**当前**状态重算局部首步控制。曲线 `command()` 通过 `Path.nearest()` 遍历有界采样段，不能称为严格 O(1)。曲线必须同时持有时间对齐的有限 Proof，或当前选中路径的严格复核；删除了旧空 trace 的 `safe=true` pending 占位值。
+- 初始 APPROACH 候选等待最多 8 ticks 保持向目标的温和转向/当前高度；已有 REPOSITION 沿固定 Compact Goal 继续，不重置朝向。pending 每 tick 领取，初始搜索完成后按 12 tick 节奏重评估；有效攻击期间可选改进按 16 tick 节奏，不能因等待新方案而清空旧路线。
 - 等待 ATTACK_EXIT 方案时先用反馈俯仰朝出口/较高目标控制，避免继续沿用上一阶段俯冲姿态。
 - 补能通过完整寿命认证后可缓存每种实际寿命的首步姿态，主线程生成烟花后立即匹配使用，减少“新火箭配旧姿态”。
 - 普通 `AttackCertificate` 等待时返回 `safe=false/async_pending`，拒绝承诺进攻，但继续本 tick 的普通引导和补能更新；不能直接抛 Pending 跳过控制，沿用高速赶路交接时的下降姿态。
@@ -179,7 +180,7 @@
 3. yaw/pitch、pose、使用物品、火箭实体生成/移除、实际伤害及命中回调。
 4. `validateImmediateMotion()` 的真实下一步身体扫掠；试当前俯仰、-35/-65/-88°，必要时有限的 180°反转。LANDING 不使用这套飞行防线，避免阻止计划触地。
 5. 当前地面净空、着陆射线/落点、安全传送以及实际 Spears 接触射线。
-6. 紧急 TTC 的最多 32 步实时扫掠、Worker 已选逃逸提案在不可变 cells 上的有界当前状态重验；不等待后台或即时读取全路线世界方块。
+6. 紧急 TTC 的最多 32 步实时扫掠、Worker 已选逃逸提案在不可变 cells 上的有界当前状态重验。等待期间复核一个旧姿态并最多比较六个 12 tick 实时避障姿态（最多 84 步），不点火、不冒充完整脱险认证。
 7. `TransitFlight` 中创造高速赶路的 `CreativeTransitPlanner.choose` 和当前实际移动长段扫掠。这条特殊赶路分支还会在主线程调整速度，普通战斗滑翔不这样做。100 倍速的长段世界查询仍可能昂贵。
 7. 结果收取、排序、缓存冻结、网络 debug 打包等管理开销。
 

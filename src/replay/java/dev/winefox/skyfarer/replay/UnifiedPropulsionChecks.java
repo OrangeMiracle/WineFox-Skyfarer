@@ -11,6 +11,9 @@ public final class UnifiedPropulsionChecks {
     static void require(boolean value,String reason){if(!value)throw new AssertionError(reason);}
     static final GlidePlanner.Corridor OPEN=(a,b,h,v)->b.y()>.6&&Math.abs(b.x())<180&&Math.abs(b.z())<180;
     public static void main(String[] args)throws Exception{
+        if(args.length>0&&args[0].equals("stress")){
+            System.setProperty("wfs.continuousMillis","5");continuousCombat();PlannerSession.stop();return;
+        }
         System.setProperty("wfs.replayTickMillis","5");
         phases();continuations();blocked();emergencyExecution();repeated();continuousCombat();
         PlannerSession.stop();System.out.println("Unified propulsion phases, strike/exit/deadline rejection, emergency corridor, shortest duration, repeated READY and source fallback passed");
@@ -86,8 +89,8 @@ public final class UnifiedPropulsionChecks {
         System.out.println("actual emergency glide=unsolvable Riptide="+duration+" thrustTicks completed="+motor.completed()+" rockets="+m.inventory.consumed);
         planning.close();
     }
-    static void continuousCombat(){
-        System.setProperty("wfs.replayTickMillis","20");dev.winefox.skyfarer.config.SkyfarerConfig.DEBUG_LOGGING.set(true);ReplayWorld.events.clear();
+    static void continuousCombat()throws Exception{
+        System.setProperty("wfs.replayTickMillis",System.getProperty("wfs.continuousMillis","20"));dev.winefox.skyfarer.config.SkyfarerConfig.DEBUG_LOGGING.set(true);ReplayWorld.events.clear();
         var w=new ReplayWorld();var m=RiptideReleaseChecks.maid(w);m.pos=new net.minecraft.world.phys.Vec3(0,9,-32);m.owner.pos=net.minecraft.world.phys.Vec3.ZERO;
         m.inventory.count=0;m.velocity=new net.minecraft.world.phys.Vec3(0,-.08,1.1);
         var first=new net.minecraft.world.entity.LivingEntity(w,net.minecraft.world.phys.Vec3.ZERO);
@@ -111,6 +114,8 @@ public final class UnifiedPropulsionChecks {
             EquipmentLifecycleChecks.move(m,next);if(m.spinTicks>0)m.spinTicks--;
             require(!m.ground&&m.getY()>0,"continuous combat landed between targets");
         }
+        java.nio.file.Files.createDirectories(java.nio.file.Path.of("build/reports/trajectory-continuity"));
+        java.nio.file.Files.write(java.nio.file.Path.of("build/reports/trajectory-continuity/historic-stress.events.log"),ReplayWorld.events);
         require(hits==2&&safeExit&&m.inventory.consumed==0&&m.releaseCallbacks>0,"continuous combat incomplete hits="+hits+" exit="+safeExit+" releases="+m.releaseCallbacks+" pos="+m.pos);
         System.out.println("continuous combat targets=2 hits="+hits+" safeExit="+safeExit+" releases="+m.releaseCallbacks+" rockets="+m.inventory.consumed);controller.dispose("TEST",false);
     }

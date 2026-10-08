@@ -18,6 +18,10 @@ public final class PropulsionCapability {
     public Decision decide(EntityMaid maid,FlightPrediction.State start,PropulsionDemand demand,boolean coastSufficient,boolean canWait,
             RiptidePropulsion motor,FireworkManager fireworks,AsyncPlanning planning,HeadingController heading,
             GlidePlanner.Corridor space,java.util.function.IntToDoubleFunction rocketCertificate){
+        // Ownership is an outcome, never a failed candidate followed by another provider.
+        if(motor.active())return new Decision(PropulsionDemand.Source.RIPTIDE,false,"GUIDED_OWNER_CONTINUES");
+        if(fireworks.active())return new Decision(PropulsionDemand.Source.FIREWORK,false,"ATTACHED_OWNER_CONTINUES");
+        if(maid.isAutoSpinAttack())return new Decision(null,false,"EXTERNAL_SPIN_ACTIVE");
         if(coastSufficient)return new Decision(PropulsionDemand.Source.COAST,false,"COAST_SUFFICIENT");
         int selected=prefer(maid,start,demand,fireworks.active(),motor,planning,heading,space);
         if(selected==2)return new Decision(PropulsionDemand.Source.RIPTIDE,false,reason);

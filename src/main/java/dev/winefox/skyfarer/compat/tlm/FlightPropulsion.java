@@ -17,8 +17,9 @@ public final class FlightPropulsion {
     public Decision request(EntityMaid maid,FlightPrediction.State start,PropulsionDemand demand,boolean canWait,
                             PropulsionRoute route,AsyncPlanning planning,HeadingController heading,GlidePlanner.Corridor space){
         attached.resetReview();
-        var decision=capability.decide(maid,start,demand,false,canWait,guided,attached.motor,planning,heading,space,
-            duration->attached.certify(start,demand,route,planning,space,duration));
+        var requirement=route instanceof PropulsionRoute.Turn turn?demand.withTurn(turn.goal(),turn.rate()):demand;
+        var decision=capability.decide(maid,start,requirement,false,canWait,guided,attached.motor,planning,heading,space,
+            duration->attached.certify(start,requirement,route,planning,space,duration));
         return new Decision(decision.riptide(),decision.firework(),decision.waiting(),decision.reason());
     }
     public int prefer(EntityMaid maid,FlightPrediction.State start,PropulsionDemand demand,AsyncPlanning planning,HeadingController heading,GlidePlanner.Corridor space){
@@ -26,7 +27,8 @@ public final class FlightPropulsion {
     }
     public void warm(EntityMaid maid,FlightPrediction.State start,PropulsionDemand demand,AsyncPlanning planning,GlidePlanner.Corridor space){capability.warm(maid,start,demand,planning,space);}
     public void warm(EntityMaid maid,FlightPrediction.State start,PropulsionDemand demand,PropulsionRoute route,AsyncPlanning planning,GlidePlanner.Corridor space){
-        warm(maid,start,demand,planning,space);attached.warm(maid,start,demand,route,planning,space);
+        var requirement=route instanceof PropulsionRoute.Turn turn?demand.withTurn(turn.goal(),turn.rate()):demand;
+        warm(maid,start,requirement,planning,space);attached.warm(maid,start,requirement,route,planning,space);
     }
     public boolean available(EntityMaid maid){return attached.motor.active()||guided.active()||RiptidePropulsion.available(maid)>0||!attached.durations(maid).isEmpty();}
     public boolean attached(){return attached.motor.active();}
@@ -37,6 +39,7 @@ public final class FlightPropulsion {
     public boolean guided(){return guided.active();}
     public boolean interrupted(EntityMaid maid){return maid.isAutoSpinAttack()&&!guided.active();}
     public boolean continuation(){return guided.continuation();}
+    public CompactTurnPlanner.Goal turnGoal(){return guided.turnGoal();}
     public boolean completed(){return guided.completed();}
     public void prepare(EntityMaid maid,boolean eligible){guided.prepare(maid,eligible);attached.begin(maid);}
     public void context(String phase){guided.context(phase);}
@@ -48,6 +51,7 @@ public final class FlightPropulsion {
     public void detach(){attached.motor.detach();}
     public void close(EntityMaid maid,String reason,boolean handoff){cancel(maid,reason);detach();resetLaunch();if(!handoff)RiptideReadiness.clear(maid);}
     public SweepingAttackPlanner.Selection attackSelection(){return guided.attackSelection();}
+    public List<GlidePlanner.TracePoint> guidedTrace(){return guided.trace();}
     public String reason(){return capability.reason();}
     public String review(){return attached.review();}
     public GlidePlanner.Request selectedRequest(){return attached.selectedRequest();}

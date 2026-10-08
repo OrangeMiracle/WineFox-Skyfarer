@@ -6,6 +6,34 @@ import java.util.List;
 /** Bounded last-resort escape search. Every accepted command includes the complete pulse and coast. */
 public final class EmergencyAvoidancePlanner {
     private EmergencyAvoidancePlanner() {}
+    private static final double[][] ATTITUDES={{90,-20},{-90,-20},{135,-35},{-135,-35},{180,-20},{0,-75}};
+    public record Holding(double yaw,double pitch,int clearTicks) {}
+    /** Receding, 12-tick live steering guard while the full worker certificate is unavailable.
+     * Never authorizes ignition. One retained attitude plus at most six alternatives,
+     * no geometry search or recovery claim. */
+    public static Holding holding(FlightPrediction.State start,int active,double gravity,GlidePlanner.Corridor live,Holding previous){
+        if(previous!=null){
+            var checked=holdingCheck(start,previous.yaw(),previous.pitch(),active,gravity,live);
+            if(checked.clearTicks()==12)return checked;
+        }
+        double yaw=Math.hypot(start.vx(),start.vz())>.1?Math.toDegrees(Math.atan2(-start.vx(),start.vz())):start.yaw();
+        Holding best=null;
+        for(var attitude:ATTITUDES){
+            var candidate=holdingCheck(start,yaw+attitude[0],attitude[1],active,gravity,live);
+            if(best==null||candidate.clearTicks()>best.clearTicks())best=candidate;
+            if(candidate.clearTicks()==12)return candidate;
+        }
+        return best;
+    }
+    private static Holding holdingCheck(FlightPrediction.State start,double yaw,double pitch,int active,double gravity,GlidePlanner.Corridor live){
+        var state=start;
+        for(int tick=0;tick<12;tick++){
+            var next=FlightPrediction.step(state,yaw,pitch,45,20,20,gravity,RocketProfile.active(tick,active,start));
+            if(!live.clear(state,next,.15,.12))return new Holding(yaw,pitch,tick);
+            state=next;
+        }
+        return new Holding(yaw,pitch,12);
+    }
     public record Danger(boolean imminent,int ttc,int margin,double divergence) {}
     public record Plan(double yaw,double pitch,double height,int duration,int ticks,List<GlidePlanner.TracePoint> trace) {
         public String mode(){return duration<0?"EMERGENCY_GLIDE_TURN":"EMERGENCY_BOOST_TURN";}
@@ -52,13 +80,12 @@ public final class EmergencyAvoidancePlanner {
     public static Plan choose(FlightPrediction.State start,int active,List<Integer> durations,double gravity,GlidePlanner.Corridor space){
         double velocityYaw=Math.hypot(start.vx(),start.vz())>.1?Math.toDegrees(Math.atan2(-start.vx(),start.vz())):start.yaw();
         // Six escape attitudes; glide always gets the first opportunity, including any active rocket.
-        double[][] candidates={{90,-20},{-90,-20},{135,-35},{-135,-35},{180,-20},{0,-75}};
-        for(var c:candidates){
+        for(var c:ATTITUDES){
             var plan=certify(start,velocityYaw+c[0],c[1],-1,active,gravity,space);
             if(plan!=null)return plan;
         }
         if(active>0)return null; // Never stack a pulse or pretend an existing one can be stopped.
-        for(int duration:durations.stream().distinct().limit(3).toList())for(var c:candidates){
+        for(int duration:durations.stream().distinct().limit(3).toList())for(var c:ATTITUDES){
             var plan=certify(start,velocityYaw+c[0],c[1],duration,0,gravity,space);
             if(plan!=null)return plan;
         }

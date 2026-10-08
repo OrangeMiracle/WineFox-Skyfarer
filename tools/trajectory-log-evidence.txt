@@ -1,0 +1,52 @@
+Source: E:\rlc\PCL\.minecraft\versions\1.21.1-NeoForge_21.1.250\logs\latest.log
+Read-only log audit; counts describe this log, not a success rate.
+Lines: 5213
+ASSESS_NEXT_ATTACK_ENTRY: 199
+CLIMB_BRAKE_TURN_IN: 98
+EARLY_COLLISION_RECOVERY: 66
+UNSTABLE_ENTRY_EXTEND_AGAIN: 52
+CONTINUOUS_ATTACK: 38
+FOLLOW_ATTACK_CURVE: 38
+CURVE_NATIVE_CHARGE: 38
+PRIMARY_HIT: 17
+CURVE_NO_SAFE_CONTINUATION: 17
+FLIGHT_LIMIT_OR_FUEL: 14
+TARGET_SELECTED: 10
+PREPARING_JUMP: 10
+LANDED: 10
+CORRIDOR_REVERSAL: 9
+TOO_CLOSE_EXTEND_AGAIN: 9
+RIPTIDE_LAUNCH_WINDUP: 7
+RIPTIDE_LAUNCH_COMPLETE: 7
+NO_TARGET_AFTER_LOITER: 6
+LANDING_NEAR_OWNER_CHARGE_OFF: 6
+CURVE_TARGET_OR_TIME_LIMIT: 2
+RETURN_LOCAL_DESCENT_CERTIFIED: 1
+CURVE_PASSED_TARGET: 1
+
+Selected evidence:
+
+ATTACK_CONTINUATION_REJECT
+757: [0810月2026 08:51:06.986] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] ATTACK_CONTINUATION_REJECT state=SPEAR_CHARGE motion=(0.0, 0.0, 0.0) distance=57.4728 hit=false miss=111.07478617148297 traceTicks=81 start=State[x=-53.16236714202553, y=94.48946626274243, z=-21.842434478244552, vx=-0.500036243967122, vy=-0.3618560534718486, vz=-0.6424961047738217, yaw=166.9326629638672, pitch=43.0, physics=PhysicsContext[gravity=0.08, slowFallingTicks=0], rocketDelay=0] pathTracking=false
+832: [0810月2026 08:51:23.283] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] ATTACK_CONTINUATION_REJECT state=SPEAR_CHARGE motion=(0.0, 0.0, 0.0) distance=51.66041 hit=false miss=75.21467830302582 traceTicks=81 start=State[x=42.539325805258656, y=95.15237054760287, z=-11.805813990122509, vx=0.7100078179372367, vy=-0.33723653439266155, vz=-0.4193837477794097, yaw=215.73818969726562, pitch=40.0, physics=PhysicsContext[gravity=0.08, slowFallingTicks=0], rocketDelay=0] pathTracking=false
+973: [0810月2026 08:51:46.788] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] ATTACK_CONTINUATION_REJECT state=SPEAR_CHARGE motion=(0.0, 0.0, 0.0) distance=45.517967 hit=false miss=0.265704170605907 traceTicks=81 start=State[x=-57.60058524062102, y=94.89484193157489, z=-14.998189941950507, vx=-0.6086265642605224, vy=-0.36215595594728733, vz=-0.546144499731274, yaw=156.35308837890625, pitch=46.0, physics=PhysicsContext[gravity=0.08, slowFallingTicks=0], rocketDelay=0] pathTracking=false
+993: [0810月2026 08:51:48.183] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] ATTACK_CONTINUATION_REJECT state=SPEAR_CHARGE motion=(0.0, 0.0, 0.0) distance=58.073357 hit=false miss=50.6995351717576 traceTicks=81 start=State[x=-68.34456811373302, y=87.22002184810607, z=-37.02941500572729, vx=0.27216347505640576, vy=-0.5194594829041579, vz=-0.992849182452187, yaw=210.8368377685547, pitch=40.0, physics=PhysicsContext[gravity=0.08, slowFallingTicks=0], rocketDelay=0] pathTracking=false
+
+END:COMPLETED state=REPOSITION
+1082: [0810月2026 08:51:56.583] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] RIPTIDE maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e event=END:COMPLETED state=REPOSITION selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=583205 tick=583222 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=5 maxDuration=30 departure=false thrustElapsed=17 released=true spin=false velocity=(0.3057113350987989, 0.08161829706992241, 0.9897811804945483)
+1101: [0810月2026 08:51:58.533] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] RIPTIDE maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e event=END:COMPLETED state=REPOSITION selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=583241 tick=583261 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=8 maxDuration=30 departure=false thrustElapsed=20 released=true spin=false velocity=(-1.084455555081628, 0.08910459551985155, -0.14883856411215637)
+1164: [0810月2026 08:52:05.984] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] RIPTIDE maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e event=END:COMPLETED state=REPOSITION selectedHand=OFF_HAND item=minecraft:trident usedHand=MAIN_HAND startTick=583391 tick=583410 prepared=10 charge=0 remaining=0 sameUse=false using=false wet=true enchantLevel=3 strength=3.0 duration=7 maxDuration=30 departure=false thrustElapsed=19 released=true spin=false velocity=(-0.5777936237740022, 0.09267803677979387, -0.8595109000925859)
+
+APPROACH -> REPOSITION
+760: [0810月2026 08:51:07.735] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e APPROACH -> REPOSITION; reason=CLIMB_BRAKE_TURN_IN; run=none
+825: [0810月2026 08:51:23.085] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e APPROACH -> REPOSITION; reason=CLIMB_BRAKE_TURN_IN; run=none
+835: [0810月2026 08:51:23.684] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e APPROACH -> REPOSITION; reason=CLIMB_BRAKE_TURN_IN; run=none
+
+CORRIDOR_REVERSAL
+843: [0810月2026 08:51:24.234] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e APPROACH -> ATTACK_EXIT; reason=CORRIDOR_REVERSAL; run=none
+2369: [0810月2026 08:54:15.484] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e APPROACH -> ATTACK_EXIT; reason=CORRIDOR_REVERSAL; run=none
+2865: [0810月2026 08:55:15.133] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e APPROACH -> ATTACK_EXIT; reason=CORRIDOR_REVERSAL; run=none
+
+CONTINUOUS_ATTACK:
+702: [0810月2026 08:50:54.789] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e APPROACH -> ATTACK_RUN; reason=CONTINUOUS_ATTACK:DIRECT cost=53.66197987725752 contactTicks=76; run=b91200dd-6d2a-4b06-8cf4-e5283f4830e6
+754: [0810月2026 08:51:06.934] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] maid=f2bf9a69-6c7a-4b57-83a6-48c35a66c36e APPROACH -> ATTACK_RUN; reason=CONTINUOUS_ATTACK:VERTICAL_CLIMB cost=60.118747032381364 contactTicks=90; run=bd80f65b-4b60-459e-9074-8b5333d563b5

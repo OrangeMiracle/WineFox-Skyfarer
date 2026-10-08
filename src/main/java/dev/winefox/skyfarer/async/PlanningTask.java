@@ -21,7 +21,7 @@ public sealed interface PlanningTask extends PlannerExecutor.Task<Object> {
         public Object compute(CollisionSnapshot.Space space){return RiptidePlanner.choose(start,demand,strength,gravity,space,wet?space:SurfaceLaunchPlanner.DRY);}
         public boolean compatible(PlanningTask p){return p instanceof Propulsion r&&strength==r.strength&&gravity==r.gravity&&wet==r.wet
             &&demand.phase()==r.demand.phase()&&near(demand.x(),r.demand.x(),1)&&near(demand.height(),r.demand.height(),1)&&near(demand.z(),r.demand.z(),1)
-            &&demand.path()==r.demand.path()&&aim(demand.aim(),r.demand.aim())&&demand.minimumSpeed()==r.demand.minimumSpeed()&&demand.rate()==r.demand.rate()&&demand.exiting()==r.demand.exiting()&&near(demand.contactDeadline(),r.demand.contactDeadline(),2);}
+            &&demand.path()==r.demand.path()&&java.util.Objects.equals(demand.turn(),r.demand.turn())&&aim(demand.aim(),r.demand.aim())&&demand.minimumSpeed()==r.demand.minimumSpeed()&&demand.rate()==r.demand.rate()&&demand.exiting()==r.demand.exiting()&&near(demand.contactDeadline(),r.demand.contactDeadline(),2);}
     }
     record Emergency(FlightPrediction.State start,int active,List<Integer> durations,double gravity) implements PlanningTask {
         public Emergency {durations=List.copyOf(durations);}
@@ -125,7 +125,8 @@ public sealed interface PlanningTask extends PlannerExecutor.Task<Object> {
             var initial=ignition?start.withRocketDelay(1):start;
             return path==null?SweepingAttackPlanner.search(initial,target,aim,rocket,gravity,rate,minimum,exit,s,contact,turn)
                 :SweepingAttackPlanner.simulate(initial,path,aim,rocket,gravity,rate,minimum,exiting,s,contact,budget);}
-        public boolean compatible(PlanningTask p){return p instanceof Sweep g&&ignition==g.ignition&&path==g.path&&exiting==g.exiting&&(path==null?PlanningTask.geometryAim(aim,g.aim):PlanningTask.aim(aim,g.aim))&&PlanningTask.rocket(rocket,g.rocket,3)&&rate==g.rate&&budget==g.budget&&gravity==g.gravity&&minimum==g.minimum&&exit==g.exit;}
+        public boolean compatible(PlanningTask p){return p instanceof Sweep g&&ignition==g.ignition&&path==g.path&&exiting==g.exiting&&(path==null?PlanningTask.geometryAim(aim,g.aim):PlanningTask.aim(aim,g.aim))
+            &&(path==null&&!ignition||PlanningTask.rocket(rocket,g.rocket,3))&&rate==g.rate&&budget==g.budget&&gravity==g.gravity&&minimum==g.minimum&&exit==g.exit;}
     }
     record SweepPulse(FlightPrediction.State start,SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,int duration,double gravity,double rate,double minimum,boolean exiting) implements PlanningTask {
         public Slot slot(){return new Slot(getClass(),duration,exiting?1:0);}

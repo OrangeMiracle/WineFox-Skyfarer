@@ -30,6 +30,8 @@ public final class RiptidePropulsion {
     public boolean completed(){return released&&"COMPLETED".equals(endReason);}
     private String endReason="";
     private String beginRejection="NONE";
+    private java.util.List<GlidePlanner.TracePoint> currentTrace=java.util.List.of();
+    public java.util.List<GlidePlanner.TracePoint> trace(){return active()?currentTrace:java.util.List.of();}
     public String beginRejection(){return beginRejection;}
     public void context(String state){context=state;}
     private boolean ownsUse(EntityMaid m){return m.isUsingItem()&&m.getUsedItemHand()==InteractionHand.OFF_HAND&&m.getUseItem()==used&&m.getOffhandItem()==used;}
@@ -121,7 +123,7 @@ public final class RiptidePropulsion {
         if(!equip(m,proof.strength())){beginRejection="OFFHAND_EQUIP_REJECTED";return false;}
         plan=proof;launchPendingJump=true;jumpRequested=false;
         beginRejection="READY_RESERVATION_REJECTED";
-        heading.steerAngles(m,plan.yaw(),plan.pitch(),180,90);reserveReady(m,"LAUNCH_READY");return tick(m,jumpStart(m,planning.physics()),planning,heading);
+        heading.steerAngles(m,plan.yaw(),plan.pitch(),180,90,HeadingController.Owner.PROPULSION);reserveReady(m,"LAUNCH_READY");return tick(m,jumpStart(m,planning.physics()),planning,heading);
     }
     private static boolean jumpClear(EntityMaid m) {
         return new dev.winefox.skyfarer.safety.CorridorProbe(m).segment(m.getEyePosition().add(0,.01,0),m.getEyePosition().add(0,.43,0),.02,0);
@@ -139,9 +141,11 @@ public final class RiptidePropulsion {
         return new SweepingAttackPlanner.Selection(d.path(),new SweepingAttackPlanner.Rollout(true,true,contact,plan.cost(),miss,first,trace));
     }
     public boolean continuation(){return plan!=null&&plan.demand()!=null&&plan.demand().continuation();}
+    public CompactTurnPlanner.Goal turnGoal(){return plan==null||plan.demand()==null?null:plan.demand().turn();}
     public void continuationAim(FlightPrediction.Aim aim,int deadline){if(continuation()&&(plan.demand().exiting()||aim!=null))plan=plan.withDemand(plan.demand().withAim(aim).withDeadline(deadline));}
     public boolean tick(EntityMaid m,FlightPrediction.State s,AsyncPlanning planning,HeadingController heading) {
         if(plan==null)return false;
+        if(plan.demand()!=null)plan=plan.withDemand(plan.demand().advanceTurn(s));
         int charge=RiptideReadiness.of(m).ticks();
         int elapsed=released?RiptidePlanner.WINDUP+(int)(m.level().getGameTime()-releasedAt):Math.min(charge,RiptidePlanner.WINDUP);
         if(!released) {
@@ -157,7 +161,7 @@ public final class RiptidePropulsion {
                 var proof=planning.certifyRiptide(jumpStart(m,planning.physics()),plan,RiptidePlanner.WINDUP,false);
                 if(proof==null){cancel(m,"LAUNCH_"+planning.riptideRejection());return false;}
                 if(!entitiesClear(m,proof,RiptidePlanner.WINDUP)){cancel(m,"LAUNCH_ENTITY_OR_ANCHOR_REJECTED");return false;}
-                heading.steerAngles(m,plan.yaw(),plan.pitch(),180,90);
+                heading.steerAngles(m,plan.yaw(),plan.pitch(),180,90,HeadingController.Owner.PROPULSION);
                 if(elapsed>=RiptidePlanner.WINDUP){m.getJumpControl().jump();jumpRequested=true;log(m,"LAUNCH_JUMP");}
                 return true;
             }
@@ -179,8 +183,9 @@ public final class RiptidePropulsion {
         var proof=planning.certifyRiptide(s,plan,elapsed,m.isInWaterOrBubble());
         if(proof==null){cancel(m,planning.riptideRejection());return false;}
         if(!entitiesClear(m,proof,elapsed)){cancel(m,"ENTITY_OR_ANCHOR_REJECTED");return false;}
+        currentTrace=proof.trace().stream().map(point->new GlidePlanner.TracePoint(point,.2,.15)).toList();
         var command=RiptidePlanner.command(s,plan,elapsed,planning.physics().gravity());
-        heading.steerAngles(m,command.yaw(),command.pitch(),command.yawRate(),command.pitchRate());
+        heading.steerAngles(m,command.yaw(),command.pitch(),command.yawRate(),command.pitchRate(),HeadingController.Owner.PROPULSION);
         if(!released&&elapsed==RiptidePlanner.WINDUP) {
             log(m,"RELEASE_REQUEST:CERTIFIED_READY");
             RELEASING.set(new Release(m,this));
@@ -225,7 +230,7 @@ public final class RiptidePropulsion {
         // Independent readiness never stops another item-use session.
         if(released)clearSpin(m);
         // Stop owned WineFox propulsion only. Velocity and FALL_FLYING are never reset here.
-        plan=null;used=ItemStack.EMPTY;launchPendingJump=false;jumpRequested=false;
+        plan=null;currentTrace=java.util.List.of();used=ItemStack.EMPTY;launchPendingJump=false;jumpRequested=false;
     }
     private static void clearSpin(EntityMaid m){var spin=(LivingRiptideAccessor)m;spin.wfs$spinTicks(0);spin.wfs$spinDamage(0);spin.wfs$spinItem(ItemStack.EMPTY);spin.wfs$livingFlag(4,false);}
     public void transition(EntityMaid m,String from,String to,String reason){if(active())log(m,"STATE_TRANSITION "+from+"->"+to+":"+reason);context=to;}

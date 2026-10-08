@@ -26,6 +26,7 @@ public final class AirCombatController {
     private final dev.winefox.skyfarer.async.AsyncPlanning emergencyPlanning;
     private long dangerUntil;
     private EmergencyAvoidancePlanner.Plan emergencyPlan;
+    private EmergencyAvoidancePlanner.Holding emergencyHolding;
     private int emergencyTicks;
     private LaunchAttackPlanner.Plan launchAttack;
     private LivingEntity launchTarget;
@@ -97,6 +98,10 @@ public final class AirCombatController {
     private int chainTicks,chainHits;
     private double chainTravel;
     private SweepingAttackPlanner.Path sweepPath;
+    private final TrajectoryCommitment trajectory = new TrajectoryCommitment();
+    private long nextSweepImprovement;
+    private String continuationStatus="NONE";
+    private long trajectoryConfig=-1;
     private List<GlidePlanner.TracePoint> sweepTrace=List.of();
     private long nextSweepPlan;
     private int sweepContactTicks;
@@ -169,12 +174,16 @@ public final class AirCombatController {
     }
     public void tick() {
         planningContext();
+        if(trajectoryConfig!=SkyfarerSettings.revision()){
+            trajectory.phaseChanged("CONFIG_CHANGED");sweepTrace=List.of();trajectoryConfig=SkyfarerSettings.revision();
+        }
         emergencyPlanning.begin(maid.level().getGameTime(),"EMERGENCY",null,SkyfarerSettings.revision());
         planningPending=false;
         try {tickFlight();}
         catch(dev.winefox.skyfarer.async.PlannerSession.Pending wait){
             planningPending=true;
-            if(state==AirCombatState.APPROACH||state==AirCombatState.REPOSITION)tryAirRecovery();
+            // Missing geometry is not permission for an unrelated energy controller to turn.
+            if(!propulsion.guided()&&(state==AirCombatState.APPROACH||state==AirCombatState.REPOSITION))continueEntryWhilePending();
             if(state==AirCombatState.TAKEOFF_PREP)stateTicks=Math.max(0,stateTicks-1);
             if(state==AirCombatState.ATTACK_EXIT&&maid.isFallFlying()){
                 // Do not retain the nose-down attack command while the exit job is pending.
@@ -192,13 +201,23 @@ public final class AirCombatController {
         for(double pitch:new double[]{maid.getXRot(),-35,-65,-88}){
             var next=SurfaceLaunchPlanner.step(s,maid.getYRot(),pitch,gravity(),propulsion.attached(),maid.isInWaterOrBubble());
             if(live.clear(s,next,.02,.01)){
-                if(pitch!=maid.getXRot())heading.steerAngles(maid,maid.getYRot(),pitch,180,90);
+                if(pitch!=maid.getXRot()){
+                    propulsion.cancel(maid,"LIVE_COLLISION_PREEMPT");
+                    heading.steerAngles(maid,maid.getYRot(),pitch,180,90,HeadingController.Owner.SAFETY);
+                    continuationStatus="LIVE_COLLISION_PREEMPT";
+                    trajectory.phaseChanged(continuationStatus);sweepTrace=List.of();planning.invalidate();
+                }
                 return;
             }
         }
         // Last resort is a bounded local reversal. Unknown terrain is never certified as air.
         var reverse=SurfaceLaunchPlanner.step(s,maid.getYRot()+180,-20,gravity(),propulsion.attached(),maid.isInWaterOrBubble());
-        if(live.clear(s,reverse,.02,.01))heading.steerAngles(maid,maid.getYRot()+180,-20,180,90);
+        if(live.clear(s,reverse,.02,.01)){
+            propulsion.cancel(maid,"LIVE_COLLISION_REVERSAL");
+            heading.steerAngles(maid,maid.getYRot()+180,-20,180,90,HeadingController.Owner.SAFETY);
+            continuationStatus="LIVE_COLLISION_REVERSAL";
+            trajectory.phaseChanged(continuationStatus);sweepTrace=List.of();planning.invalidate();
+        }
     }
 
     private boolean earlyAvoidance(){
@@ -216,7 +235,7 @@ public final class AirCombatController {
                 double pitch=EmergencyAvoidancePlanner.pitch(start,emergencyPlan,emergencyTicks-1,gravity(),propulsion.projectedTicks());
                 var next=FlightPrediction.step(start,emergencyPlan.yaw(),pitch,45,20,20,gravity(),propulsion.attached());
                 if(corridor.clear(start,next,.15,.12)){
-                    heading.steerAngles(maid,emergencyPlan.yaw(),pitch,45,20);diagnostic=emergencyPlan.mode();return true;
+                    heading.steerAngles(maid,emergencyPlan.yaw(),pitch,45,20,HeadingController.Owner.SAFETY);diagnostic=emergencyPlan.mode();return true;
                 }
                 emergencyPlan=null;dangerUntil=now+12;
             }
@@ -230,19 +249,20 @@ public final class AirCombatController {
             if(now>=dangerUntil&&SkyfarerSettings.debugLogging())WineFoxSkyfarer.LOGGER.info("[WFS debug] EMERGENCY_DETECTED maid={} state={} ttc={} margin={} divergence={} velocity={}",maid.getUUID(),state,danger.ttc(),danger.margin(),danger.divergence(),maid.getDeltaMovement());
             dangerUntil=now+12;
         }
-        if(now>=dangerUntil)return false;
+        if(now>=dangerUntil){emergencyHolding=null;return false;}
         var plan=propulsion.emergency(maid,start,emergencyPlanning,gravity());
         if(propulsion.needsFunding(plan)){
             double angle=Math.toRadians(start.yaw());
             int source=preferPropulsion(new PropulsionDemand(PropulsionDemand.Phase.EMERGENCY,start.x()-Math.sin(angle)*64,start.y()+3,start.z()+Math.cos(angle)*64,.65));
-            if(source==2){endCharge();sweepPath=null;sweepTrace=List.of();laneExit=null;
+            if(source==2){endCharge();clearSweep("EMERGENCY_PREEMPT");laneExit=null;
                 if(!returning())transition(AirCombatState.ATTACK_EXIT,"EMERGENCY_RIPTIDE_TURN");
                 diagnostic="EMERGENCY_RIPTIDE_TURN";return true;}
         }
-        endCharge();sweepPath=null;sweepTrace=List.of();laneExit=null;
+        endCharge();clearSweep("EMERGENCY_PREEMPT");laneExit=null;
         if(!returning()&&state!=AirCombatState.ATTACK_EXIT){recoveryOrigin=maid.position();exitTravelled=0;exitDistanceLimit=SkyfarerSettings.attackExitDistance();transition(AirCombatState.ATTACK_EXIT,"EARLY_COLLISION_RECOVERY");}
         if(plan!=null&&propulsion.executeEmergency(maid,plan)){
-            emergencyPlan=plan;emergencyTicks=1;heading.steerAngles(maid,plan.yaw(),plan.pitch(),45,20);diagnostic=plan.mode();
+            emergencyHolding=null;
+            emergencyPlan=plan;emergencyTicks=1;heading.steerAngles(maid,plan.yaw(),plan.pitch(),45,20,HeadingController.Owner.SAFETY);diagnostic=plan.mode();
             lifecycle("EMERGENCY_CERTIFIED",plan.mode()+" duration="+plan.duration()+" horizon="+plan.ticks());return true;
         }
         if(returning()){
@@ -257,7 +277,9 @@ public final class AirCombatController {
                 heading.steer(maid,local,false,false);return true;
             }
         }
-        heading.steerAngles(maid,maid.getYRot(),-75,45,20);diagnostic="EMERGENCY_AIRBRAKE_WAIT";
+        emergencyHolding=EmergencyAvoidancePlanner.holding(start,propulsion.projectedTicks(),gravity(),corridor,emergencyHolding);
+        heading.steerAngles(maid,emergencyHolding.yaw(),emergencyHolding.pitch(),45,20,HeadingController.Owner.SAFETY);
+        diagnostic="EMERGENCY_LOCAL_WAIT:"+emergencyHolding.clearTicks();
         if(SkyfarerSettings.debugLogging()&&danger.imminent()&&danger.ttc()<=10)WineFoxSkyfarer.LOGGER.info("[WFS debug] EMERGENCY_WAIT maid={} ttc={} pitch={} position={} velocity={} {}",maid.getUUID(),danger.ttc(),maid.getXRot(),maid.position(),maid.getDeltaMovement(),emergencyPlanning.detail());
         return true;
     }
@@ -296,6 +318,7 @@ public final class AirCombatController {
         propulsion.prepare(maid,SkyfarerRuntime.isSkyfarer(maid)&&wingsReady&&workBlockReason().isEmpty());
         propulsion.context(state.name());
         if(propulsion.guided()) {
+            if(propulsion.turnGoal()!=null)compactGoal=propulsion.turnGoal();
             // The owned propulsion certifies its actual remaining thrust each tick. A coast-only
             // danger forecast must not cancel a certified escape just because it omits that thrust.
             if(propulsion.continuation()&&state.locksRunTarget()&&passHistory.primaryHit()){propulsion.cancel(maid,"NATIVE_SPEAR_CONTACT");beginBreakaway("RIPTIDE_PRIMARY_HIT");}
@@ -303,13 +326,19 @@ public final class AirCombatController {
             if(propulsion.continuation())propulsion.continuationAim(state==AirCombatState.ATTACK_EXIT?null:TargetEvaluator.attackable(maid,runTarget)?sweepAim(runTarget):null,remainingChargeBudget());
             if(state.locksRunTarget())runTicks++;
             if(!workBlockReason().isEmpty()||equipmentRetreat||!SkyfarerRuntime.isSkyfarer(maid))propulsion.cancel(maid,"WORK_OR_EQUIPMENT_BLOCK:"+workBlockReason());
-            else if(propulsion.tick(maid,predictionStart(),planning,heading)){TlmFollowCompat.clearGroundMovement(maid);diagnostic="RIPTIDE_PROPULSION";return;}
+            else if(propulsion.tick(maid,predictionStart(),planning,heading)){
+                if(propulsion.turnGoal()!=null)compactGoal=propulsion.turnGoal();
+                TlmFollowCompat.clearGroundMovement(maid);diagnostic="RIPTIDE_PROPULSION";logDiagnostic();return;
+            }
             else if(state!=AirCombatState.WATER_ESCAPE) {
-                if(!state.locksRunTarget()&&state!=AirCombatState.ATTACK_EXIT)planning.invalidate();
                 if(state==AirCombatState.TAKEOFF) {
                     if(maid.onGround()){guidedLaunchRejected=true;transition(AirCombatState.TAKEOFF_PREP,"RIPTIDE_LAUNCH_FALLBACK");}
                     else {guidedLaunchOpportunity=propulsion.completed();transition(AirCombatState.CLIMB,propulsion.completed()?"RIPTIDE_LAUNCH_COMPLETE":"RIPTIDE_LAUNCH_INTERRUPTED");}
-                } else if(!returning()&&!state.locksRunTarget()&&state!=AirCombatState.ATTACK_EXIT)startApproach();
+                }
+                // A completed energy pulse resumes its entry/turn. Motion-sensitive results
+                // will reject themselves; do not erase the route, target or setup progress.
+                heading.release(HeadingController.Owner.PROPULSION);
+                tickPrediction=null;
             }
         }
         if(propulsion.interrupted(maid)&&!returning()&&state!=AirCombatState.WATER_ESCAPE){managed=true;beginReturn("RIPTIDE_INTERRUPTED_RECOVERY");}
@@ -413,7 +442,7 @@ public final class AirCombatController {
             }
             case RETURN_TO_OWNER, LANDING -> returnToAnchor();
         }
-        if (managed && maid.isFallFlying() && !returning() && state != AirCombatState.TAKEOFF && launchControlTicks==0) terrainSafety();
+        if (!propulsion.guided() && managed && maid.isFallFlying() && !returning() && state != AirCombatState.TAKEOFF && launchControlTicks==0) terrainSafety();
         logDiagnostic();
     }
     private void prepare() {
@@ -610,7 +639,7 @@ public final class AirCombatController {
             &&maid.level().getGameTime()-observedAt<SkyfarerSettings.ticks("loiter_time_ticks");
     }
     private void startApproach() {
-        sweepPath=null;sweepTrace=List.of();nextSweepPlan=0;
+        clearSweep("NEW_ENTRY");nextSweepPlan=0;
         compactGoal=null; chainCandidate=null; chainTarget=null; chainCenter=null;
         runTarget = null;
         if(!postChargeActive()) endCharge();
@@ -679,7 +708,6 @@ public final class AirCombatController {
         }
     }
     private void flyCompactTurn() {
-        if(!returning()&&tryAirRecovery()>0)return;
         var start=predictionStart(); var space=navigationSpace();
         double rate=Math.max(5,SkyfarerSettings.turnRate());
         var plan=planning.compact(start,compactGoal,propulsion.projectedTicks(),gravity(),rate,space);
@@ -738,11 +766,11 @@ public final class AirCombatController {
             // lower airborne staging height is only for an isolated elevated contact.
             if(support.samples()>=12&&!flatTerrain(support)){ascentEntry=false;compactGoal=null;}
         }
-        if(trySweepingEntry()) { attack(); return; }
+        if(trySweepingEntry()) { if(!propulsion.guided())attack(); return; }
         // A certified strike/exit already proves enough energy. Do not replace it with an
         // unrelated recovery climb just because the current horizontal speed is below .9.
-        if(tryAirRecovery()>0)return;
-        if(sweepPending&&++entryWaitTicks<=8){
+        if(!sweepPending&&state==AirCombatState.APPROACH&&tryAirRecovery()>0)return;
+        if(state==AirCombatState.APPROACH&&sweepPending&&++entryWaitTicks<=8){
             // Keep the entry direction while the initial candidate set is being evaluated. Starting a
             // competing compact turn here can destroy the very arc the worker is evaluating.
             double hold=ascentEntry?attackHeight(preferred)-Math.min(3,SkyfarerSettings.get("spear_vertical_expansion")):maid.getEyeY();
@@ -825,6 +853,18 @@ public final class AirCombatController {
         guide(entry == target ? "TURN_IN" : "MULTI_PIERCE_ENTRY", entry, height + approachHeight, false, 0, 0, Double.NaN);
         manageEnergy();
     }
+    private void continueEntryWhilePending(){
+        var s=predictionStart();
+        if(state==AirCombatState.REPOSITION&&compactGoal!=null){
+            if(compactGoal.readyInward(s.x(),s.z()))compactGoal=compactGoal.inward();
+            var c=CompactTurnPlanner.command(s,compactGoal,gravity(),propulsion.attached(),Math.max(5,SkyfarerSettings.turnRate()),compactPlan==null?-25:compactPlan.brake());
+            heading.steerAngles(maid,c.yaw(),c.pitch(),c.yawRate(),c.pitchRate());
+        } else if(TargetEvaluator.attackable(maid,preferred)) {
+            double hold=ascentEntry?attackHeight(preferred)-Math.min(3,SkyfarerSettings.get("spear_vertical_expansion")):s.y();
+            double yaw=Math.toDegrees(Math.atan2(s.x()-preferred.getX(),preferred.getZ()-s.z()));
+            heading.steerAngles(maid,yaw,GlidePlanner.feedbackPitch(s,hold,0,gravity(),propulsion.attached()),SkyfarerSettings.turnRate(),SkyfarerSettings.pitchRate());
+        }
+    }
     private FlightPrediction.Aim launchAim(LivingEntity target){
         var aim=sweepAim(target,true);var v=target.getDeltaMovement();
         if(v.lengthSqr()>9)v=Vec3.ZERO;
@@ -862,7 +902,7 @@ public final class AirCombatController {
         if(choice!=null){
             // Try exactly the returned path against CURRENT motion and fresh snapshot cells.
             // A successful full strike/exit replay need not wait another worker round trip.
-            if(choice.path().tracking)current=planning.currentSweep(start,choice,aim,propulsion.projectedTicks(),gravity(),sweepRate(),
+            current=planning.currentSweep(start,choice,aim,propulsion.projectedTicks(),gravity(),sweepRate(),
                 Math.max(.2,SpearCompat.minimumDamageSpeed(maid.getMainHandItem())),planningSpace);
             if(current==null)current=propulsion.rejoin(maid,start,choice.path(),aim,planning,gravity(),sweepRate(),
                 Math.max(.2,SpearCompat.minimumDamageSpeed(maid.getMainHandItem())),planningSpace,false);
@@ -913,7 +953,10 @@ public final class AirCombatController {
                 var prediction=planning.forecast(start,old,plan,navigationSpace(),.3);
                 double oldCost=(along/Math.max(.35,approachSpeed())+16)*.35+Math.max(0,-prediction.reserve())*12;
                 oldCost+=planning.clearanceCost();
-                if(prediction.safe()&&prediction.miss()<=1e-8&&oldCost<=choice.prediction().cost())return false;
+                // Only an actual attack certificate may displace the already certified curve.
+                // A short Glide forecast is neither an entry commitment nor a full exit proof.
+                if(prediction.safe()&&prediction.miss()<=1e-8&&oldCost+6<choice.prediction().cost()
+                    &&planning.certifyAttack(start,old,Math.max(.3,SpearCompat.minimumDamageSpeed(maid.getMainHandItem())+.05),navigationSpace()).safe())return false;
             }
         }
         if(propulsion.needsFunding(current)){
@@ -934,6 +977,7 @@ public final class AirCombatController {
     }
     private void commitSweep(SweepingAttackPlanner.Selection choice,String reason){
         sweepPath=choice.path();sweepTrace=choice.prediction().trace();sweepContactTicks=choice.prediction().contactTick();
+        trajectory.select(sweepPath,maid.level().getGameTime(),reason);nextSweepImprovement=maid.level().getGameTime()+16;
         compactGoal=null;compactPlan=null;endCharge();runTarget=preferred;runOrigin=TargetEvaluator.aimPoint(preferred);runTicks=0;
         runFlare=-3;laneExit=new Vec3(sweepPath.exit.d().x(),sweepPath.exit.d().y(),sweepPath.exit.d().z());
         debugEntry=maid.getEyePosition();var tangent=sweepPath.entry.b().subtract(sweepPath.entry.a()).unit();
@@ -941,6 +985,8 @@ public final class AirCombatController {
         laneStatus=sweepPath.style+" cost="+choice.prediction().cost()+" contactTicks="+sweepContactTicks;
         passHistory.begin(runTarget.getUUID());chainCandidate=null;chainCenter=runTarget.position();chainHits=0;chainTicks=0;chainTravel=0;
         SpearCompat.startCharge(maid);
+        if(!propulsion.guided()&&!propulsion.attached())trajectory.accept(new TrajectoryCommitment.Proof(maid.level().getGameTime(),
+            sweepPath,sweepAim(runTarget),0,gravity(),sweepRate(),Math.max(.2,SpearCompat.minimumDamageSpeed(maid.getMainHandItem())),false,choice.prediction()));
         var first=choice.prediction().first();if(!propulsion.guided())heading.steerAngles(maid,first.yaw(),first.pitch(),first.yawRate(),first.pitchRate());
         transition(AirCombatState.ATTACK_RUN,reason+":"+laneStatus);
     }
@@ -952,46 +998,90 @@ public final class AirCombatController {
         if(sweepContactTicks-runTicks<=SpearCompat.delayTicks(maid.getMainHandItem())+8&&!maid.isUsingItem())SpearCompat.startCharge(maid);
         if(maid.isUsingItem())transition(AirCombatState.SPEAR_CHARGE,"CURVE_NATIVE_CHARGE");
         if(!followSweep(false)){
-            sweepPath=null;sweepTrace=List.of();beginBreakaway("CURVE_NO_SAFE_CONTINUATION");return;
+            clearSweep(continuationStatus);beginBreakaway("CURVE_NO_SAFE_CONTINUATION:"+continuationStatus);return;
         }
+        if(propulsion.guided())return;
         if(sweepPath.passedContact(SweepingAttackPlanner.point(predictionStart()),SpearCompat.mobReach(maid.getMainHandItem())+2)
             || maid.isUsingItem()&&maid.getTicksUsingItem()>SpearCompat.chargeWindow(maid.getUseItem()))beginBreakaway("CURVE_PASSED_TARGET");
     }
     private boolean followSweep(boolean exiting) {
-        var aim=exiting?null:sweepAim(runTarget);var contact=exiting?(SweepingAttackPlanner.Contact)(s,a,t)->true:sweepContact(runTarget);
+        if(propulsion.guided())return true;
+        var aim=exiting?null:sweepAim(runTarget);
         var start=predictionStart();double minimum=Math.max(.2,SpearCompat.minimumDamageSpeed(maid.getMainHandItem()));
-        var prediction=planning.follow(start,sweepPath,aim,propulsion.projectedTicks(),gravity(),sweepRate(),minimum,exiting,navigationSpace(),contact,exiting?24:80);
-        boolean coastPending=planning.lastPending();
+        long now=maid.level().getGameTime();
+        trajectory.accept(planning.follow(start,sweepPath,aim,propulsion.projectedTicks(),gravity(),sweepRate(),minimum,exiting,navigationSpace()));
+        var proof=trajectory.usable(now,start,aim,propulsion.projectedTicks(),gravity(),sweepRate(),minimum,exiting);
+        if(proof==null||!proof.rollout().safe()){
+            // Revalidate one selected feedback path, not a candidate tree. A delayed negative
+            // result must not throw away a route which is safe from the actual current state.
+            proof=planning.certifyContinuation(start,sweepPath,aim,propulsion.projectedTicks(),gravity(),sweepRate(),minimum,exiting,navigationSpace());
+            trajectory.accept(proof);
+        }
+        if(proof==null){continuationStatus="PROOF_UNAVAILABLE:"+planning.continuationReason();sweepTrace=List.of();return false;}
+        var prediction=proof.remaining(now);
         var demand=continuationDemand(sweepPath,aim,exiting,exiting?PropulsionDemand.Phase.EXIT:PropulsionDemand.Phase.STRIKE);
-        if(coastPending&&!propulsion.attached())propulsion.warm(maid,start,demand,planning,navigationSpace());
-        // Pending is not a failed coast certificate. Keep following its current command while
-        // providers warm. A slow, certified dive gains speed from gravity; low speed alone
-        // must not ignite a different trajectory while its coast proof is pending.
-        if(!propulsion.attached()&&!coastPending&&(!prediction.safe()||!prediction.hit())){
+        if(!propulsion.attached()&&(!prediction.safe()||!prediction.hit())){
             var decision=choosePropulsion(demand,prediction.safe(),
                 new PropulsionRoute.Curve());
             if(decision.guided())return true;
-            if(decision.attached())
-                prediction=planning.follow(predictionStart(),sweepPath,aim,propulsion.projectedTicks(),gravity(),sweepRate(),minimum,exiting,navigationSpace(),contact,exiting?24:100);
+            if(decision.attached()){
+                proof=planning.certifyContinuation(predictionStart(),sweepPath,aim,propulsion.projectedTicks(),gravity(),sweepRate(),minimum,exiting,navigationSpace());
+                if(proof==null){continuationStatus="FUNDED_PROOF_UNAVAILABLE";return false;}
+                trajectory.accept(proof);prediction=proof.rollout();
+            }
         }
         sweepTrace=prediction.trace();
+        planning.retainTrace(sweepTrace);
         energyReserve=prediction.envelope().worstReserve();
         if(!prediction.safe()){
+            continuationStatus="CURRENT_PHYSICS_REJECTED";
             if(SkyfarerSettings.debugLogging())WineFoxSkyfarer.LOGGER.info("[WFS debug] ATTACK_CONTINUATION_REJECT state={} motion={} distance={} hit={} miss={} traceTicks={} start={} pathTracking={}",state,targetMotion,runTarget==null?-1:maid.distanceTo(runTarget),prediction.hit(),prediction.miss(),prediction.trace().size(),start,sweepPath.tracking);
             return false;
         }
+        continuationStatus=proof.tick()==now?"CURRENT_CERTIFIED":"FOLLOW_CERTIFIED_SUFFIX";
+        if(!exiting)prediction=improveSweep(start,aim,prediction,minimum);
+        // Even an optional improvement's fresh incumbent check can reveal a real failure.
+        if(!prediction.safe()){continuationStatus="CURRENT_PHYSICS_REJECTED";return false;}
+        sweepTrace=prediction.trace();energyReserve=prediction.envelope().worstReserve();
         if(!exiting&&runTicks%4==0&&prediction.hit()&&prediction.contactTick()>=0&&prediction.contactTick()<12
             &&SkyfarerSettings.ticks("post_attack_charge_ticks")>0){
             var contactState=sweepTrace.get(Math.min(prediction.contactTick(),sweepTrace.size()-1)).state();
             chainCandidate=selectChain(contactState,Math.min(40,SkyfarerSettings.ticks("post_attack_charge_ticks")),Math.max(0,propulsion.projectedTicks()-prediction.contactTick()));
         }
-        var c=prediction.first();
+        var c=SweepingAttackPlanner.command(start,sweepPath,aim,exiting,propulsion.projectedTicks(),gravity(),sweepRate());
         flightPlan=new GlidePlanner.Plan(c.yaw(),c.pitch(),c.yawRate(),c.pitchRate(),GlidePlanner.Mode.GLIDE,true,prediction.cost(),0,sweepTrace.size()-1,0);
         applyPlan();
         route=new AirRoute(List.of(new AirRoute.Waypoint(exiting?"CURVE_EXIT":"CURVE_ATTACK",maid.getEyePosition().add(heading.desired().scale(8)))));
         return true;
     }
+    /** Optional improvement cannot reset charge, target, timeout, hit history or exit progress. */
+    private SweepingAttackPlanner.Rollout improveSweep(FlightPrediction.State start,FlightPrediction.Aim aim,SweepingAttackPlanner.Rollout incumbent,double minimum){
+        long now=maid.level().getGameTime();
+        if(now<nextSweepImprovement||incumbent.contactTick()<=16||!incumbent.hit())return incumbent;
+        var space=navigationSpace();
+        var choice=planning.sweep(start,new SweepingAttackPlanner.Point(runTarget.getX(),attackHeight(runTarget),runTarget.getZ()),aim,
+            propulsion.projectedTicks(),gravity(),sweepRate(),minimum,SkyfarerSettings.attackExitDistance(),space,sweepContact(runTarget),sweepTurn);
+        nextSweepImprovement=now+(planning.lastPending()?1:16);
+        if(choice==null||choice.path()==sweepPath)return incumbent;
+        var current=planning.certifyContinuation(start,sweepPath,aim,propulsion.projectedTicks(),gravity(),sweepRate(),minimum,false,space);
+        if(current==null)return incumbent;
+        trajectory.accept(current);
+        if(!current.rollout().safe())return current.rollout();
+        var better=planning.currentSweep(start,choice,aim,propulsion.projectedTicks(),gravity(),sweepRate(),minimum,space);
+        if(better==null||!trajectory.better(now,current.rollout(),better.selection().prediction()))return current.rollout();
+        sweepPath=better.selection().path();trajectory.switched(sweepPath,now);
+        var prediction=better.selection().prediction();
+        trajectory.accept(new TrajectoryCommitment.Proof(now,sweepPath,aim,propulsion.projectedTicks(),gravity(),sweepRate(),minimum,false,prediction));
+        sweepContactTicks=runTicks+prediction.contactTick();sweepTrace=prediction.trace();
+        var end=sweepPath.exit.d();laneExit=new Vec3(end.x(),end.y(),end.z());
+        continuationStatus="BETTER_ROUTE";decisionLog("TRAJECTORY_SWITCH",trajectory.detail(now));
+        return prediction;
+    }
+    private void clearSweep(String reason){
+        sweepPath=null;sweepTrace=List.of();trajectory.clear(reason);
+    }
     private void attack() {
+        if(propulsion.guided())return;
         runTicks++;
         if(passHistory.primaryHit()) { beginBreakaway("PRIMARY_HIT"); return; }
         // Range is reconsidered after recovery. Moving the owner cannot invalidate a locked pass.
@@ -1044,6 +1134,7 @@ public final class AirCombatController {
         } else endCharge();
         runDirection = forward();
         recoveryOrigin = maid.getEyePosition();
+        trajectory.phaseChanged();sweepTrace=List.of();
         if(sweepPath!=null){
             exitDistanceLimit=SkyfarerSettings.attackExitDistance();exitTravelled=0;
             var end=sweepPath.exit.d();waypoint=new Vec3(end.x(),end.y(),end.z());exitStyle="CONTINUOUS_"+sweepPath.style;
@@ -1093,7 +1184,7 @@ public final class AirCombatController {
         if(chainCandidate==null || !pendingReturn.isEmpty() || !maid.isUsingItem() || SkyfarerSettings.ticks("post_attack_charge_ticks")<=0) return false;
         int budget=Math.min(40,SkyfarerSettings.ticks("post_attack_charge_ticks"));
         if(chainPlan(predictionStart(),chainCandidate,budget,propulsion.projectedTicks())==null) return false;
-        sweepPath=null;sweepTrace=List.of();
+        clearSweep("STATE_HANDOFF");
         chainTarget=chainCandidate; chainCandidate=null; chainTicks=0; chainHits=0; chainTravel=0;
         chargeTailUntil=maid.level().getGameTime()+SkyfarerSettings.ticks("post_attack_charge_ticks");
         passHistory.settle(); previous=runTarget.getUUID();
@@ -1191,9 +1282,10 @@ public final class AirCombatController {
         return new Vec3(capped.x(),capped.y(),capped.z());
     }
     private void attackExit() {
+        if(propulsion.guided())return;
         if (recoveryOrigin==null) selectExit();
         Vec3 destination=waypoint;
-        if(sweepPath!=null){if(!followSweep(true)){sweepPath=null;sweepTrace=List.of();selectExit();return;}}
+        if(sweepPath!=null){if(!followSweep(true)){clearSweep(continuationStatus);selectExit();return;}}
         else {guide("ATTACK_EXIT_"+exitStyle,destination,destination.y,false,0,0,Double.NaN); manageEnergy();}
         if(state!=AirCombatState.ATTACK_EXIT) return;
         boolean reached=maid.getEyePosition().distanceTo(destination)<Math.max(4,approachSpeed()*4)
@@ -1274,7 +1366,7 @@ public final class AirCombatController {
     private void beginReturn(String reason) {
         decisionLog("RETURN",reason);
         propulsion.cancel(maid,reason);
-        sweepPath=null;sweepTrace=List.of();
+        clearSweep("STATE_HANDOFF");
         compactGoal=null; chainCandidate=null; chainTarget=null;
         returnReason=reason;
         endCharge(); runTarget = null; preferred = null; secondaryTarget = null;
@@ -1407,7 +1499,10 @@ public final class AirCombatController {
         pulseReview=propulsion.review();
         energyDecision=decision.reason();
         if(decision.guided()){
-            if(demand.continuation()&&sweepPath==null){sweepPath=demand.path();sweepContactTicks=runTicks+40;runFlare=-3;}
+            if(demand.continuation()&&sweepPath==null){
+                sweepPath=demand.path();sweepContactTicks=runTicks+40;runFlare=-3;
+                trajectory.select(sweepPath,maid.level().getGameTime(),"FUNDED_CONTINUATION");
+            }
             flightPlan=null;flightRequest=null;return;
         }
         if(decision.waiting())return;
@@ -1431,7 +1526,7 @@ public final class AirCombatController {
                 maid.getX(),maid.getZ(),Math.max(32,preferred.position().subtract(maid.position()).horizontalDistance()+16));
             var recovery=choosePropulsion(new PropulsionDemand(PropulsionDemand.Phase.AIR_RECOVERY,goal.x(),goal.y(),goal.z(),.9),false,
                 new PropulsionRoute.Turn(goal,Math.max(5,SkyfarerSettings.turnRate())));
-            if(recovery.guided()){endCharge();runTarget=null;sweepPath=null;compactGoal=goal;transition(AirCombatState.REPOSITION,"LOW_ENERGY_RIPTIDE_RECOVERY");return;}
+            if(recovery.guided()){endCharge();runTarget=null;clearSweep("LOW_ENERGY_RECOVERY");compactGoal=goal;transition(AirCombatState.REPOSITION,"LOW_ENERGY_RIPTIDE_RECOVERY");return;}
             if(recovery.attached()) {
                 endCharge(); runTarget=null; compactGoal=goal;
                 transition(AirCombatState.REPOSITION,"LOW_ENERGY_RECOVERY_TURN");
@@ -1444,6 +1539,7 @@ public final class AirCombatController {
             &&maid.isFallFlying()&&!maid.onGround()&&TargetEvaluator.valid(maid,preferred,true,anchor());
     }
     private Vec3 recoveryGoal(){
+        if(compactGoal!=null)return new Vec3(compactGoal.x(),compactGoal.y(),compactGoal.z());
         if(airRecoveryGoal==null||maid.level().getGameTime()>airRecoveryUntil){
             Vec3 center=entryIntercept();
             Vec3 delta=center.subtract(maid.position());
@@ -1532,7 +1628,9 @@ public final class AirCombatController {
                 new SweepingAttackPlanner.Cubic(contact,contact.add(tangent.scale(handle)),exit.subtract(tangent.scale(handle)),exit),"PROPULSION_REJOIN",0,true);
             return continuationDemand(path,aim,false,PropulsionDemand.Phase.STRIKE);
         }
-        if(state==AirCombatState.ATTACK_EXIT)goal=maid.getEyePosition().add(heading.desired().scale(48));
+        // Funding follows the selected navigation destination. Target/owner positions can
+        // differ from an entry or exit waypoint and must not silently become a new route.
+        if(!route.waypoints().isEmpty())goal=waypoint;
         return new PropulsionDemand(state==AirCombatState.ATTACK_EXIT?PropulsionDemand.Phase.EXIT:state==AirCombatState.REPOSITION?PropulsionDemand.Phase.REPOSITION:PropulsionDemand.Phase.APPROACH,goal.x,height,goal.z,minimum);
     }
     private int remainingChargeBudget(){return Math.max(0,SpearCompat.chargeWindow(maid.getMainHandItem())-(maid.isUsingItem()?maid.getTicksUsingItem():0));}
@@ -1584,10 +1682,10 @@ public final class AirCombatController {
         propulsion.close(maid,reason,reason.equals("COMBAT_TO_TRANSIT"));
         lifecycle("CONTROL_DISPOSE",reason+" preserveGlide="+preserveGlide);
         planning.close();
-        emergencyPlanning.close();emergencyPlan=null;dangerUntil=0;emergencyTicks=0;
+        emergencyPlanning.close();emergencyPlan=null;emergencyHolding=null;dangerUntil=0;emergencyTicks=0;
         launchAttack=null;launchTarget=null;launchSearchTicks=0;preparedLaunchStart=null;
         guidedLaunchRejected=false;guidedLaunchOpportunity=false;
-        sweepPath=null;sweepTrace=List.of();
+        clearSweep("STATE_HANDOFF");
         compactGoal=null; chainCandidate=null; chainTarget=null; chainCenter=null; sampledSlope=null;
         if(state==AirCombatState.WATER_ESCAPE) maid.getSwimManager().setWantToSwim(previousWantToSwim);
         endCharge(); if(!preserveGlide)ElytraFlightController.stopGliding(maid);
@@ -1615,6 +1713,8 @@ public final class AirCombatController {
             maid.getUUID(), state, diagnostic, lastScan, maid.position(), movement, maid.onGround(), maid.isFallFlying(), clearance,
             preferred == null ? "none" : preferred.getUUID(), runTarget == null ? "none" : runTarget.getUUID(), maid.isUsingItem(), maid.getTicksUsingItem(), SpearCompat.mobReach(maid.getMainHandItem()));
         WineFoxSkyfarer.LOGGER.info("[WFS debug] async {}",planning.detail());
+        WineFoxSkyfarer.LOGGER.info("[WFS debug] TRAJECTORY maid={} state={} owner={} rejectedCommands={} {} continuation={}",
+            maid.getUUID(),state,heading.owner(),heading.rejectedCommands(),trajectory.detail(maid.level().getGameTime()),continuationStatus);
         if (flightPlan!=null) WineFoxSkyfarer.LOGGER.info("[WFS debug] maid={} planner={} safe={} clearTicks={} energyReserve={} rocketTicks={} exit={} corridor=[{}] pitch={}",
             maid.getUUID(),flightPlan.mode(),flightPlan.safe(),flightPlan.clearTicks(),energyReserve,propulsion.projectedTicks(),exitStyle,laneStatus,flightPlan.pitch());
         if(flightRequest!=null)WineFoxSkyfarer.LOGGER.info("[WFS debug] maid={} energyDecision={} pulseReview={} cooldown={} contactDistance={} contactHeight={} signedSlope={}",maid.getUUID(),energyDecision,pulseReview,propulsion.detail(maid),flightRequest.distance(),flightRequest.height(),flightRequest.slope());
@@ -1638,9 +1738,19 @@ public final class AirCombatController {
                 for(var p:sweepPath.points()){var point=new CompoundTag();DebugSnapshot.vector(point,"pos",new Vec3(p.x(),p.y(),p.z()));points.add(point);}
                 data.put("attack_curve",points);data.putString("curve_style",sweepPath.style);
                 DebugSnapshot.corridor(data,maid,sweepTrace);
+                data.putString("prediction_kind",sweepTrace.isEmpty()?"PROOF_UNAVAILABLE":"COMMITTED_SUFFIX");
+                data.putLong("prediction_age",trajectory.proofAge(maid.level().getGameTime()));
             }
-            else DebugSnapshot.corridor(data,maid,planning.trace());
+            else {
+                var prediction=planning.debugTrace();DebugSnapshot.corridor(data,maid,prediction.points());
+                data.putString("prediction_kind",prediction.kind());data.putLong("prediction_age",prediction.age());
+            }
+            if(propulsion.guided()){
+                DebugSnapshot.corridor(data,maid,propulsion.guidedTrace());data.putString("prediction_kind","GUIDED_ROUTE");data.putLong("prediction_age",0);
+            }
         }
+        data.putString("control_owner",heading.owner().name());
+        data.putString("trajectory_status",trajectory.detail(maid.level().getGameTime())+" "+continuationStatus);
         data.putString("planner_status",(planningPending||planning.waiting()?"waiting":"ready")+" "+planning.detail());
         data.putString("maid_name", maid.getName().getString()); data.putString("reason", diagnostic); data.putString("scan", lastScan);
         data.putDouble("clearance", clearance); data.putBoolean("charging", maid.isUsingItem() && SpearCompat.isChargeWeapon(maid.getUseItem()));

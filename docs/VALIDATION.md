@@ -1,6 +1,23 @@
 # 验证、离线回放与构建
 
-当前版本 **0.7.0**。完整验证包括编译、打包和 build/check 挂接的全部验证任务，不启动 Minecraft。
+当前版本 **0.7.1**。本次按用户要求仅编译、打包、定向验证和少量生产控制器离线回放，**未运行全量 build/check，未启动 Minecraft**。下文 0.7.0 的完整验证保留为历史证据，不能替代当前版本全量验证。
+
+## 0. 0.7.1 定向范围
+
+实现与实机日志因果见 [航迹连续性](TRAJECTORY_CONTINUITY.md)。本轮直接相关的七项验证为 `verifyTrajectoryContinuity`、`verifyTrajectoryStress`、`verifyAsyncPlanning`、`verifyEmergencyReplay`、`verifyStabilityLaunch`、`verifyArchitecture`、`verifyRiptideDuration`。
+
+- [trajectory-directed.log](../tools/trajectory-directed.log)：compileJava 与 Continuity、EmergencyReplay、StabilityLaunch、Architecture、RiptideDuration 成功。包含固定第 93 tick 接触路线的 80/120 tick 对照，原时间戳证明、状态偏移/物理/推进拒绝、切换成本、控制权、Compact 推进的完整预测/执行一致性。
+- [trajectory-package.log](../tools/trajectory-package.log)：编译、Continuity、Stress 与 Jar 成功；同 tick guided 交接不再落入普通路径结束逻辑。历史加速压力完成 2 命中、安全 Exit、5 次激流释放、0 烟花。
+- [trajectory-release.log](../tools/trajectory-release.log)：最终 compileJava、Continuity、AsyncPlanning、jar 成功。真实碰撞抢占立即撤销旧证明。最终四例的首次攻击/命中/安全离场分别为静止 4/27/53、移动 7/30/56、停顿 11/29/49 ticks；动态墙体在第 10 tick 加入并阻塞 Worker，第 45 tick 完成无碰撞逃逸观察。
+- 四个新增真实控制器回放：雨中双推进库存/静止目标，双推进/移动目标，已在攻击中阻塞全部 Worker 12 ticks，以及同一停顿中新增墙体。检查硬身体碰撞、推进不叠加、实际命中代理与安全离场；前三例要求连续攻击至少 12 ticks，墙体例要求安全抢占并继续无碰撞飞行 35 ticks。
+- 历史压力场景通过 `verifyTrajectoryStress` 保留 **5 ms/tick**、真实 Worker、仅激流、移动与静止双目标；要求两次命中、安全 Exit、不中途落地，保留全部硬碰撞断言。它是显式诊断入口，不接入常规 check。
+- 紧急冷启动两个场景现在都可先转离墙体再取得完整滑翔证书，50 ticks 无碰撞、末态朝离墙方向移动、无烟花消耗。`verifyStabilityLaunch` 独立保留较近墙体的 coast 无解/完整烟花可救、全随机寿命与危险推进拒绝。
+
+失败调查日志保留：`trajectory-safety-1` / `trajectory-stress-2` 曾出现 500 tick 无命中；`trajectory-preempt-1` 的新增墙体 + Worker 停顿在第 24 tick 碰撞，推动了实时等待转向修复。`trajectory-preempt-2` 是旧“必须点火”断言失败；`trajectory-final-code-2` 中 Continuity、Stress、AsyncPlanning 已通过，随后新增的初态必须推进假设失败，该假设被数值检查证伪，测试改为上述完整脱险检查，并保留独立的推进必需反例。另有 `trajectory-final-code` 的一次方法参数编译错误，已修正。文件名不代表通过，不隐去中间失败。
+
+逐 tick 数据与事件位于 `build/reports/trajectory-continuity/`，两例冷启动紧急事件仍在 `build/reports/controller-replay/emergency-*.events.log`。主动换路的收益门槛已做确定性检查，复杂场景中实际选中新路线的行为仍需实机观察；没有把离线 native hit 代理当成真实游戏伤害结果。
+
+当前 Jar：[winefox_skyfarer-1.21.1-0.7.1.jar](../build/libs/winefox_skyfarer-1.21.1-0.7.1.jar)，583,748 bytes，SHA-256 `6A2910FB5323D27876E73AB30F976A881FA7A105453C5D635C5531F5C544838E`。Manifest/Mod 元数据均为 0.7.1，包含 TrajectoryCommitment，无离线检查或 Minecraft/TLM 替身；[校验记录](../tools/trajectory-artifact-check.json)。
 
 ## 1. 工作约束与入口
 
@@ -21,7 +38,7 @@
 
 ## 3. 全部验证任务
 
-以下清单来自当前 build.gradle；每项均由 check 依赖。ControllerReplay 不设置 wfs.replayCase，覆盖全部 21 场景。
+以下 44 项来自当前 build.gradle；每项均由 check 依赖。ControllerReplay 不设置 wfs.replayCase 时覆盖全部 21 场景。本轮没有执行这份全量清单。独立 `verifyTrajectoryStress` 不在其中。
 
 - `verifyScanCadence`
 - `verifyFlightMath`
@@ -66,6 +83,7 @@
 - `verifyMovingAttack`
 - `verifyUnifiedPropulsion`
 - `verifyArchitecture`
+- `verifyTrajectoryContinuity`
 
 ## 4. 回放范围
 
@@ -97,9 +115,9 @@ verifyAsyncPlanning/AsyncSweep/PlannerLoad 覆盖关闭、取消、generation、
 
 现有 AirRecoveryHome 明确覆盖 LANDING 的合法软返航恢复；Controller 旧无条件禁复战断言已同步，只有任务未完成、未触地且重新看到合法目标才允许重新攻击。硬返航/完成任务的释放约束继续由 Home/Command/Controller 回放检验。
 
-## 7. 当前构建证据与已知缺口
+## 7. 历史 0.7.0 完整构建证据
 
-最终发布证据为 [v070-release-all.log](../tools/v070-release-all.log)：`BUILD SUCCESSFUL in 6m 46s`。完整 build/check 执行并通过全部 **43 项 verify**（49 个任务，45 执行、4 已是最新），无场景筛选、无失败或跳过的 verify。
+0.7.0 当时的最终发布证据为 [v070-release-all.log](../tools/v070-release-all.log)：`BUILD SUCCESSFUL in 6m 46s`。当时完整 build/check 执行并通过全部 **43 项 verify**（49 个任务，45 执行、4 已是最新），无场景筛选、无失败或跳过的 verify。它不代表 0.7.1 本轮执行了全量验证。
 
 - **Controller：21/21** 完整生命周期回放通过，包含 Home/Follow 连续命中、不同随机火箭寿命、取消/消失、部分方块、坡面、山顶与高柱。上坡本轮首次攻击 330 tick、落地 446 tick，仍符合原有攻击时限和战区约束。
 - **Command/Transit：7/7** 调度全周期通过，含 900 格、创造倍率和友好标记；RemoteWake 通过多候选分批、第二轮任务、存档重建、失败重试、票据上限与释放。

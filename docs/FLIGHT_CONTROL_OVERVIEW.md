@@ -1,6 +1,6 @@
 # 飞控系统总设计与当前实现
 
-当前版本 **0.7.0**。推进所有权、删除与迁移见 [架构审计](ARCHITECTURE_070.md)，构建结果见 [验证](VALIDATION.md)。源码为最终权威。
+当前版本 **0.7.1**。航迹承诺、控制仲裁与延迟安全见 [航迹连续性](TRAJECTORY_CONTINUITY.md)，既有推进边界见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
 
 ## 导航
 
@@ -21,7 +21,7 @@
 
 核心目标是从当前动量出发，在真实身体通道可通过、长矛可接触、攻击后有恢复路线的前提下完成攻击，随后尽早评估下一次进场。地形附近的方块数量或单根射线不是攻击可行性的替代品；近处有山体、地板或屋顶不等于航线被堵塞。
 
-正常战斗由原版鞘翅滑翔与附着烟花推动；0.6.2.2 在非承诺攻击阶段增加原版激流叠加推进。高度、速度、空气阻力和有限烟花推进共同影响未来能量；控制器主要修改观察方向，由物理逐步改变运动，不把速度向量直接旋转到目标方向。它仍使用目标高度、垂直速度反馈和速度阈值，因此不能把当前实现描述为“完全不控制高度或速度的纯能量控制器”。
+正常战斗使用原版鞘翅滑翔、附着烟花或 WineFox 有限时长激流；激流可服务已认证的 Strike/Exit，仍须证明推力及完整后续路线。高度、速度、阻力和有限推进共同影响未来能量；普通控制主要修改观察方向，激流按已有 .2/tick 规则叠加实际推力，不把速度向量直接旋转到目标方向。目标高度、垂直速度反馈和速度阈值仍存在。
 
 关键物理约定：
 
@@ -32,7 +32,7 @@
 | `yaw/pitch` | 角度；负 pitch 是抬头，正 pitch 是俯冲 |
 | 物理上下文 | 主线程通过 `getGravity()` 读取实际 gravity（含 noGravity），采集缓降剩余时间，冻结到 `PhysicsContext`；异常回退 .08；合法负/零值保留 |
 | `FlightPrediction.step` | 受限姿态后调用 `VanillaElytra`：float 查表、速度 epsilon、原版滑翔/阻力、位移，最后附着火箭更新下一步速度；新火箭延后一个实体 tick 才推进 |
-| `HeadingController` | 在主线程从本 tick 开始姿态限速应用 yaw/pitch；重复调用不会无限叠加每 tick 转向额度 |
+| `HeadingController` | 从本 tick 起始姿态限速应用 yaw/pitch；`SAFETY > PROPULSION > ROUTE`，低权限不能覆盖高权限；同 tick 不叠加转向额度 |
 | 创造赶路 | 明确例外：`CreativeTransitPlanner` 计算当前步输入速度，主线程设置 `setDeltaMovement`，交战前缩回正常速度范围 |
 
 源码：[FlightPrediction](../src/main/java/dev/winefox/skyfarer/flight/FlightPrediction.java)、[HeadingController](../src/main/java/dev/winefox/skyfarer/flight/HeadingController.java)、[ElytraFlightController](../src/main/java/dev/winefox/skyfarer/flight/ElytraFlightController.java)。
@@ -68,7 +68,7 @@ TLM Skyfarer 工作行为 -> SkyfarerRuntime.workTick -> acquire 请求
 
 ### 3.1 实际枚举及主路径
 
-[AirCombatState](../src/main/java/dev/winefox/skyfarer/ai/AirCombatState.java) 共有 20 个枚举值：
+[AirCombatState](../src/main/java/dev/winefox/skyfarer/ai/AirCombatState.java) 共有 17 个枚举值：
 
 ```text
 GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
@@ -109,7 +109,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 ### 3.2 全状态共同约束
 
-**工作资格。** 主人须存在、存活、非旁观者且与女仆同维度；女仆不能关闭 AI、打开 GUI、坐下、睡觉、乘坐或被拴住。普通起飞还需地面、可充能长矛、可用鞘翅和烟花。水中逃逸入口是独立恢复路径，不以当前存在攻击目标为前提。
+**工作资格。** 主人须存在、存活、非旁观者且与女仆同维度；女仆不能关闭 AI、打开 GUI、坐下、睡觉、乘坐或被拴住。普通起飞还需地面、可充能长矛、可用鞘翅及合法推进或已认证无动力路线。水中逃逸入口是独立恢复路径，不以当前存在攻击目标为前提。
 
 **托管期间。** 每 tick 清理 TLM 导航、`WALK_TARGET/PATH/LOOK_TARGET/TARGET_POS` 和地面移动输入；滑翔时设置 `FALL_FLYING` 姿态。这样地面跟随行为不会持续把空中攻击航向拉向主人。实际模型动画是客户端兼容问题，服务端姿态不能保证每个第三方模型都有鞘翅动画。
 
@@ -302,11 +302,11 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 竖向曲线以三维速度和局部路径高度误差跟踪，接触附近同时修正 yaw/pitch 指向目标，姿态范围 ±75°；进攻 pitch 速率仍为 6°/tick，陡角离场允许 14°/tick。以上只是候选指令，`VanillaElytra` 与每步身体扫掠仍决定能否执行。只有完整命中、前摇及安全离场成立的路线进入成本比较；旧普通路线必须预测到实际接触（miss ≤1e-8）才能压过已认证曲线。
 
-`Path` 按控制多边形长度约每 `.75` 格采样，每段 8–160 步；先真实身体走廊过滤，再模拟原版动量/姿态/有限火箭。模拟在原生前摇之后检查最低攻击速度、长矛接触与逐步身体净空。命中后的提前成功退出条件要求至少再模拟 16 ticks，并达到火箭结束后 12 ticks；但总时域为 `min(160, max(budget, rocket + 16))`，达到上限时也会返回已模拟部分的 `safe/hit`。因此，接触发生在时域末尾时，当前实现不保证完整的上述恢复窗口；不能将有限预测写成整段离场安全的无条件证明。
+`Path` 按控制多边形长度约每 `.75` 格采样，每段 8–160 步；先身体走廊过滤，再模拟原版动量/姿态/有限火箭。搜索、Rejoin、执行 follow 的进攻基准统一为 120 ticks，完整上限仍为 160。预测接触后扩展离场预算；只有接触后至少 16 ticks、火箭及点火延迟结束后的滑行窗口、出口行程与最低速度全部满足才返回 safe。硬上限耗尽直接失败，不允许接近截止才命中而省略完整恢复。Exit 从剩余行程重新分配预算。
 
 成本含时间、紧通道、姿态变化平方、与当前转向趋势反向的代价。直达几何 simplicity 为 0、弧线/绕山为 1.5，保留小的简单性优势；不是几何直线能通就强制放弃曲线。控制器还用实际预测 miss、能量亏空、净空和预计时间与已有常规路线竞争。
 
-已完成候选搜索默认隔 12 ticks 再发；正在等待的候选/接入结果按下一 tick 重新领取。曲线保留只代表几何可复用，提交攻击前必须用当前状态 `Rejoin` 再证明安全命中，可调整出口尾部高度或验证库存火箭。接入不能绕过前摇或使用旧姿态证书。
+初始搜索完成后默认隔 12 ticks 再发，pending 按下一 tick 领取。提交攻击前必须用当前状态完成 Rejoin/同等完整认证，可调整出口高度或验证库存推进。提交后 `TrajectoryCommitment` 保存路径，后台刷新使用时间对齐的有限证明，必要时从当前状态重验同一路径；另每 16 ticks 可选搜索明显更好候选，满足承诺窗口和切换成本才更换。接入和换路都不能绕过前摇、身体碰撞或完整 Exit，详见 [航迹连续性](TRAJECTORY_CONTINUITY.md)。
 
 源码：[SweepingAttackPlanner](../src/main/java/dev/winefox/skyfarer/flight/SweepingAttackPlanner.java)、[AttackLanePlanner](../src/main/java/dev/winefox/skyfarer/flight/AttackLanePlanner.java)、[AttackLinePlanner](../src/main/java/dev/winefox/skyfarer/flight/AttackLinePlanner.java)、[DiveProfile](../src/main/java/dev/winefox/skyfarer/flight/DiveProfile.java)。
 
@@ -376,6 +376,8 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 普通 Glide 首 24 ticks 是硬安全窗口；`prediction_length_multiplier` 扩大的远端碰撞仍采样并增加风险成本，不能把无限无动力延伸最终落地当成禁止现在起飞。完整烟花寿命 + 后续滑翔的验证另有硬窗口，不因远端软惩罚而省略。
 
 0.6.2.1 在状态分支前另有真实动量 TTC 检测：速度、转向角差决定 6–32 ticks 余量，危险保持 12 ticks；曲线使用动态控制律。独立紧急请求先验六个滑翔候选，无解才搜索全寿命烟花转向，执行前用当前状态复核，详见 [紧急避障](STABILITY_LAUNCH_0621.md#紧急避障)。陡角 Exit 俯仰上限为 14°/tick，预测与执行一致。
+
+0.7.1 等待紧急 Worker 时不再仅抬头：保留可用的 12 tick 逃逸姿态，失效才比较最多六个姿态；全部以实时身体扫掠检查，不授权点火，也不取代完整逃逸认证。连旧姿态复核最多 84 步。安全控制可立即抢占路线/激流，相关动态墙体 + 12 tick Worker 停顿反例见航迹专题。guided 运行时仍由自身的完整推力/恢复复核守卫，避免漏算激流推力的 coast TTC 误抢占。
 
 主线程 `validateImmediateMotion()` 对当前真实身体和实际世界检查本 tick，依次当前 pitch、-35/-65/-88，再必要时检查一次 180°/-20 回头。它不执行整套候选搜索，也不把未知空间当安全。正常 `LANDING` 跳过这条防线，否则着陆会被抬头回避。
 
@@ -455,7 +457,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 - 必需的 Lane、Launch、Exit 没结果会抛无堆栈 `PlannerSession.Pending`，上层等待下个 tick；不得主线程 `get/join` 或同步重算。
 - 普通 Glide 没结果提供 O(1) feedback 姿态，但标记不安全；`terrainSafety()` 不把单纯 waiting 误当已证明的路径失败，最后靠 live 当前步检查。
-- Compact 等待时使用保守制动参数和当前状态重算方向；曲线跟踪保留当前曲线并实时重算首步 command，预测更新仍由 Worker 完成。
+- Compact 等待时使用保守制动参数和当前状态重算方向；曲线跟踪保留当前路径，使用时间对齐的有限证明并重算当前 command。Worker 负责滚动刷新，后缀不可用时主线程只对选中路径做当前严格数值重验，不重新搜索候选，也不读取全路线实时世界。
 - Pulse 未完成返回无限成本/`async_pending`，禁止未经完整生命周期验证先点火。已完成 pulse 保存了各寿命对应的首步姿态，可在真实火箭产生的同 tick 使用。
 - Slope 等待时临时返回零样本估计；零样本不能满足平地 >=12 样本条件，不能把“还没有数据”当“已证明平坦”。
 

@@ -27,7 +27,11 @@ public final class PlannerExecutor {
                 if(!missing.isEmpty()){
                     // Discovery only: look through absent snapshot cells to request the whole route.
                     // Its result is NEVER published or used to certify a collision corridor.
-                    var discovery=snapshot.space(cancellation);discovery.explore();var speculative=task.compute(discovery);
+                    var discovery=snapshot.space(cancellation);discovery.explore();Object speculative=task.compute(discovery);
+                    // Search wraps Selection now. Preserve the selected corridor's priority;
+                    // otherwise unrelated candidate cells can starve its current-state rejoin.
+                    if(speculative instanceof dev.winefox.skyfarer.flight.SweepingAttackPlanner.Search search)speculative=search.selection();
+                    if(speculative instanceof PlanningTask.RejoinResult rejoin)speculative=rejoin.selection();
                     if(speculative instanceof dev.winefox.skyfarer.flight.SweepingAttackPlanner.Selection selected){
                         var proof=snapshot.space(cancellation);var points=selected.path().points();
                         for(int i=1;i<points.size();i++){var a=points.get(i-1);var b=points.get(i);proof.clear(CollisionSnapshot.point(a.x(),a.y(),a.z()),CollisionSnapshot.point(b.x(),b.y(),b.z()),.15,.12);}
@@ -44,6 +48,11 @@ public final class PlannerExecutor {
                         var trace=speculative instanceof dev.winefox.skyfarer.flight.EmergencyAvoidancePlanner.Plan e?e.trace()
                             :((dev.winefox.skyfarer.flight.LaunchAttackPlanner.Plan)speculative).selection().prediction().trace();
                         var proof=snapshot.space(cancellation);
+                        for(int i=1;i<trace.size();i++)proof.clear(trace.get(i-1).state(),trace.get(i).state(),.15,.12);
+                        preferred=proof.missing();
+                    }
+                    else if(speculative instanceof dev.winefox.skyfarer.flight.SweepingAttackPlanner.Rollout rollout){
+                        var proof=snapshot.space(cancellation);var trace=rollout.trace();
                         for(int i=1;i<trace.size();i++)proof.clear(trace.get(i-1).state(),trace.get(i).state(),.15,.12);
                         preferred=proof.missing();
                     }

@@ -50,6 +50,7 @@ public final class AsyncPlanning {
     private String sweepSource="COAST";
     public String attackDetail(){return "source="+sweepSource+" search="+(sweepSearchPending?"PENDING":sweepSearch==null?"NONE":"candidates="+sweepSearch.candidates()+" geometry="+sweepSearch.geometryRejected()+" noContact="+sweepSearch.contactRejected()+" exit="+sweepSearch.exitRejected()+" accepted="+sweepSearch.accepted()+" miss="+sweepSearch.bestMiss())+" rejoin="+session.rejoinReason();}
     public List<GlidePlanner.TracePoint> trace(){return session.trace();}
+    public PlannerSession.DebugTrace debugTrace(){return session.debugTrace();}
     private Object call(PlanningTask task){lastPending=false;try{return session.query(task);}catch(PlannerSession.Pending pending){lastPending=true;waiting=true;throw pending;}}
     public AttackLanePlanner.Lane lane(AttackLanePlanner.Input input){return (AttackLanePlanner.Lane)call(new PlanningTask.Lane(input));}
     private Object optional(PlanningTask task,Object fallback){try{return call(task);}catch(PlannerSession.Pending pending){waiting=true;return fallback;}}
@@ -121,10 +122,13 @@ public final class AsyncPlanning {
         var proposal=(PlanningTask.RejoinResult)optional(bounded(task,space),null);
         return session.recertifyRejoin(task,proposal,space instanceof BoundedCorridor b?b.bounds():null);
     }
-    public SweepingAttackPlanner.Rollout follow(FlightPrediction.State s,SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,double minimum,boolean exiting,GlidePlanner.Corridor ignored,SweepingAttackPlanner.Contact contact,int budget){
-        var result=(SweepingAttackPlanner.Rollout)optional(bounded(new PlanningTask.Sweep(s,null,aim,rocket,gravity,rate,minimum,0,0,path,exiting,budget),ignored),
-            new SweepingAttackPlanner.Rollout(true,false,-1,Double.POSITIVE_INFINITY,Double.POSITIVE_INFINITY,SweepingAttackPlanner.command(s,path,aim,exiting,rocket,gravity,rate),List.of()));
-        return new SweepingAttackPlanner.Rollout(result.safe(),result.hit(),result.contactTick(),result.cost(),result.miss(),
-            SweepingAttackPlanner.command(s,path,aim,exiting,rocket,gravity,rate),result.trace(),result.envelope());
+    public TrajectoryCommitment.Proof follow(FlightPrediction.State s,SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,double minimum,boolean exiting,GlidePlanner.Corridor space){
+        var result=session.continuation(bounded(new PlanningTask.Sweep(s,null,aim,rocket,gravity,rate,minimum,0,0,path,exiting,120),space));
+        lastPending=result==null;waiting|=lastPending;return result;
     }
+    public TrajectoryCommitment.Proof certifyContinuation(FlightPrediction.State s,SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,int rocket,double gravity,double rate,double minimum,boolean exiting,GlidePlanner.Corridor space){
+        return session.certifyContinuation(bounded(new PlanningTask.Sweep(s,null,aim,rocket,gravity,rate,minimum,0,0,path,exiting,120),space));
+    }
+    public String continuationReason(){return session.continuationReason();}
+    public void retainTrace(List<GlidePlanner.TracePoint> trace){session.retainTrace(trace);}
 }

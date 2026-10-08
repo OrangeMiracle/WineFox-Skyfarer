@@ -121,8 +121,8 @@ public final class PlannerSession {
             boolean background=urgentCells.isEmpty()||!backgroundCells.isEmpty()&&turn++%3==2;
             nearest.add((background?backgroundCells:urgentCells).removeFirst());
         }
-        for(long key:nearest){if(local<=0||cellBudget<=0||captureBudget<216||epochCaptureNanos>=2_000_000)break;requested.remove(key);
-            var old=cells.get(key);if(old!=null&&now-old.tick<20)continue;
+        for(long key:nearest){if(local<=0||cellBudget<=0||captureBudget<216||epochCaptureNanos>=2_000_000)break;int priority=requested.remove(key);
+            var old=cells.get(key);if(old!=null&&now-old.tick<(priority==0?8:20))continue;
             long begin=System.nanoTime();var captured=source.capture(key);long elapsed=System.nanoTime()-begin;captureNanos+=elapsed;epochCaptureNanos+=elapsed;
             int reads=source.lastReads();cells.put(key,new CellEntry(captured,now));dirty=true;local--;cellBudget--;capturedThisEpoch++;captureBudget-=reads;capturedBlocks+=reads;
         }
@@ -150,7 +150,7 @@ public final class PlannerSession {
             boolean geometry=unbound instanceof PlanningTask.Sweep sweep&&sweep.path()==null;
             boolean failedMoving=geometry&&cached.value instanceof SweepingAttackPlanner.Search search&&search.selection()==null
                 &&((PlanningTask.Sweep)unbound).aim()!=null&&Math.hypot(((PlanningTask.Sweep)unbound).aim().vx(),((PlanningTask.Sweep)unbound).aim().vz())>.025;
-            if(cached.generation!=generation||now-cached.tick>(terrain?20:failedMoving?3:geometry?12:4)||!task.compatible(cached.task))continue;
+            if(cached.generation!=generation||now-cached.tick>(terrain?20:failedMoving?3:geometry?24:4)||!task.compatible(cached.task))continue;
             var a=task.start();var b=cached.task.start();
             // Committing a contact curve is more sensitive than reusing a steering hint.
             // Especially under a long rocket pulse, two ticks of turning can invalidate
@@ -169,6 +169,52 @@ public final class PlannerSession {
         }
         enqueue(task);throw WAIT;
     }
+    /** Reuse the time-aligned suffix of a certified feedback rollout, never its old first frame.
+     * This is independent of ordinary cache tolerances and always refreshes in the background. */
+    public TrajectoryCommitment.Proof continuation(PlanningTask task) {
+        check();lastQueryEpoch=captureEpoch;urgent=task.start();pump();
+        var wanted=(PlanningTask.Sweep)task.unbound();
+        for(var cached:cache) {
+            if(cached.generation!=generation || !(cached.task.unbound() instanceof PlanningTask.Sweep old)
+                || old.path()==null || !(cached.value instanceof SweepingAttackPlanner.Rollout rollout))continue;
+            if(!sameBounds(task,cached.task))continue;
+            var proof=new TrajectoryCommitment.Proof(cached.tick,old.path(),old.aim(),old.rocket(),old.gravity(),old.rate(),old.minimum(),old.exiting(),rollout);
+            if(!proof.matches(now,wanted.start(),wanted.path(),wanted.aim(),wanted.rocket(),wanted.gravity(),wanted.rate(),wanted.minimum(),wanted.exiting()))continue;
+            cacheHits++;enqueue(task);return proof;
+        }
+        enqueue(task);return null;
+    }
+    private static boolean sameBounds(PlanningTask a,PlanningTask b) {
+        if(a instanceof PlanningTask.Bounded x)return b instanceof PlanningTask.Bounded y&&x.bounds().equals(y.bounds());
+        return !(b instanceof PlanningTask.Bounded);
+    }
+    /** Refresh only cells touched by the selected route, ahead of the strict 20-tick recheck.
+     * The empty snapshot is a numeric body-volume enumerator, never a safety certificate. */
+    public void retainTrace(List<GlidePlanner.TracePoint> trace) {
+        check();var volume=source.snapshot(Map.of(),false,false).space(new java.util.concurrent.atomic.AtomicBoolean());
+        volume.trackTouched();
+        for(int i=1;i<trace.size();i++)volume.clear(trace.get(i-1).state(),trace.get(i).state(),trace.get(i).side(),trace.get(i).vertical());
+        for(long key:volume.touched()){var cell=cells.get(key);if(cell==null||now-cell.tick>=8)request(key,0);}
+    }
+    /** One already-selected route, at most 160 integration steps. No search, no world reads,
+     * no new propulsion. Used at handoffs or when actual motion no longer matches a suffix. */
+    public TrajectoryCommitment.Proof certifyContinuation(PlanningTask task) {
+        check();var sweep=(PlanningTask.Sweep)task.unbound();
+        var map=new HashMap<Long,CollisionSnapshot.Cell>();
+        cells.forEach((k,v)->{if(now-v.tick<=20)map.put(k,v.cell);});
+        var space=source.snapshot(Map.copyOf(map),false,false).space(new java.util.concurrent.atomic.AtomicBoolean());
+        space.trackTouched();
+        var rollout=(SweepingAttackPlanner.Rollout)task.compute(space);
+        for(long key:space.missing())request(key,0);
+        for(long key:space.touched()){var cell=cells.get(key);if(cell!=null&&now-cell.tick>=8)request(key,0);}
+        // A successful strict rollout may have missing optional roomy-clearance samples.
+        // Its body/contact/exit proof succeeded; those scoring probes cannot revoke it.
+        continuationReason=rollout.safe()?"CURRENT_CERTIFIED":!space.missing().isEmpty()?"SNAPSHOT_MISSING":"CURRENT_PHYSICS_REJECTED";
+        if(!rollout.safe()&&!space.missing().isEmpty())return null;
+        return new TrajectoryCommitment.Proof(now,sweep.path(),sweep.aim(),sweep.rocket(),sweep.gravity(),sweep.rate(),sweep.minimum(),sweep.exiting(),rollout);
+    }
+    private String continuationReason="NONE";
+    public String continuationReason(){return continuationReason;}
     static boolean contactStateCompatible(FlightPrediction.State a,FlightPrediction.State b,long age){
         return age<=2&&Math.hypot(Math.hypot(a.x()-b.x(),a.z()-b.z()),a.y()-b.y())<=2.5
             &&Math.abs(FlightPrediction.turn(a.yaw(),b.yaw(),180)-a.yaw())<=8
@@ -240,6 +286,7 @@ public final class PlannerSession {
             chosen=result;
         }
         rejoinReason="CURRENT_STRIKE_EXIT_CERTIFIED";
+        retainTrace(chosen.trace());
         return new PlanningTask.RejoinResult(new SweepingAttackPlanner.Selection(proposal.selection().path(),chosen),proposal.duration());
     }
     private String rejoinReason="NOT_REQUESTED";
@@ -248,10 +295,18 @@ public final class PlannerSession {
         if(task.unbound() instanceof PlanningTask.Sweep sweep&&sweep.path()==null){
             var seed=seeds.get(task.slot());
             if(seed!=null&&now<=seed.expires&&task.compatible(seed.task))task=seed.task;
-            else seeds.put(task.slot(),new Seed(task,now+12));
+            else seeds.put(task.slot(),new Seed(task,now+24));
         }
         var prior=pending.get(task.slot());
-        if(prior!=null&&now-prior.tick<=6&&task.compatible(prior.task))return;
+        boolean following=task.unbound() instanceof PlanningTask.Sweep s&&s.path()!=null;
+        boolean geometry=task.unbound() instanceof PlanningTask.Sweep s&&s.path()==null;
+        boolean sameContinuation=following&&prior!=null&&sameBounds(task,prior.task)
+            &&prior.task.unbound() instanceof PlanningTask.Sweep old&&old.path()==((PlanningTask.Sweep)task.unbound()).path()
+            &&old.exiting()==((PlanningTask.Sweep)task.unbound()).exiting();
+        // Let a route refresh finish despite natural target/rocket countdown. Its delivered
+        // proof still has to pass time-aligned state, aim, force and physics checks above.
+        if(prior!=null&&now-prior.tick<=(geometry?24:following?TrajectoryCommitment.MAX_PROOF_AGE:6)
+            &&(task.compatible(prior.task)||sameContinuation))return;
         if(prior!=null){prior.ticket.cancel();pending.remove(task.slot());}
         // Expired shapes are absent, not silently considered empty. Fetch only cells actually queried.
         if(cells.values().removeIf(c->now-c.tick>80))dirty=true;
@@ -264,12 +319,16 @@ public final class PlannerSession {
     }
     /** Debug never schedules or repeats a forecast. */
     public List<GlidePlanner.TracePoint> trace(){
+        return debugTrace().points();
+    }
+    public record DebugTrace(List<GlidePlanner.TracePoint> points,String kind,long age) {}
+    public DebugTrace debugTrace(){
         check();for(var c:cache)if(c.generation==generation&&now-c.tick<=8){
-            if(c.value instanceof PlanningTask.GlideResult g)return g.trace();
-            if(c.value instanceof SweepingAttackPlanner.Rollout r)return r.trace();
-            if(c.value instanceof SweepingAttackPlanner.Selection s)return s.prediction().trace();
-            if(c.value instanceof SweepingAttackPlanner.Search s&&s.selection()!=null)return s.selection().prediction().trace();
-        }return List.of();
+            if(c.value instanceof PlanningTask.GlideResult g)return new DebugTrace(g.trace(),"GLIDE_FORECAST",now-c.tick);
+            if(c.value instanceof SweepingAttackPlanner.Rollout r)return new DebugTrace(r.trace(),"PATH_FORECAST",now-c.tick);
+            if(c.value instanceof SweepingAttackPlanner.Selection s)return new DebugTrace(s.prediction().trace(),"CANDIDATE",now-c.tick);
+            if(c.value instanceof SweepingAttackPlanner.Search s&&s.selection()!=null)return new DebugTrace(s.selection().prediction().trace(),"CANDIDATE",now-c.tick);
+        }return new DebugTrace(List.of(),"NONE",-1);
     }
     public int pendingCount(){check();return pending.size();}
     public int cellCount(){check();return cells.size();}

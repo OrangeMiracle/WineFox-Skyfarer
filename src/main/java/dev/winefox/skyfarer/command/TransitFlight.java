@@ -39,7 +39,13 @@ final class TransitFlight {
             var space=new CorridorProbe(maid,maid.getBbWidth(),maid.getBbHeight(),maid.getEyeHeight(),maid.isInWaterOrBubble());
             for(double pitch:new double[]{maid.getXRot(),-35,-65,-88}){
                 var next=SurfaceLaunchPlanner.step(s,maid.getYRot(),pitch,planning.physics().gravity(),remaining()>0,maid.isInWaterOrBubble());
-                if(space.clear(s,next,.02,.01)){heading.steerAngles(maid,maid.getYRot(),pitch,180,90);break;}
+                if(space.clear(s,next,.02,.01)){
+                    if(Math.abs(pitch-maid.getXRot())>.01){
+                        propulsion.cancel(maid,"LIVE_COLLISION_PREEMPT");
+                        heading.steerAngles(maid,maid.getYRot(),pitch,180,90,HeadingController.Owner.SAFETY);
+                    }
+                    break;
+                }
             }
             return true;
         }
@@ -52,7 +58,7 @@ final class TransitFlight {
         if(propulsion.guided()){
             var state=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot(),planning.physics());
             if(propulsion.tick(maid,state,planning,heading))return true;
-            cached=null;launch=null;departure=0;
+            cached=null;launch=null;departure=0;heading.release(HeadingController.Owner.PROPULSION);
         }
         if(maid.isInWaterOrBubble())return escapeWater(maid,yaw,gravity);
         restoreSwimming();

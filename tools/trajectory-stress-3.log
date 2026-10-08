@@ -1,0 +1,20 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyTrajectoryStress
+continuous combat targets=2 hits=2 safeExit=true releases=11 rockets=0
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyTrajectoryContinuity
+Trajectory contracts: time-aligned suffix, finite original timestamp, physics/force/drift rejection, switch cost and phase invalidation passed
+Control arbitration: guided owner, same-tick overwrite rejection, safety preemption, no dual ignition passed
+dual-static first=4 hit=27 exit=53 continuous=31 workerBlackout=-1 collision=false
+dual-moving first=8 hit=30 exit=56 continuous=29 workerBlackout=-1 collision=false
+worker-blackout first=8 hit=28 exit=54 continuous=28 workerBlackout=10 collision=false
+
+BUILD SUCCESSFUL in 12s
+3 actionable tasks: 3 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

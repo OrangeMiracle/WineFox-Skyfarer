@@ -45,6 +45,13 @@ public final class RiptidePlanner {
         if(p.demand()!=null&&p.demand().continuation()){
             var d=p.demand();return SweepingAttackPlanner.command(s,d.path(),d.aim(),d.exiting(),0,gravity,d.rate());
         }
+        if(p.demand()!=null&&p.demand().turn()!=null){
+            var d=p.demand();
+            // Reuse the route's feedback law. The thrust itself remains Riptide's per-tick
+            // impulse, never the rocket force or its speed floor.
+            var c=CompactTurnPlanner.command(s,d.turn(),gravity,false,d.rate(),p.pitch());
+            return new SweepingAttackPlanner.Command(c.yaw(),c.pitch(),c.yawRate(),c.pitchRate());
+        }
         double rate=p.demand()!=null&&p.demand().emergency()?45:8;
         return new SweepingAttackPlanner.Command(p.yaw(),pitch(s,p,elapsed,gravity),rate,rate==45?20:8);
     }
@@ -85,12 +92,17 @@ public final class RiptidePlanner {
         var path=new ArrayList<FlightPrediction.State>();path.add(s);double cost=0;
         double dx=-Math.sin(Math.toRadians(p.yaw())),dz=Math.cos(Math.toRadians(p.yaw()));
         int horizon=p.demand()!=null&&p.demand().continuation()?p.end():p.handoff();
+        var steering=p.demand();
         for(int tick=elapsed;tick<horizon;tick++) {
-            var remaining=p.demand()==null?p:p.withDemand(p.demand().after(tick-elapsed));
+            if(steering!=null)steering=steering.advanceTurn(s);
+            var remaining=steering==null?p:p.withDemand(steering.after(tick-elapsed));
             var next=step(s,remaining,tick,gravity,water.wet(s));
             if(!space.clear(s,next,.2,.15))return null;
             // Leave room for a fresh spear windup / landing turn instead of overshooting the destination.
-            if(!p.departure()&&(p.demand()==null||!p.demand().continuation()&&!p.demand().emergency())&&(p.goalX()-next.x())*dx+(p.goalZ()-next.z())*dz<6)return null;
+            if(steering!=null&&steering.turn()!=null){
+                var goal=steering.turn();
+                if(Math.hypot(next.x()-goal.originX(),next.z()-goal.originZ())>goal.radius())return null;
+            } else if(!p.departure()&&(p.demand()==null||!p.demand().continuation()&&!p.demand().emergency())&&(p.goalX()-next.x())*dx+(p.goalZ()-next.z())*dz<6)return null;
             cost+=Math.pow(Math.max(0,p.height()-next.y()),2)*.01;
             s=next;path.add(s);
             // A departure must already have usable height AND speed when thrust stops.

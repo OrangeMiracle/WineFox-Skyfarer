@@ -1,6 +1,6 @@
-# WineFox: Skyfarer 0.7.0 工程总索引
+# WineFox: Skyfarer 0.7.1 工程总索引
 
-当前代码、推进边界、删除清单与配置迁移见 [0.7.0 审计](ARCHITECTURE_070.md)，完整构建证据见 [验证](VALIDATION.md)。版本化专题是历史证据；当前规则以本索引和源码为准。
+当前航迹执行、控制仲裁、有限证明与延迟避障见 [航迹连续性](TRAJECTORY_CONTINUITY.md)。已有推进边界和配置迁移见 [0.7.0 审计](ARCHITECTURE_070.md)，本轮定向验证证据见 [验证](VALIDATION.md)。版本化专题是历史证据；当前规则以本索引和源码为准。
 
 ## 先读：长期维护规则
 
@@ -27,7 +27,7 @@
 
 ## 1. 项目定位与版本事实
 
-当前版本 **0.7.0**，基于本地 `172d9f5` 的 0.6.2.11；Minecraft 1.21.1 / NeoForge 21.1.250 / TLM 1.5.3 / Spears 1.8.0。Gradle 与 Mod 元数据一致，无 Funnel，无 Cataclysm 硬依赖。
+当前版本 **0.7.1**，在当前本地 0.7.0 成果上继续修改；Minecraft 1.21.1 / NeoForge 21.1.250 / TLM 1.5.3 / Spears 1.8.0。Gradle 与 Mod 元数据一致，无 Funnel，无 Cataclysm 硬依赖。
 
 长矛可启用工作模式；起飞需真正可滑翔的合格鞘翅及可用推进或已认证的无推进路线。Unbreakable 不触发低耐久，正常可损坏鞘翅采用剩余 20 门槛。低耐久可换备用；否则空中返航、落地普通左键战斗。远程资格允许合法激流或烟花。
 
@@ -77,7 +77,7 @@ Java 包根为 `src/main/java/dev/winefox/skyfarer/`。目录名称不能直接�
 
 | 目录 | 职责、调用关系与应修改它的情形 |
 | --- | --- |
-| [`ai/`](../src/main/java/dev/winefox/skyfarer/ai/) | 控制器、20 状态枚举、战斗中心、目标分层与每次攻击记录；由 runtime 驱动。改变决策顺序、阶段衔接、目标锁定或连续作战时进入这里 |
+| [`ai/`](../src/main/java/dev/winefox/skyfarer/ai/) | 控制器、17 状态枚举、战斗中心、目标分层与每次攻击记录；由 runtime 驱动。改变决策顺序、阶段衔接、目标锁定或连续作战时进入这里 |
 | [`async/`](../src/main/java/dev/winefox/skyfarer/async/) | 主线程 facade / 快照源 / 会话邮箱，以及纯 DTO、共享执行器、快照查询；性能、缓存、取消、旧结果与线程问题首先看这里 |
 | [`flight/`](../src/main/java/dev/winefox/skyfarer/flight/) | 滑翔方程、身体扫掠、坡面/入口/曲线/离场/追击/起飞数学；同时有 `HeadingController`、`FireworkManager`、`ElytraFlightController` 等主线程执行器。改变实际航线或预测/执行一致性时看具体调用路径 |
 | [`safety/`](../src/main/java/dev/winefox/skyfarer/safety/) | `CorridorProbe` 和 `AirCollisionChecker` 访问真实世界，负责即时身体、射线、支撑面和加载范围检查；不传给 Worker |
@@ -113,6 +113,7 @@ Java 包根为 `src/main/java/dev/winefox/skyfarer/`。目录名称不能直接�
 | [CombatAnchor](../src/main/java/dev/winefox/skyfarer/ai/CombatAnchor.java) | 指挥任务 / Home 限制中心 / 主人 → 工作中心 | 主线程；控制器在攻击周期间保存，不能因主人移动打断已承诺攻击 |
 | [SpearPassHistory](../src/main/java/dev/winefox/skyfarer/ai/SpearPassHistory.java) | 每轮主目标、命中 UUID、结算 → 去重和失败换目标记录 | 控制器所有；主线程，避免原生命中与扩展判定双击 |
 | [AsyncPlanning](../src/main/java/dev/winefox/skyfarer/async/AsyncPlanning.java) | 主线程请求 → 封闭 PlanningTask；已验证结果或等待/轻量控制 | 每控制器/赶路实例一份；不是可从后台访问的“世界代理” |
+| [TrajectoryCommitment](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java) | 已选曲线、原始时间戳证明、时间对齐后缀、切换收益门槛 | 每空战控制器所有；路径持续存在不等于证明永久有效；重验/中断规则见航迹连续性专题 |
 | [MaidTerrainSource](../src/main/java/dev/winefox/skyfarer/async/MaidTerrainSource.java) | 已加载实体可 tick 区域、真实形状、女仆尺寸、边界 → 数值 Cell / Snapshot | 主线程专用，持有 Maid；绝不能随任务传递 |
 | [CollisionSnapshot](../src/main/java/dev/winefox/skyfarer/async/CollisionSnapshot.java) | 不可变盒子/水位掩码/已加载标记 → Worker 身体、射线、支撑面查询 | Snapshot 共享只读；`Space` 查询游标每任务独占，记录缺失单元与取消 |
 | [PlanningTask](../src/main/java/dev/winefox/skyfarer/async/PlanningTask.java) | 封闭数值 DTO → 对应规划结果 | Worker；兼容性和 slot 是缓存/并行调度协议的一部分，不是随意可简化的 equals |
@@ -211,7 +212,7 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 - HUD：状态、原因、目标、蓄力、姿态与异步指标。`captureMs` 是累计快照采集墙钟时间，`workerMs` 是各任务累计墙钟耗时，**不是 CPU profiler 结果**；`stale` 包含被失效取消的 pending，不是每 tick 过期比例。
 - 世界调试：红色目标线、蓝色引导、黄色身体预测通道、绿色入口方块与方向、青绿色拟合曲线；当前 HUD 女仆亮绿色粗透视框。不同线表示不同数据，不能用蓝色单一 waypoint 代替完整预测轨迹。
 - 指挥目标标记：普通亮红橙、创造亮紫，角框 + `▼` + 序号；穿墙简化，只有标记者可见。它和调试棒的女仆选择框是独立系统。
-- 入口命令：`./gradlew.bat build` 触发 `check` 及 43 项 verify；只编译可用 `classes`。当前环境包装脚本为 `tools/build.ps1`，参数和限制见 [验证文档](VALIDATION.md)。
+- 入口命令：`./gradlew.bat build` 触发 `check` 及 44 项 verify；另有独立 `verifyTrajectoryStress` 压力诊断。0.7.1 按本次要求只运行定向验证，未运行全量；只编译可用 `classes`。当前环境包装脚本为 `tools/build.ps1`，参数和限制见 [验证文档](VALIDATION.md)。
 - 完整验证包括 21 个控制器生命周期、2 个特殊攻击入口、2 个镜像山腰、7 个赶路生命周期，以及物理差分与包络验证；本轮实际结果与日志见 [buildHistory](../buildHistory.md)。离线通过不是对任意世界/模组组合的全覆盖证明。
 
 ## 10. 当前开发状态与限制
@@ -221,7 +222,7 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 | 已实现 | 骑空士空战、直线/曲线与坡面攻击、持续作战、指挥调度/区块票据、调试体系、共享异步流水线，以及 0.6.1 mapped 物理预测/冻结上下文/全程能量包络 |
 | 正在长期维护 | 预测与实际执行一致性、取消/旧结果边界、兼容 Mixin、配置消费者、离线回放，以及这套 `docs/`；不是承诺后台另有自动维护任务 |
 | 当前边界 | 预测不覆盖第三方 travel Mixin、外部火箭或外力；完整攻击认证时域最多 160 ticks。原生效果/实体 tick 时序与复杂模组组合仍需实机确认 |
-| 本轮清理 | 删除三个无效配置、三个不可达状态和无生产消费者的旧入口；具体证据见 0.7.0 架构审计 |
+| 本轮改造 | 曲线承诺与有限证明分离、推进/安全仲裁、同路径延续及切换成本、几何延迟和动态避障；具体证据见航迹连续性专题 |
 | 性能边界 | 快照约 2 ms 是全服单 tick 累计采集软预算，不包含所有 Mod 工作；即时世界查询、实体扫描和创造极高速实际位移仍在主线程。缓存可短暂陈旧，依赖验收和实时安全检查 |
 | 验证边界 | 离线世界与外部 API 是夹具，不能完全复现真实区块时序、服务端调度、碰撞形状模组或网络同步；合成负载不是 MC MSPT/GC 基准 |
 | 需要实机验证 | 异步延迟对复杂地形命中与连续作战的影响、多女仆 MSPT/内存/GC、区块加载/卸载/回家竞态、高速赶路、YSM 各模型视觉与客户端同步 |

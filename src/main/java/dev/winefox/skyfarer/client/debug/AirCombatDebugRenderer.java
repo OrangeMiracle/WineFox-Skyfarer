@@ -104,6 +104,8 @@ public final class AirCombatDebugRenderer {
             "原因: " + data.getString("reason")+(data.getString("curve_style").isEmpty()?"":" | "+data.getString("curve_style")),
             "扫描: " + data.getString("scan"),
             "异步规划: " + data.getString("planner_status"),
+            "航迹: " + data.getString("control_owner") + " / " + data.getString("prediction_kind"),
+            "执行: " + data.getString("trajectory_status"),
             "本轮锁定（红线）: " + (data.contains("target_name") ? data.getString("target_name") : "尚未进入攻击航程"),
             "候选: " + data.getString("preferred_name") + String.format(Locale.ROOT, " | 分数 %.1f", data.getDouble("score")),
             String.format(Locale.ROOT, "速度 %.2f 格/t | 离地 %s 格", DebugSnapshot.vector(data, "velocity").length(), Double.isFinite(data.getDouble("clearance")) ? String.format(Locale.ROOT, "%.2f", data.getDouble("clearance")) : "未知"),

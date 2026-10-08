@@ -1,6 +1,6 @@
 # 配置、指挥、调试与兼容接口
 
-当前版本 **0.7.0**。推进所有权、删除与迁移见 [架构审计](ARCHITECTURE_070.md)，构建结果见 [验证](VALIDATION.md)。源码为最终权威。
+当前版本 **0.7.1**。航迹/控制权诊断见 [航迹连续性](TRAJECTORY_CONTINUITY.md)，既有配置迁移见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。本轮没有新增配置。源码为最终权威。
 
 ## 1. 配置的入口与生效方式
 
@@ -206,7 +206,11 @@ Home 保留由 [CommandHomeRecallMixin](../src/main/java/dev/winefox/skyfarer/mi
 | 绿色 1 格立方框 | `attack_entry`，中心引出 2 格 `entry_direction` 线。 |
 | 亮绿粗四角框 | 当前 HUD 女仆；独立 SELECTED RenderType 无深度测试，只写颜色；线宽是普通基准的 3 倍。 |
 
-黄色框半径会按横截面方向投影 AABB，不能把画面宽度当作女仆身体宽度本身；截面上/下高使用实际 body/eye 与预测余量。它读取已完成的后台预测，debug 渲染不再次跑 Planner。F1 隐藏 GUI 时也隐藏这些世界辅助显示；打开调试面板时隐藏 HUD。
+黄色框半径会按横截面方向投影 AABB，不能把画面宽度当作女仆身体宽度本身；截面上/下高使用实际 body/eye 与预测余量。它读取已保存的执行证明或后台预测，debug 渲染不再次跑 Planner。F1 隐藏 GUI 时也隐藏这些世界辅助显示；打开调试面板时隐藏 HUD。
+
+黄色通道不能单凭颜色视为已认证攻击。`prediction_kind` 区分 `COMMITTED_SUFFIX`（当前已承诺曲线证明后缀）、`GUIDED_ROUTE`（当前激流严格重验）、`GLIDE_FORECAST/PATH_FORECAST`（预测）、`CANDIDATE`（候选）、`PROOF_UNAVAILABLE/NONE`；`prediction_age` 为原证明/任务时刻起的年龄。HUD 的“航迹”和“执行”显示控制 owner、来源、路径 id、proofAge、switches 和拒因。候选缓存 8 ticks 后不再显示，不能把消失一律解读为正在执行的攻击被取消。
+
+`TRAJECTORY` 周期日志显示 `ROUTE/PROPULSION/SAFETY`、`rejectedCommands`、承诺状态和 continuation 原因；`TRAJECTORY_SWITCH` 记录通过双路线当前认证与收益门槛的主动换路。`PROOF_UNAVAILABLE:SNAPSHOT_MISSING` 与 `CURRENT_PHYSICS_REJECTED` 分别表示必要数据不足与当前严格模拟拒绝。紧急等待用 `EMERGENCY_LOCAL_WAIT:n` 表示该姿态当前已检查的清晰步数，不是新的完整攻击或推进证书。
 
 HUD 当前字段包含名称/UUID 前缀/维度/选中序号、状态、原因/曲线类型、扫描统计、异步规划、锁定目标、候选及分数、速度/离地、Charge 时长/前摇/射程、俯仰/目标距离/相对中心高度、转角/搜索/作战范围。
 
