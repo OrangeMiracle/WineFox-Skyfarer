@@ -22,14 +22,14 @@ public final class RemoteWakeChecks {
     }
     public static void main(String[] args)throws Exception {
         var scheduler=new RemoteWakeScheduler();var server=new Server();var pair=List.of(id(1),id(2));
-        for(int mission=1;mission<=2;mission++) {
+        for(int mission=1;mission<=3;mission++) {
             scheduler.offer(OWNER,mission,mission*300,pair,server);
             require(scheduler.active()==2&&server.tickets.size()==2,"both unloaded Home candidates queued");
             server.loadTickets();scheduler.tick(mission*300+1);
             require(server.assigned.containsAll(pair)&&scheduler.active()==0,"both reach assignment");
             scheduler.stop(OWNER,"mission_empty");server.home();
         }
-        require(server.counts.get(id(1))==2&&server.counts.get(id(2))==2,"second Home mission reawakens both");
+        require(server.counts.get(id(1))==3&&server.counts.get(id(2))==3,"second/third Home mission reawakens both");
 
         var candidates=new ArrayList<UUID>();for(int i=1;i<=13;i++)candidates.add(id(i));
         server.fail.add(id(1));server.fail.add(id(2));
@@ -62,6 +62,15 @@ public final class RemoteWakeChecks {
         registry.put(new SkyfarerMaidRegistry.Entry(id(3),OWNER,"minecraft:overworld",new BlockPos(460,90,-600),false,false,false,"legacy"));
         var restored=SkyfarerMaidRegistry.load(registry.save(new CompoundTag(),null),null);
         require(restored.owned(OWNER).size()==3&&restored.find(id(1)).equals(registry.find(id(1))),"registry NBT keeps all same-owner records and positions");
+        for(int mission=1;mission<=3;mission++){
+            // Post-teleport observation must replace the combat location, then survive
+            // unloading/restart. Neither attempt nor generation belongs in SavedData.
+            var home=new BlockPos(-321-mission*16,70,800+mission*16);
+            restored.put(new SkyfarerMaidRegistry.Entry(id(1),OWNER,"minecraft:overworld",new BlockPos(3,78,-624),true,true,true,"one"));
+            restored.put(new SkyfarerMaidRegistry.Entry(id(1),OWNER,"minecraft:overworld",home,true,true,true,"one"));
+            restored=SkyfarerMaidRegistry.load(restored.save(new CompoundTag(),null),null);
+            require(restored.find(id(1)).pos().equals(home)&&restored.find(id(1)).home()&&restored.find(id(1)).skyfarer(),"post-Home registry position/role lost");
+        }
         scheduler=new RemoteWakeScheduler();var rebuiltServer=new Server();
         var restoredIds=restored.owned(OWNER).stream().filter(e->DispatchPolicy.discover(e.known(),e.home(),true,false,900,128,1000)).map(SkyfarerMaidRegistry.Entry::id).toList();
         require(DispatchPolicy.discover(true,false,true,false,900,128,1000)&&!DispatchPolicy.discover(true,true,true,false,1001,128,1000),"Home/Follow share creative range; no range bypass");
@@ -69,7 +78,7 @@ public final class RemoteWakeChecks {
         scheduler.offer(OWNER,1,10,restoredIds.stream().filter(id->!rebuiltServer.assigned.contains(id)).toList(),rebuiltServer);rebuiltServer.loadTickets();scheduler.tick(11);
         require(rebuiltServer.assigned.size()==3,"rebuilt registry gets fair batches including stale role hints");
         scheduler.clear();rebuiltServer.home();
-        System.out.println("Remote wake lifecycle passed: two Home maids, second mission, 13-candidate batches, retry, generations, NBT rebuild, qualification, global cap and cleanup.");
+        System.out.println("Remote wake lifecycle passed: two Home maids, three missions, post-Home NBT positions, 13-candidate batches, retry, generations, qualification, global cap and cleanup.");
     }
     private static void require(boolean ok,String message){if(!ok)throw new AssertionError(message);}
 }

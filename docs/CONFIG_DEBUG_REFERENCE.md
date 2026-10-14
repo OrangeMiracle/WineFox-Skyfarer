@@ -2,7 +2,7 @@
 
 0.7.3 统一动力源权威仲裁，永燃独占推进、持续闭环速度保持和客户端双赤尾焰/气流环，见 [动力仲裁与持续控制](PROPULSION_073.md)。饰品与隐藏觉醒机制见 [彗星专题](COMET_HEARTS.md)。
 
-当前版本 **0.7.5**。航迹/控制权诊断见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有配置迁移见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。新增 SERVER 配置 `accessories.comet_firework_saving_chance`，默认 0.6、范围 0.5–0.7。源码为最终权威。
+当前版本 **0.7.6**。航迹/控制权诊断见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有配置迁移见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。新增 SERVER 配置 `accessories.comet_firework_saving_chance`，默认 0.6、范围 0.5–0.7。源码为最终权威。
 
 ## 1. 配置的入口与生效方式
 
@@ -154,13 +154,13 @@ effectiveHard   = max(Settings.hardCombatRange(), effectiveCombat + 16)
 
 ### 4.2 发现与分配
 
-[SkyfarerMaidRegistry](../src/main/java/dev/winefox/skyfarer/command/SkyfarerMaidRegistry.java) 是 overworld DataStorage 中的 SavedData `winefox_skyfarer_maids`。按 owner 分组记录 `id, owner, dimension, BlockPos, known, home, skyfarer, name`。EntityJoin、女仆每 20 ticks、离开世界时更新；死亡或 DISCARDED 删除。它不是女仆实体的序列化替代品。
+[SkyfarerMaidRegistry](../src/main/java/dev/winefox/skyfarer/command/SkyfarerMaidRegistry.java) 是 overworld DataStorage 中的 SavedData `winefox_skyfarer_maids`。按 owner 分组记录 `id, owner, dimension, BlockPos, known, home, skyfarer, name`。EntityJoin、女仆每 20 ticks、离开世界时更新；Home 回收到达时在撤票前立即更新实际位置/维度；死亡或 DISCARDED 删除。它不是女仆实体的序列化替代品。
 
 - 从 TLM `MaidWorldData.getInfos(owner)` seed 时，未知记录使用 `known=false`；TLM 未提供的 Home/任务事实不能据此猜测为真实。加载后再次核实当前实体资格。
 - 每 10 ticks 检查待派遣记录；每玩家每轮最多发起 2 次唤醒，全球最多 8 个 wake，各 100 ticks 到期。[RemoteWakeScheduler](../src/main/java/dev/winefox/skyfarer/command/RemoteWakeScheduler.java) 先处理从未尝试者，再按上次尝试顺序轮转；达到上限时不把未入队者标为 attempted。失败记录从尝试起冷却 200 ticks 后可重试，同一任务不会永久跳过它。
 - 标记增删、自然失效、死亡都刷新 revision/generation 并撤销旧 wake；任务空、创造目标卸载、登出、换维度和关服释放未接单票据。成功接单将发现票据移交订单的滚动窗口，生存订单直接释放；一只接单不终止其他候选的调度。回 Home 后下一任务重新建立尝试历史。
 - 持久化的 `skyfarer=false` 不再永久否决发现。旧/未知记录可以在范围内分批醒来核实，只有当前实体的主人、工作及装备符合条件才分配；命令和 attempted 均不存入 registry。TLM seed 忽略无位置记录。
-- 同维度、本人所属、当前骑空士、存活、有 AI、非坐下/睡眠/乘客/拴绳/打开 GUI，并有合格鞘翅、矛及可用推进才可初次接单。推进为真实水/雨环境下可用激流三叉戟，或库存烟花；两种镜共用实时资格，不从 registry 推测雨况。地面再次核对，空中不会因为失雨直接清除滑翔。
+- 同维度、本人所属、当前骑空士、存活、有 AI、非坐下/睡眠/乘客/拴绳/打开 GUI，并有合格鞘翅、矛及可用推进才可初次接单。推进为原生饰品栏的永燃之心、真实水/雨环境下可用激流三叉戟，或库存烟花；两种镜共用实时资格，不从 registry 推测雨况。地面再次核对，空中不会因为失雨直接清除滑翔。
 - 生存镜：跟随女仆无额外 Home 半径门槛；Home 默认玩家三维距离 ≤128。创造镜：**跟随/Home 都受 1000 格默认三维范围限制**；0 为无限。已接任务不会仅因玩家后来移远被范围条件撤销。
 - 分配对每只女仆独立评分：`markBonus − distance×0.04 − headingAngle×0.25 + previous?20:0 + route`；64 格内且目标实际加载时 route 取 TargetEvaluator.score×0.1。不强制五个标记一一分配，不保证均匀分摊。
 - 普通战斗扫描另使用最高标记战略层；该层内部仍按幻翼/路线/失败策略选择。标记列表变化会在非赶路、非承诺攻击的安全点重评；不能打断正在完成的刺击动作。
@@ -169,7 +169,7 @@ effectiveHard   = max(Settings.hardCombatRange(), effectiveCombat + 16)
 
 [TransitFlight](../src/main/java/dev/winefox/skyfarer/command/TransitFlight.java) 使用自己的异步规划 session，不复用战斗控制器状态。生存指令三维距离 ≤48 格交接，创造指令 ≤32 格交接。在赶路完成前固定分配目标，不因沿途普通怪物或新标记转头。
 
-创造模式通过 [CreativeTransitPlanner](../src/main/java/dev/winefox/skyfarer/command/CreativeTransitPlanner.java) 提供独立高速移动：基准 `BASE_SPEED=1.7`，倍率 1–100，目标高度受 cruiseHeight 公式及维度顶棚限制；水平距离 64 格开始下降，接近交接范围缩小速度。**此阶段确实会设置移动速度**；“所有飞行只改朝向、不改速度”仅适用于常规战斗，不适用于创造赶路。赶路不消耗背包烟花；出发时必须有可用激流或烟花，不能把无烟花等同无推进。交接移除免费推进并限制速度。
+创造模式通过 [CreativeTransitPlanner](../src/main/java/dev/winefox/skyfarer/command/CreativeTransitPlanner.java) 提供独立高速移动：基准 `BASE_SPEED=1.7`，倍率 1–100，目标高度受 cruiseHeight 公式及维度顶棚限制；水平距离 64 格开始下降，接近交接范围缩小速度。**此阶段确实会设置移动速度**；“所有飞行只改朝向、不改速度”仅适用于常规战斗，不适用于创造赶路。赶路不消耗背包烟花；出发时必须有可用永燃之心、激流或烟花，不能把无烟花等同无推进。交接移除免费推进并限制速度。
 
 创造每 tick 真正移动前在主线程核验当前身体整段扫掠；最多 12 次逐次半速尝试，失败回局部飞控。此真实即时检查不是异步几何结论的可省略副本，尤其 100 倍速可能跨过多个块。
 
@@ -235,6 +235,8 @@ HUD 当前字段包含名称/UUID 前缀/维度/选中序号、状态、原因/�
 普通标记颜色 `0xFF8070`，创造 `0xE58CFF`；四角框 + 头顶 `▼` + 1–5 编号。客户端从相机向目标中心做方块射线，遮挡时仅画透视 `▼`，隐藏框及编号。新标记使用 0.35 秒三次缓动，由 1.8 倍框缩到 1 倍；重复同步不重新触发动画。服务端仅向标记者发送该列表；成功音效 `EXPERIENCE_ORB_PICKUP`（0.8 音量/1.4 音高），取消 `UI_BUTTON_CLICK`（0.8/0.8）。
 
 ### 5.4 日志与排查
+
+0.7.6 增加 `REMOTE_WAKE stage=ticket_location` 的实际唤醒维度/位置、按原因变化输出的 `assignment_rejected`、关闭前的 `COMMAND_TRANSIT_FAILED`（generation/位置/速度/ground/glide/retryAt/provider/proof），以及 `COMMAND_HOME_RETURN` 的实际 pos/dimension。`GROUND_CONTACT_TIMEOUT` 表示重载站立实体等待原版接触超过 20 ticks；原先每 40 ticks 才偶尔输出的接单资格拒绝改为原因去重。详见 [二次召唤诊断](REMOTE_RECALL_076.md)。
 
 0.7.5 新增 `TRANSIT_LAUNCH_REJECTED`：`NO_CERTIFIED_LAUNCH` 是无可执行起飞结果，`LAUNCH_WAIT_TIMEOUT` 是包含 Worker/Provider 等待的 100 游戏 tick 地面规划截止。记录 Resolver 和 planning 原因；后续应有 `COMMAND_RELEASE` 与撤票或有限 Home 回收。不要将装备 `READY` 当成起飞已认证，也不要将 wake 的 `transferred_to_order` 当成真正撤票；见 [实机堆栈与修复](REMOTE_WAKE_075.md)。
 

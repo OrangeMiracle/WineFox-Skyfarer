@@ -50,7 +50,7 @@ public final class FlightPropulsion {
     public boolean prepare(EntityMaid maid,boolean eligible){
         sustaining=false;boolean changed=capability.refresh(maid,guided,attached.motor);guided.prepare(maid,eligible);attached.begin(maid);return changed;
     }
-    public void context(String phase){guided.context(phase);}
+    public void context(String phase){guided.context(phase);capability.virtual.context(phase);}
     public void continuationAim(FlightPrediction.Aim aim,int deadline){guided.continuationAim(aim,deadline);capability.virtual.continuationAim(aim,deadline);}
     public boolean tick(EntityMaid maid,FlightPrediction.State start,AsyncPlanning planning,HeadingController heading){capability.refresh(maid,guided,attached.motor);capability.synchronize(planning);return capability.virtual.active()?capability.virtual.tick(maid,start,planning,heading):guided.tick(maid,start,planning,heading);}
     /** All upper controllers may request speed hold. Only a registered continuous provider runs it. */

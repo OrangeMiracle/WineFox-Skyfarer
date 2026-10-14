@@ -4,7 +4,7 @@
 
 0.7.3 统一动力源权威仲裁，永燃独占推进、持续闭环速度保持和客户端双赤尾焰/气流环，见 [动力仲裁与持续控制](PROPULSION_073.md)。饰品与隐藏觉醒机制见 [彗星专题](COMET_HEARTS.md)。
 
-当前版本 **0.7.5**。航迹承诺、控制仲裁与延迟安全见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有推进边界见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
+当前版本 **0.7.6**。航迹承诺、控制仲裁与延迟安全见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有推进边界见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
 
 ## 导航
 
@@ -429,6 +429,8 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 赶路失败走统一 cancel，移除订单并关闭 Provider/PlannerSession、释放滚动票据；离开 Home 范围的创造女仆沿用最多 200 ticks 的有限回收宽限。目标标记保留，200 ticks 冷却后允许重新分配。地面起飞结果为空时区分 pending 与真正无解，前者最多等 100 游戏 ticks（包括 Worker/Provider 等待），后者安全拒绝；均不能跳过认证或降级绕过永燃独占。该规划等待与初始票据 ready 等待分开计时。实体实例改变先关闭旧会话。
 
 虚拟推进从跳跃进入滑翔后，必须以新姿态的真实眼位/速度重新构造 State，再完成当前认证和 live 身体扫掠；不能沿用切姿态前的站立眼位。0.7.5 实机堆栈、回归证据及范围见 [远程唤醒修复](REMOTE_WAKE_075.md)。
+
+0.7.6 接单先按 transit 划分控制权：即使新实体还没有战斗控制器，远程订单也不调用 `acceptCommand`。未滑翔且下落、脚下 0.5 格内有实际支撑的重载实体先由原版 travel 完成接触（最多 20 游戏 ticks），不伪造 OnGround。虚拟 TAKEOFF 与激流共用本地赶路上下文/128 格范围，保留完整认证；回 Home 撤票前即时记录实际位置。见 [重复召唤证据与边界](REMOTE_RECALL_076.md)。
 
 ### 10.2 创造高速赶路
 

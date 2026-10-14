@@ -22,6 +22,8 @@ public final class VirtualPropulsion implements PropulsionResolver.Provider {
     private long started,lastTick=Long.MIN_VALUE;
     private boolean jumping,completed;
     private String reason="NONE";
+    private boolean transit;
+    public void context(String phase){transit="TRANSIT".equals(phase);}
     private List<GlidePlanner.TracePoint> trace=List.of();
     /** Cruise does not own a long-lived route or delay the state machine. One complete current
      * proof permits one impulse; an unavailable snapshot permits none. */
@@ -113,9 +115,11 @@ public final class VirtualPropulsion implements PropulsionResolver.Provider {
     }
     private void effects(EntityMaid maid,float output){dev.winefox.skyfarer.runtime.CometThrustEffects.emit(maid,output);}
     private boolean withinAnchor(EntityMaid maid,RiptidePlanner.Plan proof){
-        boolean transit=proof.demand()!=null&&proof.demand().phase()==PropulsionDemand.Phase.TRANSIT;
-        var anchor=transit?maid.position():dev.winefox.skyfarer.ai.CombatAnchor.current(maid);
-        double radius=transit?128:Math.max(dev.winefox.skyfarer.ai.TargetEvaluator.hardRange(maid)+12,maid.position().subtract(anchor).horizontalDistance()+6);
+        // TAKEOFF is still a departure demand, but a remote departure belongs to the
+        // local transit window, not a combat disk centred hundreds of blocks away.
+        boolean localTransit=transit||proof.demand()!=null&&proof.demand().phase()==PropulsionDemand.Phase.TRANSIT;
+        var anchor=localTransit?maid.position():dev.winefox.skyfarer.ai.CombatAnchor.current(maid);
+        double radius=localTransit?128:Math.max(dev.winefox.skyfarer.ai.TargetEvaluator.hardRange(maid)+12,maid.position().subtract(anchor).horizontalDistance()+6);
         return proof.trace().stream().allMatch(s->Math.hypot(s.x()-anchor.x,s.z()-anchor.z)<=radius);
     }
     public SweepingAttackPlanner.Selection attackSelection(){

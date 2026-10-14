@@ -2,7 +2,17 @@
 
 ## 当前交付状态
 
-当前工程为 **0.7.5**，在本地 0.7.4 成果上修复永燃女仆远程唤醒后的赶路崩溃。仅编译、四项直接相关定向验证与打包，未运行全量 build/check/verify，未启动或安装 Minecraft。
+当前工程为 **0.7.6**，基于本地 0.7.5 修复 Home 回收后重复远程任务的接单/起飞交接。仅编译、五项定向验证和打包，未运行全量 build/check/verify，未启动或安装 Minecraft。
+
+## 0.7.6 — 重复远程接单与 Home 重载接触（2026-10-13）
+
+- 最新日志实际显示第二次 generation=3 已成功发现、申请票据、加载并接单，随后取消赶路进入 transit_retry；不是 attempted 永久锁定或永燃资格丢失。首次完成 Home 回收及后续接单的完整证据见 [专题](REMOTE_RECALL_076.md)。
+- 修正 `order.transit && controller != null` 的 else 误入战斗：重载后无旧控制器的远程订单不再提前 acceptCommand/开启 APPROACH 滑翔。真正交接时仍正常进入战斗。
+- 针对日志中的 false-ground、未滑翔及残余速度，允许脚下有真实支撑的重载实体先由原版 travel 接触地面，最多 20 ticks。没有改写 OnGround、位置或惯性。虚拟起飞同步接收 Transit 上下文，与激流采用相同的局部 128 格范围；修复三轮回放中的 ANCHOR_REJECTED，仍严格认证物理和身体碰撞。
+- Home 到达撤票前即时 observe 位置/维度。新增唤醒位置、接单拒绝原因去重和完整 COMMAND_TRANSIT_FAILED 诊断；已有 Wake 2/批、8/全服、超时/重试、公平性和有限 Home 票据均保留。
+- compileJava、RemoteRecall、RemoteCometContracts、RemoteWake、RemoteComet、RemotePropulsion、jar 全部通过。三种装备的同三只 UUID 连续三次任务、Worker 阻塞、NBT、控制权及取消/释放检查通过。实际区块 IO、整合包 Mixin/传送和完整攻击伤害需实机确认；见 [验证](VALIDATION.md)。中间失败日志保留。
+
+交付包：[winefox_skyfarer-1.21.1-0.7.6.jar](../build/libs/winefox_skyfarer-1.21.1-0.7.6.jar)，**664,570 bytes**；SHA-256 `A77628E2C954DAEFB75735C6B72D1F78DB78C1DA3E75855DEF115461032F4BF2`。版本与资源、四处生产类及测试隔离已核对；[包校验](../tools/remote-recall-artifact-check.json)。
 
 ## 0.7.5 — 远程赶路起飞与重载生命周期（2026-10-13）
 

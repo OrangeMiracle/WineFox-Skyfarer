@@ -1,0 +1,245 @@
+Actual TLM 1.5.3 SchedulePos teleport bytecode:
+  private void teleport(com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid);
+    Code:
+       0: iconst_0
+       1: istore_2
+       2: iload_2
+       3: bipush        10
+       5: if_icmpge     22
+       8: aload_1
+       9: invokestatic  #313                // Method com/github/tartaricacid/touhoulittlemaid/util/TeleportHelper.teleportToRestrictCenter:(Lcom/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid;)Z
+      12: ifeq          16
+      15: return
+      16: iinc          2, 1
+      19: goto          2
+      22: return
+
+Actual Minecraft 1.21.1 Entity source:
+1438:     }
+1439: 
+1440:     public void moveTo(double p_20108_, double p_20109_, double p_20110_, float p_20111_, float p_20112_) {
+1441:         this.setPosRaw(p_20108_, p_20109_, p_20110_);
+1442:         this.setYRot(p_20111_);
+1443:         this.setXRot(p_20112_);
+1444:         this.setOldPosAndRot();
+1445:         this.reapplyPosition();
+1446:     }
+1447: 
+1448:     public final void setOldPosAndRot() {
+1449:         double d0 = this.getX();
+1673:             p_20241_.putShort("Fire", (short)this.remainingFireTicks);
+1674:             p_20241_.putShort("Air", (short)this.getAirSupply());
+1675:             p_20241_.putBoolean("OnGround", this.onGround());
+1676:             p_20241_.putBoolean("Invulnerable", this.invulnerable);
+1677:             p_20241_.putInt("PortalCooldown", this.portalCooldown);
+1678:             p_20241_.putUUID("UUID", this.getUUID());
+1679:             Component component = this.getCustomName();
+1680:             if (component != null) {
+1681:                 p_20241_.putString("CustomName", Component.Serializer.toJson(component, this.registryAccess()));
+1682:             }
+1683: 
+1684:             if (this.isCustomNameVisible()) {
+1772:             }
+1773: 
+1774:             this.onGround = p_20259_.getBoolean("OnGround");
+1775:             this.invulnerable = p_20259_.getBoolean("Invulnerable");
+1776:             this.portalCooldown = p_20259_.getInt("PortalCooldown");
+1777:             if (p_20259_.hasUUID("UUID")) {
+1778:                 this.uuid = p_20259_.getUUID("UUID");
+1779:                 this.stringUUID = this.uuid.toString();
+1780:             }
+1781: 
+1782:             if (!Double.isFinite(this.getX()) || !Double.isFinite(this.getY()) || !Double.isFinite(this.getZ())) {
+1783:                 throw new IllegalStateException("Entity has invalid position");
+2769:     }
+2770: 
+2771:     public void teleportTo(double p_19887_, double p_19888_, double p_19889_) {
+2772:         if (this.level() instanceof ServerLevel) {
+2773:             this.moveTo(p_19887_, p_19888_, p_19889_, this.getYRot(), this.getXRot());
+2774:             this.teleportPassengers();
+2775:         }
+2776:     }
+2777: 
+2778:     private void teleportPassengers() {
+2779:         this.getSelfAndPassengers().forEach(p_185977_ -> {
+2780:             for (Entity entity : p_185977_.passengers) {
+
+TLM TeleportHelper:
+
+  public static boolean teleportToRestrictCenter(com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid);
+    Code:
+       0: aload_0
+       1: invokevirtual #76                 // Method com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.getRestrictCenter:()Lnet/minecraft/core/BlockPos;
+       4: astore_1
+       5: aload_0
+       6: getfield      #24                 // Field com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.level:Lnet/minecraft/world/level/Level;
+       9: invokevirtual #30                 // Method net/minecraft/world/level/Level.isClientSide:()Z
+      12: ifne          82
+      15: aload_0
+      16: invokevirtual #33                 // Method com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.isAlive:()Z
+      19: ifeq          82
+      22: aload_1
+      23: invokevirtual #79                 // Method net/minecraft/core/BlockPos.getX:()I
+      26: aload_0
+      27: invokevirtual #41                 // Method com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.getRandom:()Lnet/minecraft/util/RandomSource;
+      30: bipush        -3
+      32: iconst_3
+      33: invokestatic  #83                 // Method randomIntInclusive:(Lnet/minecraft/util/RandomSource;II)I
+      36: iadd
+      37: istore_2
+      38: aload_1
+      39: invokevirtual #85                 // Method net/minecraft/core/BlockPos.getY:()I
+      42: aload_0
+      43: invokevirtual #41                 // Method com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.getRandom:()Lnet/minecraft/util/RandomSource;
+      46: iconst_0
+      47: iconst_3
+      48: invokestatic  #83                 // Method randomIntInclusive:(Lnet/minecraft/util/RandomSource;II)I
+      51: iadd
+      52: istore_3
+      53: aload_1
+      54: invokevirtual #87                 // Method net/minecraft/core/BlockPos.getZ:()I
+      57: aload_0
+      58: invokevirtual #41                 // Method com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.getRandom:()Lnet/minecraft/util/RandomSource;
+      61: bipush        -3
+      63: iconst_3
+      64: invokestatic  #83                 // Method randomIntInclusive:(Lnet/minecraft/util/RandomSource;II)I
+      67: iadd
+      68: istore        4
+      70: aload_0
+      71: iload_2
+      72: i2d
+      73: iload_3
+      74: i2d
+      75: iload         4
+      77: i2d
+      78: invokestatic  #65                 // Method teleport:(Lcom/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid;DDD)Z
+      81: ireturn
+      82: iconst_0
+      83: ireturn
+
+  private static boolean teleport(com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid, double, double, double);
+    Code:
+       0: new           #7                  // class net/minecraft/core/BlockPos$MutableBlockPos
+       3: dup
+       4: dload_1
+       5: dload_3
+       6: dload         5
+       8: invokespecial #93                 // Method net/minecraft/core/BlockPos$MutableBlockPos."<init>":(DDD)V
+      11: astore        7
+      13: aload         7
+      15: invokevirtual #94                 // Method net/minecraft/core/BlockPos$MutableBlockPos.getY:()I
+      18: aload_0
+      19: getfield      #24                 // Field com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.level:Lnet/minecraft/world/level/Level;
+      22: invokevirtual #97                 // Method net/minecraft/world/level/Level.getMinBuildHeight:()I
+      25: if_icmple     55
+      28: aload_0
+      29: getfield      #24                 // Field com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.level:Lnet/minecraft/world/level/Level;
+      32: aload         7
+      34: invokevirtual #101                // Method net/minecraft/world/level/Level.getBlockState:(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/block/state/BlockState;
+      37: invokevirtual #106                // Method net/minecraft/world/level/block/state/BlockState.blocksMotion:()Z
+      40: ifne          55
+      43: aload         7
+      45: getstatic     #112                // Field net/minecraft/core/Direction.DOWN:Lnet/minecraft/core/Direction;
+      48: invokevirtual #116                // Method net/minecraft/core/BlockPos$MutableBlockPos.move:(Lnet/minecraft/core/Direction;)Lnet/minecraft/core/BlockPos$MutableBlockPos;
+      51: pop
+      52: goto          13
+      55: aload_0
+      56: getfield      #24                 // Field com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.level:Lnet/minecraft/world/level/Level;
+      59: aload         7
+      61: invokevirtual #101                // Method net/minecraft/world/level/Level.getBlockState:(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/block/state/BlockState;
+      64: astore        8
+      66: aload         8
+      68: invokevirtual #106                // Method net/minecraft/world/level/block/state/BlockState.blocksMotion:()Z
+      71: istore        9
+      73: aload         8
+      75: invokevirtual #120                // Method net/minecraft/world/level/block/state/BlockState.getFluidState:()Lnet/minecraft/world/level/material/FluidState;
+      78: getstatic     #126                // Field net/minecraft/tags/FluidTags.WATER:Lnet/minecraft/tags/TagKey;
+      81: invokevirtual #132                // Method net/minecraft/world/level/material/FluidState.is:(Lnet/minecraft/tags/TagKey;)Z
+      84: istore        10
+      86: iload         9
+      88: ifeq          160
+      91: iload         10
+      93: ifne          160
+      96: aload_0
+      97: dload_1
+      98: dload_3
+      99: dload         5
+     101: iconst_1
+     102: invokevirtual #136                // Method com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.randomTeleport:(DDDZ)Z
+     105: istore        11
+     107: iload         11
+     109: ifeq          157
+     112: aload_0
+     113: invokevirtual #139                // Method com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.isSilent:()Z
+     116: ifne          157
+     119: aload_0
+     120: getfield      #24                 // Field com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.level:Lnet/minecraft/world/level/Level;
+     123: aconst_null
+     124: aload_0
+     125: getfield      #142                // Field com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.xo:D
+     128: aload_0
+     129: getfield      #145                // Field com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.yo:D
+     132: aload_0
+     133: getfield      #148                // Field com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.zo:D
+     136: getstatic     #154                // Field net/minecraft/sounds/SoundEvents.ENDERMAN_TELEPORT:Lnet/minecraft/sounds/SoundEvent;
+     139: aload_0
+     140: invokevirtual #158                // Method com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.getSoundSource:()Lnet/minecraft/sounds/SoundSource;
+     143: fconst_1
+     144: fconst_1
+     145: invokevirtual #162                // Method net/minecraft/world/level/Level.playSound:(Lnet/minecraft/world/entity/player/Player;DDDLnet/minecraft/sounds/SoundEvent;Lnet/minecraft/sounds/SoundSource;FF)V
+     148: aload_0
+     149: getstatic     #154                // Field net/minecraft/sounds/SoundEvents.ENDERMAN_TELEPORT:Lnet/minecraft/sounds/SoundEvent;
+     152: fconst_1
+     153: fconst_1
+     154: invokevirtual #165                // Method com/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid.playSound:(Lnet/minecraft/sounds/SoundEvent;FF)V
+     157: iload         11
+     159: ireturn
+     160: iconst_0
+     161: ireturn
+
+LivingEntity.randomTeleport:
+    public boolean randomTeleport(double p_20985_, double p_20986_, double p_20987_, boolean p_20988_) {
+        double d0 = this.getX();
+        double d1 = this.getY();
+        double d2 = this.getZ();
+        double d3 = p_20986_;
+        boolean flag = false;
+        BlockPos blockpos = BlockPos.containing(p_20985_, p_20986_, p_20987_);
+        Level level = this.level();
+        if (level.hasChunkAt(blockpos)) {
+            boolean flag1 = false;
+
+            while (!flag1 && blockpos.getY() > level.getMinBuildHeight()) {
+                BlockPos blockpos1 = blockpos.below();
+                BlockState blockstate = level.getBlockState(blockpos1);
+                if (blockstate.blocksMotion()) {
+                    flag1 = true;
+                } else {
+                    d3--;
+                    blockpos = blockpos1;
+                }
+            }
+
+            if (flag1) {
+                this.teleportTo(p_20985_, d3, p_20987_);
+                if (level.noCollision(this) && !level.containsAnyLiquid(this.getBoundingBox())) {
+                    flag = true;
+                }
+            }
+        }
+
+        if (!flag) {
+            this.teleportTo(d0, d1, d2);
+            return false;
+        } else {
+            if (p_20988_) {
+                level.broadcastEntityEvent(this, (byte)46);
+            }
+
+            if (this instanceof PathfinderMob pathfindermob) {
+                pathfindermob.getNavigation().stop();
+            }
+
+            return true;
+        }
+    }

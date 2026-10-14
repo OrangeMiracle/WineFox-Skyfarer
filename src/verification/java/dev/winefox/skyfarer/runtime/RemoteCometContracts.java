@@ -38,6 +38,7 @@ public final class RemoteCometContracts {
         check(hasField(method(maid,"getMaidBauble"),Opcodes.GETFIELD,"maidBauble"),"native accessor changed");
         check(calls(method(maid,"readAdditionalSaveData"),"BaubleItemHandler","deserializeNBT"),"native maid load no longer restores baubles");
         var command=read("dev/winefox/skyfarer/command/CommandManager");
+        DispatchOwnershipChecks.verify(command);
         var tick=method(command,"beforeMaidTick");boolean failureCloses=false;
         for(var insn:tick.instructions)if(insn instanceof MethodInsnNode call&&call.owner.endsWith("/TransitFlight")&&call.name.equals("tick")){
             var branch=next(call);check(branch instanceof JumpInsnNode&&branch.getOpcode()==Opcodes.IFNE,"transit failure branch changed; re-audit cleanup");
@@ -48,6 +49,7 @@ public final class RemoteCometContracts {
         var cancel=method(command,"cancel");
         check(calls(cancel,"Map","remove")&&calls(cancel,"TransitFlight","close")&&calls(cancel,"CommandTickets","release")&&calls(cancel,"CommandTickets","recall"),"cancel must remove order, close provider/session and release or transfer tickets");
         check(calls(method(command,"tickRecalls"),"CommandManager$Recall","expires")&&calls(method(command,"tickRecalls"),"CommandTickets","release"),"Home grace must expire and release tickets");
+        check(calls(method(command,"tickRecalls"),"CommandManager","observe"),"completed Home return must publish position before ticket release");
         check(calls(method(command,"releaseHomeControl"),"AirCombatController","dispose"),"Home ground handoff retains controller");
         check(calls(method(command,"clear"),"CommandTickets","clear")&&calls(method(command,"logout"),"CommandManager","cancel")&&calls(method(command,"leave"),"CommandManager","cancel"),"global/owner/entity cleanup disconnected");
         System.out.println("Actual TLM BaubleItemHandler NBT, slot/binding restoration, progress and independent stacks passed (registered vanilla item stand-ins)");

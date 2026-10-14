@@ -23,7 +23,7 @@ import java.util.*;
 public final class CommandManager {
     private static final class Session {
         final ServerLevel level;final MarkQueue marks=new MarkQueue();final Map<UUID,CompoundTag> snapshots=new HashMap<>();
-        final Map<UUID,String> discovery=new HashMap<>();long lastClick=-100,revision;
+        final Map<UUID,String> discovery=new HashMap<>(),assignmentFailures=new HashMap<>();long lastClick=-100,revision;
         Session(ServerLevel level){this.level=level;}
     }
     private static final class Order {
@@ -87,7 +87,7 @@ public final class CommandManager {
         long now=player.level().getGameTime();if(now-session.lastClick<4)return;session.lastClick=now;
         LivingEntity target=pick(player);if(target==null)return;
         boolean added=session.marks.toggle(target.getUUID(),scope.unlimited());
-        session.revision++;session.discovery.clear();WAKES.generation(player.getUUID(),session.revision);remember(session,target);sync(player,session);
+        session.revision++;session.discovery.clear();session.assignmentFailures.clear();WAKES.generation(player.getUUID(),session.revision);remember(session,target);sync(player,session);
         player.displayClientMessage(net.minecraft.network.chat.Component.translatable(added?"message.winefox_skyfarer.marked":"message.winefox_skyfarer.unmarked",target.getDisplayName(),session.marks.ids().size()),true);
         player.playNotifySound(added?net.minecraft.sounds.SoundEvents.EXPERIENCE_ORB_PICKUP:net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),net.minecraft.sounds.SoundSource.PLAYERS,.8F,added?1.4F:.8F);
         SkyfarerMaidRegistry.get(player.server).seed(player);
@@ -134,7 +134,7 @@ public final class CommandManager {
                     if(s.level.getGameTime()-snapshot.getLong("seen")>100&&s.level.isPositionEntityTicking(BlockPos.containing(DebugSnapshot.vector(snapshot,"position"))))s.marks.remove(id);
                 }
             }
-            if(!previousMarks.equals(s.marks.ids())){s.revision++;s.discovery.clear();WAKES.generation(pair.getKey(),s.revision);}
+            if(!previousMarks.equals(s.marks.ids())){s.revision++;s.discovery.clear();s.assignmentFailures.clear();WAKES.generation(pair.getKey(),s.revision);}
             s.snapshots.keySet().retainAll(s.marks.ids());
             if(now%5==0)sync(player,s);
             if(s.marks.isEmpty()){WAKES.stop(pair.getKey(),"mission_empty");continue;}
@@ -159,7 +159,10 @@ public final class CommandManager {
             }
             WAKES.offer(player.getUUID(),s.revision,now,candidates,new RemoteWakeScheduler.Backend(){
                 public boolean loaded(UUID id){return s.level.getEntity(id)!=null;}
-                public boolean ticket(UUID id){return CommandTickets.wake(s.level,id,positions.get(id));}
+                public boolean ticket(UUID id){
+                    wakeLog(player.getUUID(),id,s.revision,"ticket_location",s.level.dimension().location()+" pos="+positions.get(id),0);
+                    return CommandTickets.wake(s.level,id,positions.get(id));
+                }
                 public String assign(UUID id){
                     if(ORDERS.containsKey(id))return null;
                     if(!(s.level.getEntity(id) instanceof EntityMaid maid))return "not_maid";
@@ -183,11 +186,8 @@ public final class CommandManager {
     private static String assign(ServerPlayer player,Session session,EntityMaid maid,boolean continuing,boolean creativeMission) {
         if(ORDERS.containsKey(maid.getUUID()))return null;
         String failure=qualification(player,maid);
-        if(failure!=null){
-            if(maid.level().getGameTime()%40==0)wakeLog(player.getUUID(),maid.getUUID(),session.revision,"qualification_failed",failure,0);
-            return failure;
-        }
-        var controller=SkyfarerRuntime.get(maid);if(controller!=null&&controller.state().locksRunTarget())return "committed_attack";
+        if(failure!=null)return assignmentRejected(player,session,maid,failure);
+        var controller=SkyfarerRuntime.get(maid);if(controller!=null&&controller.state().locksRunTarget())return assignmentRejected(player,session,maid,"committed_attack");
         UUID selected=null;Vec3 destination=null;double best=-Double.MAX_VALUE;
         for(var id:session.marks.ids()) {
             var entity=session.level.getEntity(id);
@@ -203,7 +203,8 @@ public final class CommandManager {
                 controller!=null&&id.equals(controller.previousTarget()),route);
             if(score>best){best=score;selected=id;destination=pos;}
         }
-        if(selected==null)return "no_admissible_live_mark";
+        if(selected==null)return assignmentRejected(player,session,maid,"no_admissible_live_mark");
+        session.assignmentFailures.remove(maid.getUUID());
         var order=new Order(player.getUUID(),session.level,creativeMission||session.marks.creative(selected),selected,destination,
             DispatchPolicy.transit(session.level.getEntity(selected)!=null,maid.position().distanceTo(destination),creativeMission||session.marks.creative(selected)));
         ORDERS.put(maid.getUUID(),order);
@@ -211,9 +212,17 @@ public final class CommandManager {
         if(order.creative)CommandTickets.update(order.level,maid.getUUID(),maid.position(),order.destination);
         else CommandTickets.release(maid.getUUID()); // A discovery ticket must not become an unlimited survival ticket.
         if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] COMMAND_ASSIGN maid={} target={} creative={} transit={} distance={} propulsion={}",maid.getUUID(),selected,order.creative,order.transit,maid.position().distanceTo(destination),dev.winefox.skyfarer.compat.tlm.PropulsionCapability.source(maid));
-        if(order.transit&&controller!=null)controller.handoffToTransit();
+        // Transit owns admission even when a reloaded maid has no combat controller yet.
+        // The old combined condition fell through to acceptCommand and started APPROACH
+        // (including glide) at Home before the remote route had taken off.
+        if(order.transit){if(controller!=null)controller.handoffToTransit();}
         else if(session.level.getEntity(selected) instanceof LivingEntity target)SkyfarerRuntime.ensure(maid).acceptCommand(target);
         return null;
+    }
+    private static String assignmentRejected(ServerPlayer player,Session session,EntityMaid maid,String reason){
+        if(!Objects.equals(session.assignmentFailures.put(maid.getUUID(),reason),reason))
+            wakeLog(player.getUUID(),maid.getUUID(),session.revision,"assignment_rejected",reason,0);
+        return reason;
     }
     private static String qualification(ServerPlayer owner,EntityMaid maid){
         if(!owner.getUUID().equals(maid.getOwnerUUID()))return "owner";
@@ -322,6 +331,9 @@ public final class CommandManager {
             o.flight.handoff(maid);o.transit=false;var c=SkyfarerRuntime.ensure(maid);c.acceptCommand(target);return false;
         }
         if(!o.flight.tick(maid,o.destination,o.creative)) {
+            if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info(
+                "[WFS debug] COMMAND_TRANSIT_FAILED maid={} generation={} target={} pos={} velocity={} ground={} glide={} retryAt={} {}",
+                maid.getUUID(),o.revision,o.target,maid.position(),maid.getDeltaMovement(),maid.onGround(),maid.isFallFlying(),o.level.getGameTime()+200,o.flight.diagnostics());
             RETRY.put(maid.getUUID(),o.level.getGameTime()+200);
             // Failed flight windows no longer belong to an active order. cancel closes
             // its planner/providers and releases tickets (or transfers to bounded Home
@@ -342,7 +354,7 @@ public final class CommandManager {
     public static void died(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
         if(event.getEntity().level().isClientSide())return;
         for(var pair:SESSIONS.entrySet())if(pair.getValue().marks.contains(event.getEntity().getUUID())){
-            var s=pair.getValue();s.marks.remove(event.getEntity().getUUID());s.revision++;s.discovery.clear();WAKES.generation(pair.getKey(),s.revision);
+            var s=pair.getValue();s.marks.remove(event.getEntity().getUUID());s.revision++;s.discovery.clear();s.assignmentFailures.clear();WAKES.generation(pair.getKey(),s.revision);
         }
     }
     public static void leave(EntityMaid maid) {
@@ -374,7 +386,10 @@ public final class CommandManager {
         for(var entry:new ArrayList<>(RECALLS.entrySet())) {
             var maid=entry.getValue().maid();
             if(!maid.isAlive()||maid.isRemoved()||!maid.isHomeModeEnable()||maid.isWithinRestriction()) {
-                if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] COMMAND_HOME_RETURN maid={} success={} reason=TLM_HANDOFF_FINISHED loaded={} home={}",maid.getUUID(),maid.isWithinRestriction(),!maid.isRemoved(),maid.getRestrictCenter());
+                // Capture the actual post-TLM destination before releasing the last Home
+                // ticket; do not depend on another 20-tick observation before unload.
+                if(maid.isAlive()&&!maid.isRemoved())observe(maid);
+                if(SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info("[WFS debug] COMMAND_HOME_RETURN maid={} success={} reason=TLM_HANDOFF_FINISHED loaded={} home={} pos={} dimension={}",maid.getUUID(),maid.isWithinRestriction(),!maid.isRemoved(),maid.getRestrictCenter(),maid.position(),maid.level().dimension().location());
                 RECALLS.remove(entry.getKey());CommandTickets.release(entry.getKey());continue;
             }
             if(maid.onGround())releaseHomeControl(entry.getValue());

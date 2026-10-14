@@ -2,7 +2,7 @@
 
 0.7.3 统一动力源权威仲裁，永燃独占推进、持续闭环速度保持和客户端双赤尾焰/气流环，见 [动力仲裁与持续控制](PROPULSION_073.md)。饰品与隐藏觉醒机制见 [彗星专题](COMET_HEARTS.md)。
 
-当前版本 **0.7.5**。执行承诺与有限证明见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有推进边界见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
+当前版本 **0.7.6**。执行承诺与有限证明见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有推进边界见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
 
 ## 1. 当前架构
 
@@ -131,6 +131,8 @@
 `PlannerSession.begin(tick, phase, target, revision, horizon)` 比较逻辑阶段、目标和配置版本。不相同就增加 generation，取消 pending，清除结果缓存和几何 seed；维度或 **Level 引用身份**改变还清空地形 cell/requested/frozen map。同名维度的新世界不能复用旧快照。session/source 有创建线程断言。
 
 `MaidTerrainSource` 经主线程 `PhysicsProvider` 捕获 gravity/缓降，按 entity、Level、dimension、游戏 tick 缓存，同 tick 只读一次。Worker 只接收 `State.physics` 数值 DTO 与 `rocketDelay`，不会收到 Provider/身份引用。物理改变取消旧 generation；正常缓降倒计时按任务年龄比较。读取失败回退 vanilla，close 释放引用，重新加入世界按新身份采集。每个预测 tick 只推进冻结 DTO。
+
+0.7.6 接单不再在没有旧控制器时提前构造空战 session/进入 APPROACH。重载 standing 实体的有界接触等待由主线程/原版 travel 完成，不交 Worker 修改实体；虚拟推进接收与激流相同的 Transit 上下文。见 [重复召唤修复](REMOTE_RECALL_076.md)。
 
 赶路订单的 `TransitFlight` 也按 Java 实体实例隔离：同 UUID 重新加载为新实例时，关闭旧 Provider/PlannerSession 后创建新 Source。地面 `Pending` 不再延长起飞等待预算，连续等待最多 100 游戏 ticks；失败/取消订单关闭会话并撤销 pending，不改结果年龄或快照安全门槛。见 [0.7.5 修复](REMOTE_WAKE_075.md)。
 

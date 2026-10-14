@@ -1,6 +1,19 @@
 # 验证、离线回放与构建
 
-当前版本 **0.7.5**。本次仅编译、打包与四项远程唤醒直接相关验证，未运行全量 build/check/verify，未启动 Minecraft。旧版本结果仅作为历史证据。
+当前版本 **0.7.6**。本次仅编译、五项远程重复任务相关验证与打包；未执行全量 build/check/verify，未启动或安装 Minecraft。
+
+## 0.7.6 Home 回收后的重复召唤
+
+[实现、实机日志与限制](REMOTE_RECALL_076.md)、[最终运行日志](../tools/remote-recall-release.log)。
+
+- `verifyRemoteRecall`：同三只 UUID，永燃/激流/普通烟花各三次约 480 格任务；保存式重建、原日志 false-ground/残余速度、第二轮 Worker 阻塞 16 ticks、滑翔交接与 Home/卸载边界。每轮无遗留 session/适配器票据，实际推进成立、无库存消耗、飞行无身体碰撞。20 tick 接触等待到期及真正离地重载不冻结也通过。
+- `verifyRemoteCometContracts`：符号执行实际编译的接单控制权分支四种组合；TLM handler NBT；生产取消、撤票/有限 Home 宽限与 Home 到达立即观察调用链。
+- `verifyRemoteWake`：两只 Home 三次任务、战斗→Home 位置的真实 SavedData 往返、13 候选公平分批、attempt/generation/超时/上限与释放。
+- `verifyRemoteComet`、`verifyRemotePropulsion`：上一轮空方案崩溃、五只永燃、100 tick Worker 阻塞、旧实体 session 关闭与无永燃的正常/创造激流赶路回归通过。
+
+保留编译夹具字段错误、未修复代码提前滑翔断言失败、第二轮 ANCHOR_REJECTED 和随后通过的全部日志，详情见专题。TLM 传送、原版接触与区块/实体 IO 由离线适配器提供；未运行整合包、未执行完整 Combat 伤害回放，不把这些结果声称为真实端到端游戏测试。
+
+交付包：[winefox_skyfarer-1.21.1-0.7.6.jar](../build/libs/winefox_skyfarer-1.21.1-0.7.6.jar)，**664,570 bytes**；SHA-256 `A77628E2C954DAEFB75735C6B72D1F78DB78C1DA3E75855DEF115461032F4BF2`。版本与资源、四处生产类及测试隔离已核对；[包校验](../tools/remote-recall-artifact-check.json)。
 
 ## 0.7.5 永燃远程唤醒
 

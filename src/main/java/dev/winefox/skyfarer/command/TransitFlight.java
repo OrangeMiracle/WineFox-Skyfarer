@@ -22,9 +22,10 @@ final class TransitFlight {
     private dev.winefox.skyfarer.async.AsyncPlanning planning;
     private EntityMaid controlled;
     private long groundedSince=Long.MIN_VALUE;
+    private long settlingSince=Long.MIN_VALUE;
     private String failure="NONE";
     boolean waterEscape(){return swimmer!=null;}
-    String diagnostics(){return "failure="+failure+" propulsion="+propulsion.reason()+" launch="+launch+" departure="+departure+" plan="+cached+" rocket="+remaining()+" jobs="+(planning==null?0:planning.pending())+(controlled==null?"":" "+propulsion.detail(controlled));}
+    String diagnostics(){return "failure="+failure+" settling="+(settlingSince!=Long.MIN_VALUE)+" propulsion="+propulsion.reason()+" launch="+launch+" departure="+departure+" plan="+cached+" rocket="+remaining()+" jobs="+(planning==null?0:planning.pending())+(planning==null?"":" proof="+planning.riptideRejection())+(controlled==null?"":" "+propulsion.detail(controlled));}
     boolean tick(EntityMaid maid,Vec3 target) {
         return tick(maid,target,false);
     }
@@ -75,8 +76,9 @@ final class TransitFlight {
         if(maid.isInWaterOrBubble())return escapeWater(maid,yaw,gravity);
         restoreSwimming();
         if(maid.onGround()) {
+            settlingSince=Long.MIN_VALUE;
             if(prefer(maid,target,true)>0)return true;
-            if(!new CorridorProbe(maid).segment(maid.getEyePosition().add(0,.01,0),maid.getEyePosition().add(0,.45,0),.02,0))return false;
+            if(!new CorridorProbe(maid).segment(maid.getEyePosition().add(0,.01,0),maid.getEyePosition().add(0,.45,0),.02,0))return fail("JUMP_BODY_BLOCKED");
             var jump=new FlightPrediction.State(maid.getX(),maid.getY()+.82,maid.getZ(),v.x,.33,v.z,maid.getYRot(),maid.getXRot(),planning.physics(),ignitionDelay(maid));
             launch=propulsion.launch(maid,jump,yaw,maid.getY()+7,planning,gravity,new CorridorProbe(maid,maid.getBbWidth(),.6,.4),SurfaceLaunchPlanner.DRY);
             if(launch==null){
@@ -85,15 +87,27 @@ final class TransitFlight {
             }
             heading.steerAngles(maid,launch.yaw(),launch.pitch(),180,90);maid.getJumpControl().jump();return true;
         }
-        if(!maid.isFallFlying()&&!ElytraFlightController.startGliding(maid))return false;
+        if(!maid.isFallFlying()&&launch==null&&v.y<=0){
+            // Home teleport/save can preserve OnGround=false and falling velocity at
+            // a supported standing position. Let native travel resolve that contact;
+            // do not turn a not-yet-ticked ground entity into an airborne glider.
+            double support=new CorridorProbe(maid).supportNear(maid.getX(),maid.getZ(),maid.getY());
+            if(Double.isFinite(support)&&maid.getY()>=support-.05&&maid.getY()-support<=.5){
+                if(settlingSince==Long.MIN_VALUE)settlingSince=maid.level().getGameTime();
+                if(maid.level().getGameTime()-settlingSince>=20)return fail("GROUND_CONTACT_TIMEOUT");
+                return true;
+            }
+        }
+        settlingSince=Long.MIN_VALUE;
+        if(!maid.isFallFlying()&&!ElytraFlightController.startGliding(maid))return fail("GLIDE_REJECTED");
         maid.setPose(Pose.FALL_FLYING);
         var start=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot(),planning.physics(),ignitionDelay(maid));
         var space=new CorridorProbe(maid);
         if(launch!=null && departure==0) {
             launch=propulsion.launch(maid,start,yaw,launch.height(),planning,gravity,space,SurfaceLaunchPlanner.DRY);
-            if(launch==null)return false;
-            if(!space.clear(start,SurfaceLaunchPlanner.step(start,launch.yaw(),launch.pitch(),gravity,true,false),.04,.01))return false;
-            heading.steerAngles(maid,launch.yaw(),launch.pitch(),180,90);if(!propulsion.executeLaunch(maid,start,launch,true,planning,gravity,space,SurfaceLaunchPlanner.DRY,heading))return false;departure=1;return true;
+            if(launch==null)return fail("LAUNCH_RECERTIFICATION_FAILED");
+            if(!space.clear(start,SurfaceLaunchPlanner.step(start,launch.yaw(),launch.pitch(),gravity,true,false),.04,.01))return fail("LAUNCH_BODY_BLOCKED");
+            heading.steerAngles(maid,launch.yaw(),launch.pitch(),180,90);if(!propulsion.executeLaunch(maid,start,launch,true,planning,gravity,space,SurfaceLaunchPlanner.DRY,heading))return fail("LAUNCH_PROVIDER_REJECTED");departure=1;return true;
         }
         if(launch!=null && departure<6) {
             double pitch=SurfaceLaunchPlanner.command(start,launch,departure++,gravity,remaining()>0);
@@ -115,7 +129,7 @@ final class TransitFlight {
             if(result.guided()||result.waiting())return true;
             if(result.attached()){request=request.withPulse(remaining());cached=planning.glide(start,request,space);}
         }
-        if(!cached.safe()&&!planning.waiting())return false;
+        if(!cached.safe()&&!planning.waiting())return fail("NO_SAFE_GLIDE");
         heading.steerAngles(maid,cached.yaw(),cached.pitch(),cached.yawRate(),cached.pitchRate());return true;
     }
     private boolean creativeTravel(EntityMaid maid,Vec3 target,FlightPrediction.State start,CorridorProbe space,double gravity){
@@ -134,7 +148,7 @@ final class TransitFlight {
         if(fastMotion==null){
             // Return to local native guidance at ordinary speed if terrain has no direct corridor.
             Vec3 v=maid.getDeltaMovement();if(v.length()>1)maid.setDeltaMovement(v.normalize());
-            cached=null;if(++blockedFastTicks>100)return false;
+            cached=null;if(++blockedFastTicks>100)return fail("CREATIVE_CORRIDOR_BLOCKED");
             return tickFlight(maid,target,false);
         }
         blockedFastTicks=0;
@@ -150,7 +164,7 @@ final class TransitFlight {
     private boolean wet(EntityMaid maid,FlightPrediction.State state){var pos=net.minecraft.core.BlockPos.containing(state.x(),state.y()-.35,state.z());return maid.level().hasChunkAt(pos)&&maid.level().getFluidState(pos).is(net.minecraft.tags.FluidTags.WATER);}
     private boolean escapeWater(EntityMaid maid,double yaw,double gravity) {
         if(swimmer==null){swimmer=maid;previousSwimming=maid.getSwimManager().wantToSwim();maid.getSwimManager().setWantToSwim(true);launch=null;departure=0;}
-        if(++waterTicks>100)return false;
+        if(++waterTicks>100)return fail("WATER_ESCAPE_TIMEOUT");
         if(maid.onGround())maid.getJumpControl().jump();
         if(!ElytraFlightController.startGliding(maid,true))return true;
         var v=maid.getDeltaMovement();var start=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),v.x,v.y,v.z,maid.getYRot(),maid.getXRot(),planning.physics(),ignitionDelay(maid));
@@ -160,10 +174,10 @@ final class TransitFlight {
         if(remaining()==0&&prefer(maid,new Vec3(start.x()-Math.sin(Math.toRadians(yaw))*64,height,start.z()+Math.cos(Math.toRadians(yaw))*64),false)>0)return true;
         if(launch==null)launch=remaining()>0?planning.launchRemaining(start,yaw,height,gravity,remaining(),space,s->wet(maid,s)):
             propulsion.launch(maid,start,yaw,height,planning,gravity,space,s->wet(maid,s));
-        if(launch==null)return false;
+        if(launch==null)return fail("WATER_LAUNCH_UNAVAILABLE");
         double pitch=SurfaceLaunchPlanner.command(start,launch,departure++,gravity,true);
-        if(!space.clear(start,SurfaceLaunchPlanner.step(start,launch.yaw(),pitch,gravity,true,true),.04,.01))return false;
-        if(remaining()==0&&!propulsion.executeLaunch(maid,start,launch,false,planning,gravity,space,s->wet(maid,s),heading))return false;
+        if(!space.clear(start,SurfaceLaunchPlanner.step(start,launch.yaw(),pitch,gravity,true,true),.04,.01))return fail("WATER_BODY_BLOCKED");
+        if(remaining()==0&&!propulsion.executeLaunch(maid,start,launch,false,planning,gravity,space,s->wet(maid,s),heading))return fail("WATER_PROVIDER_REJECTED");
         heading.steerAngles(maid,launch.yaw(),pitch,180,90);return true;
     }
     void debug(net.minecraft.nbt.CompoundTag data,EntityMaid maid) {
@@ -186,6 +200,7 @@ final class TransitFlight {
         return propulsion.prefer(maid,start,demand,planning,heading,new CorridorProbe(maid));
     }
     private int ignitionDelay(EntityMaid maid){return propulsion.projectionDelay(maid);}
+    private boolean fail(String reason){failure=reason;return false;}
     private boolean rejectLaunch(EntityMaid maid,String reason){
         failure=reason;
         if(dev.winefox.skyfarer.config.SkyfarerSettings.debugLogging())dev.winefox.skyfarer.WineFoxSkyfarer.LOGGER.info(
@@ -199,5 +214,5 @@ final class TransitFlight {
             maid.getUUID(),reason,maid.isFallFlying(),maid.getDeltaMovement(),maid.getY(),remaining(),dev.winefox.skyfarer.ai.CommandAccess.context.apply(maid));
     }
     void close(){close(false);}
-    private void close(boolean handoff){if(controlled!=null){audit(controlled,"TRANSIT_CLOSE");propulsion.close(controlled,"TRANSIT_CLOSE_OR_HANDOFF",handoff);}controlled=null;if(planning!=null)planning.close();planning=null;cached=null;fastMotion=null;propulsion.detach();restoreSwimming();launch=null;ticks=departure=waterTicks=blockedFastTicks=0;groundedSince=Long.MIN_VALUE;failure="NONE";descending=false;cruiseY=Double.NaN;}
+    private void close(boolean handoff){if(controlled!=null){audit(controlled,"TRANSIT_CLOSE");propulsion.close(controlled,"TRANSIT_CLOSE_OR_HANDOFF",handoff);}controlled=null;if(planning!=null)planning.close();planning=null;cached=null;fastMotion=null;propulsion.detach();restoreSwimming();launch=null;ticks=departure=waterTicks=blockedFastTicks=0;groundedSince=settlingSince=Long.MIN_VALUE;failure="NONE";descending=false;cruiseY=Double.NaN;}
 }
