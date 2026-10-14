@@ -1,0 +1,48 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyRemoteComet
+Rejected launch safely at tick 7: failure=NO_CERTIFIED_LAUNCH propulsion=NO_SAFE_VIRTUAL_PROPULSION;EXCLUSIVE_SOURCE_NO_FALLBACK launch=null departure=0 plan=null rocket=0 jobs=0 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=11 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=12 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=13 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=14 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=15 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=16 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=17 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=18 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=19 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=20 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=21 ground=false pushes=0 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=VIRTUAL_PROPULSION eligible=VIRTUAL_PROPULSION guided=true virtual=VIRTUAL_JUMP_RESERVED duration=0 attached=false cooldown=0
+trace tick=22 ground=false pushes=0 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=SNAPSHOT_MISSING:1 duration=0 attached=false cooldown=0
+trace tick=23 ground=false pushes=0 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=SNAPSHOT_MISSING:1 duration=0 attached=false cooldown=0
+trace tick=24 ground=false pushes=0 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=SNAPSHOT_MISSING:1 duration=0 attached=false cooldown=0
+trace tick=25 ground=false pushes=0 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=SNAPSHOT_MISSING:1 duration=0 attached=false cooldown=0
+trace tick=26 ground=false pushes=0 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=SNAPSHOT_MISSING:1 duration=0 attached=false cooldown=0
+trace tick=27 ground=false pushes=0 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=SNAPSHOT_MISSING:1 duration=0 attached=false cooldown=0
+trace tick=28 ground=false pushes=0 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=SNAPSHOT_MISSING:1 duration=0 attached=false cooldown=0
+trace tick=29 ground=false pushes=0 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=SNAPSHOT_MISSING:1 duration=0 attached=false cooldown=0
+
+Exception in thread "main" java.lang.AssertionError: virtual propulsion was never executed after reload
+	at dev.winefox.skyfarer.command.RemoteCometChecks.check(RemoteCometChecks.java:18)
+	at dev.winefox.skyfarer.command.RemoteCometChecks.wakeBatch(RemoteCometChecks.java:97)
+	at dev.winefox.skyfarer.command.RemoteCometChecks.main(RemoteCometChecks.java:26)
+> Task :verifyRemoteComet FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyRemoteComet'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 7s
+2 actionable tasks: 2 executed

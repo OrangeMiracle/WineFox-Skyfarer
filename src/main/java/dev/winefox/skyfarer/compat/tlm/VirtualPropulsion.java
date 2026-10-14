@@ -73,6 +73,12 @@ public final class VirtualPropulsion implements PropulsionResolver.Provider {
                 return true;
             }
             if(!ElytraFlightController.startGliding(maid)){cancel("VIRTUAL_GLIDE_REJECTED");return false;}
+            // startGliding changes pose, eye height and swept body dimensions. The caller's
+            // standing-eye state was captured before that transition and cannot certify
+            // this first flying impulse. Use the current entity after the pose change.
+            var velocity=maid.getDeltaMovement();
+            start=new FlightPrediction.State(maid.getX(),maid.getEyeY(),maid.getZ(),velocity.x,velocity.y,velocity.z,
+                maid.getYRot(),maid.getXRot(),planning.physics());
             jumping=false;started=now;
         }
         if(maid.onGround()||!maid.isFallFlying()){cancel("VIRTUAL_GLIDE_LOST");return false;}

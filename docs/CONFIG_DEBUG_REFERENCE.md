@@ -2,7 +2,7 @@
 
 0.7.3 统一动力源权威仲裁，永燃独占推进、持续闭环速度保持和客户端双赤尾焰/气流环，见 [动力仲裁与持续控制](PROPULSION_073.md)。饰品与隐藏觉醒机制见 [彗星专题](COMET_HEARTS.md)。
 
-当前版本 **0.7.4**。航迹/控制权诊断见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有配置迁移见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。新增 SERVER 配置 `accessories.comet_firework_saving_chance`，默认 0.6、范围 0.5–0.7。源码为最终权威。
+当前版本 **0.7.5**。航迹/控制权诊断见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有配置迁移见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。新增 SERVER 配置 `accessories.comet_firework_saving_chance`，默认 0.6、范围 0.5–0.7。源码为最终权威。
 
 ## 1. 配置的入口与生效方式
 
@@ -235,6 +235,8 @@ HUD 当前字段包含名称/UUID 前缀/维度/选中序号、状态、原因/�
 普通标记颜色 `0xFF8070`，创造 `0xE58CFF`；四角框 + 头顶 `▼` + 1–5 编号。客户端从相机向目标中心做方块射线，遮挡时仅画透视 `▼`，隐藏框及编号。新标记使用 0.35 秒三次缓动，由 1.8 倍框缩到 1 倍；重复同步不重新触发动画。服务端仅向标记者发送该列表；成功音效 `EXPERIENCE_ORB_PICKUP`（0.8 音量/1.4 音高），取消 `UI_BUTTON_CLICK`（0.8/0.8）。
 
 ### 5.4 日志与排查
+
+0.7.5 新增 `TRANSIT_LAUNCH_REJECTED`：`NO_CERTIFIED_LAUNCH` 是无可执行起飞结果，`LAUNCH_WAIT_TIMEOUT` 是包含 Worker/Provider 等待的 100 游戏 tick 地面规划截止。记录 Resolver 和 planning 原因；后续应有 `COMMAND_RELEASE` 与撤票或有限 Home 回收。不要将装备 `READY` 当成起飞已认证，也不要将 wake 的 `transferred_to_order` 当成真正撤票；见 [实机堆栈与修复](REMOTE_WAKE_075.md)。
 
 `/wfs debuglog on` 会产生 `[WFS debug]` 状态、扫描/阻断、能量/火箭决定、任务分配、赶路、回收等日志。周期由 log_interval_ticks 控制，转移与部分 sweep 诊断有独立事件/节流；大量女仆开启后会增加日志量。
 

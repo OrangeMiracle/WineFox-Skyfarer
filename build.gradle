@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 group = 'dev.winefox.skyfarer'
-version = '0.7.4'
+version = '0.7.5'
 base { archivesName = 'winefox_skyfarer-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
@@ -407,4 +407,17 @@ tasks.register('verifyCometDrops', JavaExec) {
     dependsOn compileControllerReplay
     classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
     mainClass = 'dev.winefox.skyfarer.replay.CometDropChecks'
+}
+
+tasks.register('verifyRemoteComet', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.command.RemoteCometChecks'
+}
+
+tasks.register('verifyRemoteCometContracts', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath + sourceSets.main.compileClasspath + files('build/moddev/artifacts/neoforge-21.1.250-client-extra-aka-minecraft-resources.jar')
+    mainClass = 'dev.winefox.skyfarer.runtime.RemoteCometContracts'
+    systemProperty 'log4j.configurationFile', file('tools/offline-log4j2.xml').toURI().toString()
 }

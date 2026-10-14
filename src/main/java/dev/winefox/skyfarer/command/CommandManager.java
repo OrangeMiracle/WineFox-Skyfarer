@@ -322,9 +322,12 @@ public final class CommandManager {
             o.flight.handoff(maid);o.transit=false;var c=SkyfarerRuntime.ensure(maid);c.acceptCommand(target);return false;
         }
         if(!o.flight.tick(maid,o.destination,o.creative)) {
-            o.flight.close();o.transit=false;o.finishing=!o.creative;
-            SkyfarerRuntime.ensure(maid).commandReturn();
             RETRY.put(maid.getUUID(),o.level.getGameTime()+200);
+            // Failed flight windows no longer belong to an active order. cancel closes
+            // its planner/providers and releases tickets (or transfers to bounded Home
+            // landing grace). Discovery can retry this maid after the existing cooldown.
+            cancel(maid.getUUID());
+            if(!recalling(maid))SkyfarerRuntime.ensure(maid).commandReturn();
             return false;
         }
         return true;

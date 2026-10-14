@@ -1,0 +1,65 @@
+crash-2026-10-13_21.42.04-server.txt
+Description: Ticking entity
+
+java.lang.NullPointerException: Cannot invoke "dev.winefox.skyfarer.flight.SurfaceLaunchPlanner$Plan.yaw()" because "this.launch" is null
+	at TRANSFORMER/winefox_skyfarer@0.7.4/dev.winefox.skyfarer.command.TransitFlight.tickFlight(TransitFlight.java:71) ~[winefox_skyfarer-1.21.1-0.7.4.jar%23234!/:0.7.4] {re:classloading}
+	at TRANSFORMER/winefox_skyfarer@0.7.4/dev.winefox.skyfarer.command.TransitFlight.tick(TransitFlight.java:35) ~[winefox_skyfarer-1.21.1-0.7.4.jar%23234!/:0.7.4] {re:classloading}
+	at TRANSFORMER/winefox_skyfarer@0.7.4/dev.winefox.skyfarer.command.CommandManager.beforeMaidTick(CommandManager.java:324) ~[winefox_skyfarer-1.21.1-0.7.4.jar%23234!/:0.7.4] {re:mixin,re:classloading}
+	at TRANSFORMER/winefox_skyfarer@0.7.4/dev.winefox.skyfarer.runtime.SkyfarerRuntime.tick(SkyfarerRuntime.java:33) ~[winefox_skyfarer-1.21.1-0.7.4.jar%23234!/:0.7.4] {re:mixin,re:classloading}
+	at MC-BOOTSTRAP/net.neoforged.bus/net.neoforged.bus.ConsumerEventHandler$WithPredicate.invoke(ConsumerEventHandler.java:48) ~[bus-8.0.5.jar%23164!/:?] {}
+
+crash-2026-10-13_21.43.05-server.txt
+Description: Ticking entity
+
+java.lang.NullPointerException: Cannot invoke "dev.winefox.skyfarer.flight.SurfaceLaunchPlanner$Plan.yaw()" because "this.launch" is null
+	at TRANSFORMER/winefox_skyfarer@0.7.4/dev.winefox.skyfarer.command.TransitFlight.tickFlight(TransitFlight.java:71) ~[winefox_skyfarer-1.21.1-0.7.4.jar%23234!/:0.7.4] {re:classloading}
+	at TRANSFORMER/winefox_skyfarer@0.7.4/dev.winefox.skyfarer.command.TransitFlight.tick(TransitFlight.java:35) ~[winefox_skyfarer-1.21.1-0.7.4.jar%23234!/:0.7.4] {re:classloading}
+	at TRANSFORMER/winefox_skyfarer@0.7.4/dev.winefox.skyfarer.command.CommandManager.beforeMaidTick(CommandManager.java:324) ~[winefox_skyfarer-1.21.1-0.7.4.jar%23234!/:0.7.4] {re:mixin,re:classloading}
+	at TRANSFORMER/winefox_skyfarer@0.7.4/dev.winefox.skyfarer.runtime.SkyfarerRuntime.tick(SkyfarerRuntime.java:33) ~[winefox_skyfarer-1.21.1-0.7.4.jar%23234!/:0.7.4] {re:mixin,re:classloading}
+	at MC-BOOTSTRAP/net.neoforged.bus/net.neoforged.bus.ConsumerEventHandler$WithPredicate.invoke(ConsumerEventHandler.java:48) ~[bus-8.0.5.jar%23164!/:?] {}
+
+latest.log
+636: [1310月2026 21:43:05.314] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c generation=1 stage=candidate_discovered reason=unloaded attempted=0 active=0
+637: [1310月2026 21:43:05.314] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 generation=1 stage=candidate_discovered reason=unloaded attempted=0 active=0
+638: [1310月2026 21:43:05.316] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 generation=1 stage=wake_queued reason=attempted_until=618760 attempted=1 active=0
+640: [1310月2026 21:43:05.325] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 generation=1 stage=ticket_created reason= attempted=1 active=1
+641: [1310月2026 21:43:05.325] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c generation=1 stage=wake_queued reason=attempted_until=618760 attempted=1 active=1
+643: [1310月2026 21:43:05.326] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c generation=1 stage=ticket_created reason= attempted=1 active=2
+644: [1310月2026 21:43:05.388] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 generation=1 stage=entity_loaded reason= attempted=1 active=2
+646: [1310月2026 21:43:05.393] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] EQUIPMENT_RESULT maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 before=READY replacement=NOT_NEEDED equipmentQualified=true reason=READY spear=true fireworks=true propulsion=VIRTUAL_PROPULSION ground=true glide=false
+648: [1310月2026 21:43:05.426] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] COMMAND_ASSIGN maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 target=40c7cb18-942c-4a63-9921-ee4963eec00c creative=true transit=true distance=483.59698563710793 propulsion=VIRTUAL_PROPULSION
+649: [1310月2026 21:43:05.440] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 generation=1 stage=assignment_accepted reason= attempted=1 active=2
+650: [1310月2026 21:43:05.440] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 generation=1 stage=released reason=transferred_to_order attempted=1 active=1
+651: [1310月2026 21:43:05.440] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c generation=1 stage=entity_loaded reason= attempted=1 active=1
+653: [1310月2026 21:43:05.440] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] EQUIPMENT_RESULT maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c before=READY replacement=NOT_NEEDED equipmentQualified=true reason=READY spear=true fireworks=true propulsion=VIRTUAL_PROPULSION ground=false glide=true
+655: [1310月2026 21:43:05.441] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] COMMAND_ASSIGN maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c target=40c7cb18-942c-4a63-9921-ee4963eec00c creative=true transit=true distance=479.5559656421526 propulsion=VIRTUAL_PROPULSION
+657: [1310月2026 21:43:05.443] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c generation=1 stage=assignment_accepted reason= attempted=1 active=1
+658: [1310月2026 21:43:05.443] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c generation=1 stage=released reason=transferred_to_order attempted=1 active=0
+662: [1310月2026 21:43:05.816] [Server thread/ERROR] [net.neoforged.bus.EventBus/EVENTBUS]: Exception caught during firing event: Cannot invoke "dev.winefox.skyfarer.flight.SurfaceLaunchPlanner$Plan.yaw()" because "this.launch" is null
+668: java.lang.NullPointerException: Cannot invoke "dev.winefox.skyfarer.flight.SurfaceLaunchPlanner$Plan.yaw()" because "this.launch" is null
+669: 	at TRANSFORMER/winefox_skyfarer@0.7.4/dev.winefox.skyfarer.command.TransitFlight.tickFlight(TransitFlight.java:71)
+697: Caused by: java.lang.NullPointerException: Cannot invoke "dev.winefox.skyfarer.flight.SurfaceLaunchPlanner$Plan.yaw()" because "this.launch" is null
+698: 	at TRANSFORMER/winefox_skyfarer@0.7.4/dev.winefox.skyfarer.command.TransitFlight.tickFlight(TransitFlight.java:71) ~[winefox_skyfarer-1.21.1-0.7.4.jar%23234!/:0.7.4]
+
+debug.log
+7863: [1310月2026 21:43:05.314] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c generation=1 stage=candidate_discovered reason=unloaded attempted=0 active=0
+7864: [1310月2026 21:43:05.314] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 generation=1 stage=candidate_discovered reason=unloaded attempted=0 active=0
+7865: [1310月2026 21:43:05.316] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 generation=1 stage=wake_queued reason=attempted_until=618760 attempted=1 active=0
+7867: [1310月2026 21:43:05.325] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 generation=1 stage=ticket_created reason= attempted=1 active=1
+7868: [1310月2026 21:43:05.325] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c generation=1 stage=wake_queued reason=attempted_until=618760 attempted=1 active=1
+7870: [1310月2026 21:43:05.326] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c generation=1 stage=ticket_created reason= attempted=1 active=2
+7879: [1310月2026 21:43:05.388] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 generation=1 stage=entity_loaded reason= attempted=1 active=2
+7881: [1310月2026 21:43:05.393] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] EQUIPMENT_RESULT maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 before=READY replacement=NOT_NEEDED equipmentQualified=true reason=READY spear=true fireworks=true propulsion=VIRTUAL_PROPULSION ground=true glide=false
+7883: [1310月2026 21:43:05.426] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] COMMAND_ASSIGN maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 target=40c7cb18-942c-4a63-9921-ee4963eec00c creative=true transit=true distance=483.59698563710793 propulsion=VIRTUAL_PROPULSION
+7884: [1310月2026 21:43:05.440] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 generation=1 stage=assignment_accepted reason= attempted=1 active=2
+7885: [1310月2026 21:43:05.440] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=57d5cb3e-d760-4207-b33f-5e86080ba9a1 generation=1 stage=released reason=transferred_to_order attempted=1 active=1
+7886: [1310月2026 21:43:05.440] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c generation=1 stage=entity_loaded reason= attempted=1 active=1
+7888: [1310月2026 21:43:05.440] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] EQUIPMENT_RESULT maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c before=READY replacement=NOT_NEEDED equipmentQualified=true reason=READY spear=true fireworks=true propulsion=VIRTUAL_PROPULSION ground=false glide=true
+7890: [1310月2026 21:43:05.441] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] COMMAND_ASSIGN maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c target=40c7cb18-942c-4a63-9921-ee4963eec00c creative=true transit=true distance=479.5559656421526 propulsion=VIRTUAL_PROPULSION
+7892: [1310月2026 21:43:05.443] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c generation=1 stage=assignment_accepted reason= attempted=1 active=1
+7893: [1310月2026 21:43:05.443] [Server thread/INFO] [dev.winefox.skyfarer.WineFoxSkyfarer/]: [WFS debug] REMOTE_WAKE owner=5efcd871-4518-4656-a5a3-cb1d5e7c6621 maid=e45d295c-88b1-4060-b1d8-5e98b27bf52c generation=1 stage=released reason=transferred_to_order attempted=1 active=0
+7897: [1310月2026 21:43:05.816] [Server thread/ERROR] [net.neoforged.bus.EventBus/EVENTBUS]: Exception caught during firing event: Cannot invoke "dev.winefox.skyfarer.flight.SurfaceLaunchPlanner$Plan.yaw()" because "this.launch" is null
+7903: java.lang.NullPointerException: Cannot invoke "dev.winefox.skyfarer.flight.SurfaceLaunchPlanner$Plan.yaw()" because "this.launch" is null
+7904: 	at TRANSFORMER/winefox_skyfarer@0.7.4/dev.winefox.skyfarer.command.TransitFlight.tickFlight(TransitFlight.java:71)
+7933: Caused by: java.lang.NullPointerException: Cannot invoke "dev.winefox.skyfarer.flight.SurfaceLaunchPlanner$Plan.yaw()" because "this.launch" is null
+7934: 	at TRANSFORMER/winefox_skyfarer@0.7.4/dev.winefox.skyfarer.command.TransitFlight.tickFlight(TransitFlight.java:71) ~[winefox_skyfarer-1.21.1-0.7.4.jar%23234!/:0.7.4]

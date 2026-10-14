@@ -1,0 +1,41 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :compileControllerReplay
+
+> Task :verifyRemoteComet
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Rejected launch safely at tick 7: failure=NO_CERTIFIED_LAUNCH propulsion=NO_SAFE_VIRTUAL_PROPULSION;EXCLUSIVE_SOURCE_NO_FALLBACK launch=null departure=0 plan=null rocket=0 jobs=0 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+Five reconstructed Home maids: native slots retained, 2-per-batch wake, 16-tick worker blackout, 480-block creative transit, virtual thrust, zero fireworks, airborne handoff and closed sessions passed
+Pending order cancellation / same-UUID entity replacement close old sessions and providers passed
+Worker blackout exceeding 100 game ticks: bounded ground wait, no unsafe jump, no fallback, clean cancellation passed
+
+> Task :processResources
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyRemoteCometContracts
+Actual TLM BaubleItemHandler NBT, slot/binding restoration, progress and independent stacks passed (registered vanilla item stand-ins)
+Native constructor/load and production failed-transit, cancel, finite Home grace, logout/leave/stop cleanup bytecode contracts passed; no real chunk IO claimed
+
+> Task :verifyRemoteWake
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Remote wake lifecycle passed: two Home maids, second mission, 13-candidate batches, retry, generations, NBT rebuild, qualification, global cap and cleanup.
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyRemotePropulsion
+Home dispatch creative=false inventoryFireworks=0 wake=accepted transit=arrived glide=preserved
+Home dispatch creative=true inventoryFireworks=0 wake=accepted transit=arrived glide=preserved
+Remote normal/creative Home Riptide-only qualification, bounded wake, dry rejection, transit and glide handoff passed
+
+> Task :jarJar NO-SOURCE
+> Task :jar
+
+BUILD SUCCESSFUL in 16s
+10 actionable tasks: 8 executed, 2 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

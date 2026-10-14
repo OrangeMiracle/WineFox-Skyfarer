@@ -2,7 +2,17 @@
 
 ## 当前交付状态
 
-当前工程为 **0.7.4**，在本地 0.7.3 基础上完成彗星光效与掉落保护，没有回滚或覆盖既有飞控成果。仅编译、定向验证和打包，未执行全量 build/check/verify，未启动或自动安装 Minecraft。
+当前工程为 **0.7.5**，在本地 0.7.4 成果上修复永燃女仆远程唤醒后的赶路崩溃。仅编译、四项直接相关定向验证与打包，未运行全量 build/check/verify，未启动或安装 Minecraft。
+
+## 0.7.5 — 远程赶路起飞与重载生命周期（2026-10-13）
+
+- 先只读最新两份 crash report、latest/debug 日志，确认实际异常为 `NullPointerException`，`TransitFlight.tickFlight:71` 对空 `SurfaceLaunchPlanner.Plan` 调用 `yaw()`。日志中女仆已经加载、永燃已识别、订单已分配；不是据描述猜测 TLM 饰品初始化失败。
+- 用原生产代码离线复现相同堆栈后，修正空起飞结果的 pending/拒绝分流；连续地面规划等待最多 100 游戏 ticks，包含 Worker 停顿。失败走统一订单 cancel，关闭会话和 Provider、释放滚动票据或进入既有有限 Home 回收宽限，保留 200 tick 重试。
+- 同 UUID 新实体不复用旧 TransitFlight Source/Provider；虚拟跳跃切滑翔后重新捕获眼位、速度与姿态，再严格认证首个推力。后者由“已经到达但实际虚拟推力为零”的定向回归发现，不能冒充实机 NPE 的直接堆栈原因。
+- `compileJava`、RemoteComet、RemoteCometContracts、RemoteWake、RemotePropulsion、`jar` 通过。5 只重建 Home 女仆、每批 2 只、实际 Worker 16 tick 停顿与约 480 格赶路、永燃实际供力/零耗材、取消/替换/超时均通过；TLM 原生 handler NBT 与无永燃的激流路径通过。
+- 未改变来源优先级、Elytra 物理、碰撞检查或证书有效期，未禁止永燃参与远程命令。真实区块 IO/整合包事件与召回仍需实机；详见 [修复说明](REMOTE_WAKE_075.md) 和 [验证](VALIDATION.md)。中间失败记录保留。
+
+交付包：[winefox_skyfarer-1.21.1-0.7.5.jar](../build/libs/winefox_skyfarer-1.21.1-0.7.5.jar)，**663,334 bytes**；SHA-256 `D0ABB8B5432A900FAD9809131DBFF37CBDC561BFD38091E34146940FE37A269D`。版本元数据与 Manifest 均为 0.7.5，包含三处生产修复，JSON 资源可解析，不含回放/外部 API 夹具；[包校验](../tools/remote-comet-artifact-check.json)。
 
 ## 0.7.4 — 彗星 Fullbright 与圣物掉落保护（2026-10-13）
 

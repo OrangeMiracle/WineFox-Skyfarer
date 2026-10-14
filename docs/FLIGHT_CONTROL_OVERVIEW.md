@@ -4,7 +4,7 @@
 
 0.7.3 统一动力源权威仲裁，永燃独占推进、持续闭环速度保持和客户端双赤尾焰/气流环，见 [动力仲裁与持续控制](PROPULSION_073.md)。饰品与隐藏觉醒机制见 [彗星专题](COMET_HEARTS.md)。
 
-当前版本 **0.7.4**。航迹承诺、控制仲裁与延迟安全见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有推进边界见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
+当前版本 **0.7.5**。航迹承诺、控制仲裁与延迟安全见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有推进边界见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
 
 ## 导航
 
@@ -426,7 +426,9 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 赶路免费推进，不写女仆库存。普通赶路也遵守永燃独占/激流优先；允许烟花后备时生成显式 Flight 0 的附着烟花，仍按有限寿命、真实起飞/局部预测和安全通道移动；它不是整个世界的全局寻路器，普通 Glide 请求每约 5 ticks 刷新并做当前步 live 检查。交接销毁免费火箭、关闭赶路会话，速度长度超过 1.7 则缩到 1.7，再交 `acceptCommand(target)`。之后战斗使用真实库存和正常伤害规则。
 
-赶路失败关闭 transit，请求普通返航并设置 200 ticks 重试等待；创造女仆落地且目标仍远时可重新创建赶路控制器，不能一直保留“曾经已经到达”的状态。
+赶路失败走统一 cancel，移除订单并关闭 Provider/PlannerSession、释放滚动票据；离开 Home 范围的创造女仆沿用最多 200 ticks 的有限回收宽限。目标标记保留，200 ticks 冷却后允许重新分配。地面起飞结果为空时区分 pending 与真正无解，前者最多等 100 游戏 ticks（包括 Worker/Provider 等待），后者安全拒绝；均不能跳过认证或降级绕过永燃独占。该规划等待与初始票据 ready 等待分开计时。实体实例改变先关闭旧会话。
+
+虚拟推进从跳跃进入滑翔后，必须以新姿态的真实眼位/速度重新构造 State，再完成当前认证和 live 身体扫掠；不能沿用切姿态前的站立眼位。0.7.5 实机堆栈、回归证据及范围见 [远程唤醒修复](REMOTE_WAKE_075.md)。
 
 ### 10.2 创造高速赶路
 

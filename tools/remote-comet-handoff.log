@@ -1,0 +1,68 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyRemoteComet
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Rejected launch safely at tick 7: failure=NO_CERTIFIED_LAUNCH propulsion=NO_SAFE_VIRTUAL_PROPULSION;EXCLUSIVE_SOURCE_NO_FALLBACK launch=null departure=0 plan=null rocket=0 jobs=0 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=1 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=2 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=3 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=4 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=5 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=6 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=7 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=8 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=9 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=10 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=11 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=12 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=13 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=14 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=15 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=16 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=17 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=18 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=19 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=20 ground=true pushes=0 failure=NONE propulsion=VIRTUAL_CERTIFICATE_PENDING launch=null departure=0 plan=null rocket=0 jobs=1 source=COAST eligible=VIRTUAL_PROPULSION guided=false virtual=NONE duration=0 attached=false cooldown=0
+trace tick=21 ground=false pushes=0 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=VIRTUAL_PROPULSION eligible=VIRTUAL_PROPULSION guided=true virtual=VIRTUAL_JUMP_RESERVED duration=0 attached=false cooldown=0
+trace tick=22 ground=false pushes=1 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=VIRTUAL_PROPULSION eligible=VIRTUAL_PROPULSION guided=true virtual=VIRTUAL_PROPULSION duration=0 attached=false cooldown=0
+trace tick=23 ground=false pushes=2 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=VIRTUAL_PROPULSION eligible=VIRTUAL_PROPULSION guided=true virtual=VIRTUAL_PROPULSION duration=0 attached=false cooldown=0
+trace tick=24 ground=false pushes=3 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=VIRTUAL_PROPULSION eligible=VIRTUAL_PROPULSION guided=true virtual=VIRTUAL_PROPULSION duration=0 attached=false cooldown=0
+trace tick=25 ground=false pushes=4 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=VIRTUAL_PROPULSION eligible=VIRTUAL_PROPULSION guided=true virtual=VIRTUAL_PROPULSION duration=0 attached=false cooldown=0
+trace tick=26 ground=false pushes=5 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=VIRTUAL_PROPULSION eligible=VIRTUAL_PROPULSION guided=true virtual=VIRTUAL_PROPULSION duration=0 attached=false cooldown=0
+trace tick=27 ground=false pushes=6 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=VIRTUAL_PROPULSION eligible=VIRTUAL_PROPULSION guided=true virtual=VIRTUAL_PROPULSION duration=0 attached=false cooldown=0
+trace tick=28 ground=false pushes=7 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=VIRTUAL_PROPULSION eligible=VIRTUAL_PROPULSION guided=true virtual=VIRTUAL_PROPULSION duration=0 attached=false cooldown=0
+trace tick=29 ground=false pushes=8 failure=NONE propulsion=VIRTUAL_PROPULSION_ACCEPTED launch=null departure=0 plan=null rocket=0 jobs=0 source=VIRTUAL_PROPULSION eligible=VIRTUAL_PROPULSION guided=true virtual=VIRTUAL_PROPULSION duration=0 attached=false cooldown=0
+Five reconstructed Home maids: native slots retained, 2-per-batch wake, 16-tick worker blackout, 480-block creative transit, virtual thrust, zero fireworks, airborne handoff and closed sessions passed
+Pending order cancellation / same-UUID entity replacement close old sessions and providers passed
+Worker blackout exceeding 100 game ticks: bounded ground wait, no unsafe jump, no fallback, clean cancellation passed
+
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :processResources
+> Task :classes
+> Task :compileVerificationJava UP-TO-DATE
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses UP-TO-DATE
+
+> Task :verifyRemoteWake
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Remote wake lifecycle passed: two Home maids, second mission, 13-candidate batches, retry, generations, NBT rebuild, qualification, global cap and cleanup.
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyRemotePropulsion
+Home dispatch creative=false inventoryFireworks=0 wake=accepted transit=arrived glide=preserved
+Home dispatch creative=true inventoryFireworks=0 wake=accepted transit=arrived glide=preserved
+Remote normal/creative Home Riptide-only qualification, bounded wake, dry rejection, transit and glide handoff passed
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 12s
+8 actionable tasks: 6 executed, 2 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

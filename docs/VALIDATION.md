@@ -1,6 +1,20 @@
 # 验证、离线回放与构建
 
-当前版本 **0.7.4**。本次仅编译、打包与四项直接相关的定向验证，**未运行全量 build/check/verify，未启动 Minecraft**。旧版本结果保留为历史证据，不能替代当前版本全量验证。
+当前版本 **0.7.5**。本次仅编译、打包与四项远程唤醒直接相关验证，未运行全量 build/check/verify，未启动 Minecraft。旧版本结果仅作为历史证据。
+
+## 0.7.5 永燃远程唤醒
+
+[根因与回归边界](REMOTE_WAKE_075.md)、[真实异常摘录](../tools/remote-comet-crash-evidence.txt)、[最终定向运行日志](../tools/remote-comet-release.log)。
+
+- 先在未修改的生产代码复现 `NullPointerException / TransitFlight.tickFlight:71`；修复后无认证方案安全拒绝，PlannerSession 释放。
+- `verifyRemoteComet`：5 只重建的 Home 女仆每批 2 只，Worker 停顿 16 ticks 后完成约 480 格创造赶路与滑翔交接；永燃推力确实执行、普通饰品进度保留、零烟花/火箭/节能 RNG、无身体碰撞。另查 pending 取消、同 UUID 新实体及超过 100 ticks 的 Worker 阻塞退出。
+- `verifyRemoteCometContracts`：实际 TLM 饰品栏 NBT 往返与绑定缓存，槽位/进度独立保存；生产字节码确认失败→cancel→close/撤票或有限 Home 宽限，以及登出/离开/停服清理。
+- `verifyRemoteWake`：双 Home、第二次任务、13 候选分批、公平重试/generation/注册表 NBT/上限/清理。`verifyRemotePropulsion`：无永燃、无烟花的正常/创造 Home 激流赶路及干燥环境拒绝。
+- 保留 [原异常复现失败](../tools/remote-comet-reproduce.log)、[首次修复后推力缺失失败](../tools/remote-comet-directed.log)、[姿态诊断](../tools/remote-comet-trace.log) 与 [姿态修复后的回归](../tools/remote-comet-handoff.log)，未弱化“必须实际虚拟推进”的断言。
+
+TLM 持久化检查使用已注册原版物品代替 Mod ID；回放的实体重建、世界和票据后端为夹具，不能宣称实际 NeoForge 区块 IO/事件总线已端到端通过。真实卸载/召回、标记取消/登出后的区块回收与整合包兼容仍需实机复测。
+
+交付包：[winefox_skyfarer-1.21.1-0.7.5.jar](../build/libs/winefox_skyfarer-1.21.1-0.7.5.jar)，**663,334 bytes**；SHA-256 `D0ABB8B5432A900FAD9809131DBFF37CBDC561BFD38091E34146940FE37A269D`。版本元数据与 Manifest 均为 0.7.5，包含三处生产修复，JSON 资源可解析，不含回放/外部 API 夹具；[包校验](../tools/remote-comet-artifact-check.json)。
 
 ## 0.7.4 Fullbright 与圣物掉落
 

@@ -1,0 +1,37 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :compileControllerReplay
+
+> Task :verifyRemoteComet
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Rejected launch safely at tick 7: failure=NO_CERTIFIED_LAUNCH propulsion=NO_SAFE_VIRTUAL_PROPULSION;EXCLUSIVE_SOURCE_NO_FALLBACK launch=null departure=0 plan=null rocket=0 jobs=0
+
+Exception in thread "main" java.lang.AssertionError: virtual propulsion was never executed after reload
+	at dev.winefox.skyfarer.command.RemoteCometChecks.check(RemoteCometChecks.java:18)
+> Task :verifyRemoteComet FAILED
+	at dev.winefox.skyfarer.command.RemoteCometChecks.wakeBatch(RemoteCometChecks.java:96)
+
+	at dev.winefox.skyfarer.command.RemoteCometChecks.main(RemoteCometChecks.java:26)
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyRemoteComet'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 9s
+4 actionable tasks: 3 executed, 1 up-to-date

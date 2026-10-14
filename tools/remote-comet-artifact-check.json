@@ -1,0 +1,14 @@
+{
+  "artifact": "build/libs/winefox_skyfarer-1.21.1-0.7.5.jar",
+  "bytes": 663334,
+  "sha256": "D0ABB8B5432A900FAD9809131DBFF37CBDC561BFD38091E34146940FE37A269D",
+  "version": "0.7.5",
+  "required_classes": [
+    "dev/winefox/skyfarer/command/TransitFlight.class",
+    "dev/winefox/skyfarer/command/CommandManager.class",
+    "dev/winefox/skyfarer/compat/tlm/VirtualPropulsion.class"
+  ],
+  "forbidden_fixture_classes": [],
+  "resource_json": "all parsed",
+  "manifest": "Manifest-Version: 1.0\r\nImplementation-Version: 0.7.5\r\n\r\n"
+}

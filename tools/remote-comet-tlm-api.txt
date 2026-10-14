@@ -1,0 +1,182 @@
+Read-only javap -p -c excerpts from libs/touhoulittlemaid-1.5.3-neoforge+mc1.21.1.jar
+EntityMaid constructor / native bauble save-load / getter. Line numbers refer to the original complete javap output.
+Dynamic handler NBT checks: verifyRemoteCometContracts. No dependency JAR changed.
+
+...
+258:       64: aload_0
+259:       65: new           #373                // class com/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler
+260:       68: dup
+261:       69: bipush        30
+262:       71: invokespecial #376                // Method com/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler."<init>":(I)V
+263:       74: putfield      #378                // Field maidBauble:Lcom/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler;
+264:       77: aload_0
+265:       78: new           #380                // class net/neoforged/neoforge/items/ItemStackHandler
+266:       81: dup
+267:       82: iconst_1
+268:       83: invokespecial #381                // Method net/neoforged/neoforge/items/ItemStackHandler."<init>":(I)V
+269:       86: putfield      #383                // Field hideInv:Lnet/neoforged/neoforge/items/ItemStackHandler;
+270:       89: aload_0
+...
+871:       19: invokevirtual #1045               // Method com/github/tartaricacid/touhoulittlemaid/api/event/MaidTickEvent.isCanceled:()Z
+872:       22: ifne          43
+873:       25: aload_0
+874:       26: invokespecial #1047               // Method net/minecraft/world/entity/TamableAnimal.tick:()V
+875:       29: aload_0
+876:       30: getfield      #378                // Field maidBauble:Lcom/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler;
+877:       33: aload_0
+878:       34: invokedynamic #1066,  0           // InvokeDynamic #0:test:(Lcom/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid;)Ljava/util/function/BiPredicate;
+879:       39: invokevirtual #1070               // Method com/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler.fireEvent:(Ljava/util/function/BiPredicate;)Z
+880:       42: pop
+881:       43: invokestatic  #1075               // Method com/github/tartaricacid/touhoulittlemaid/compat/ysm/YsmCompat.isInstalled:()Z
+882:       46: ifeq          138
+883:       49: aload_0
+...
+1592:       83: getfield      #364                // Field handsInvWrapper:Lnet/neoforged/neoforge/items/wrapper/EntityHandsInvWrapper;
+1593:       86: aastore
+1594:       87: dup
+1595:       88: iconst_2
+1596:       89: aload_0
+1597:       90: getfield      #378                // Field maidBauble:Lcom/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler;
+1598:       93: aastore
+1599:       94: invokespecial #1632               // Method net/neoforged/neoforge/items/wrapper/CombinedInvWrapper."<init>":([Lnet/neoforged/neoforge/items/IItemHandlerModifiable;)V
+1600:       97: astore_3
+1601:       98: aload_0
+1602:       99: aload_3
+1603:      100: invokevirtual #1636               // Method getRandomItemWithMendingEnchantments:(Lnet/neoforged/neoforge/items/IItemHandler;)Lnet/minecraft/world/item/ItemStack;
+1604:      103: astore        4
+...
+1946:       22: invokevirtual #1815               // Method com/github/tartaricacid/touhoulittlemaid/api/event/MaidHurtTarget$Pre.isCanceled:()Z
+1947:       25: ifeq          30
+1948:       28: iconst_1
+1949:       29: ireturn
+1950:       30: aload_0
+1951:       31: getfield      #378                // Field maidBauble:Lcom/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler;
+1952:       34: aload_0
+1953:       35: aload_1
+1954:       36: invokedynamic #1823,  0           // InvokeDynamic #3:test:(Lcom/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid;Lnet/minecraft/world/entity/Entity;)Ljava/util/function/BiPredicate;
+1955:       41: invokevirtual #1070               // Method com/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler.fireEvent:(Ljava/util/function/BiPredicate;)Z
+1956:       44: pop
+1957:       45: aload_0
+1958:       46: aload_1
+...
+2348:      229: aload_3
+2349:      230: invokevirtual #2010               // Method net/neoforged/neoforge/common/damagesource/DamageContainer.getNewDamage:()F
+2350:      233: invokespecial #2073               // Method org/apache/commons/lang3/mutable/MutableFloat."<init>":(F)V
+2351:      236: astore        8
+2352:      238: aload_0
+2353:      239: getfield      #378                // Field maidBauble:Lcom/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler;
+2354:      242: aload_0
+2355:      243: aload_1
+2356:      244: aload         8
+2357:      246: invokedynamic #2081,  0           // InvokeDynamic #4:test:(Lcom/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid;Lnet/minecraft/world/damagesource/DamageSource;Lorg/apache/commons/lang3/mutable/MutableFloat;)Ljava/util/function/BiPredicate;
+2358:      251: invokevirtual #1070               // Method com/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler.fireEvent:(Ljava/util/function/BiPredicate;)Z
+2359:      254: istore        9
+2360:      256: aload         8
+...
+2491:       45: return
+2492: 
+2493:   public void die(net.minecraft.world.damagesource.DamageSource);
+2494:     Code:
+2495:        0: aload_0
+2496:        1: getfield      #378                // Field maidBauble:Lcom/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler;
+2497:        4: aload_0
+2498:        5: aload_1
+2499:        6: invokedynamic #2195,  0           // InvokeDynamic #5:test:(Lcom/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid;Lnet/minecraft/world/damagesource/DamageSource;)Ljava/util/function/BiPredicate;
+2500:       11: invokevirtual #1070               // Method com/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler.fireEvent:(Ljava/util/function/BiPredicate;)Z
+2501:       14: istore_2
+2502:       15: iload_2
+2503:       16: ifne          73
+...
+2836:        9: ifeq          44
+2837:       12: aload_3
+2838:       13: checkcast     #2407               // class com/github/tartaricacid/touhoulittlemaid/api/task/IRangedAttackTask
+2839:       16: astore        4
+2840:       18: aload_0
+2841:       19: getfield      #378                // Field maidBauble:Lcom/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler;
+2842:       22: aload_0
+2843:       23: aload         4
+2844:       25: invokedynamic #2415,  0           // InvokeDynamic #6:test:(Lcom/github/tartaricacid/touhoulittlemaid/entity/passive/EntityMaid;Lcom/github/tartaricacid/touhoulittlemaid/api/task/IRangedAttackTask;)Ljava/util/function/BiPredicate;
+2845:       30: invokevirtual #1070               // Method com/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler.fireEvent:(Ljava/util/function/BiPredicate;)Z
+2846:       33: pop
+2847:       34: aload         4
+2848:       36: aload_0
+...
+3472:      152: invokevirtual #2630               // Method registryAccess:()Lnet/minecraft/core/RegistryAccess;
+3473:      155: invokevirtual #2665               // Method net/neoforged/neoforge/items/ItemStackHandler.serializeNBT:(Lnet/minecraft/core/HolderLookup$Provider;)Lnet/minecraft/nbt/CompoundTag;
+3474:      158: invokevirtual #2658               // Method net/minecraft/nbt/CompoundTag.put:(Ljava/lang/String;Lnet/minecraft/nbt/Tag;)Lnet/minecraft/nbt/Tag;
+3475:      161: pop
+3476:      162: aload_1
+3477:      163: ldc           #172                // String MaidBaubleInventory
+3478:      165: aload_0
+3479:      166: getfield      #378                // Field maidBauble:Lcom/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler;
+3480:      169: aload_0
+3481:      170: invokevirtual #2630               // Method registryAccess:()Lnet/minecraft/core/RegistryAccess;
+3482:      173: invokevirtual #2666               // Method com/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler.serializeNBT:(Lnet/minecraft/core/HolderLookup$Provider;)Lnet/minecraft/nbt/CompoundTag;
+3483:      176: invokevirtual #2658               // Method net/minecraft/nbt/CompoundTag.put:(Ljava/lang/String;Lnet/minecraft/nbt/Tag;)Lnet/minecraft/nbt/Tag;
+3484:      179: pop
+3485:      180: aload_1
+3486:      181: ldc           #175                // String MaidHideInventory
+...
+3794:      411: aload_1
+3795:      412: ldc           #169                // String MaidInventory
+3796:      414: invokevirtual #2745               // Method net/minecraft/nbt/CompoundTag.getCompound:(Ljava/lang/String;)Lnet/minecraft/nbt/CompoundTag;
+3797:      417: invokevirtual #2806               // Method net/neoforged/neoforge/items/ItemStackHandler.deserializeNBT:(Lnet/minecraft/core/HolderLookup$Provider;Lnet/minecraft/nbt/CompoundTag;)V
+3798:      420: aload_1
+3799:      421: ldc           #172                // String MaidBaubleInventory
+3800:      423: bipush        10
+3801:      425: invokevirtual #2711               // Method net/minecraft/nbt/CompoundTag.contains:(Ljava/lang/String;I)Z
+3802:      428: ifeq          484
+3803:      431: aload_1
+3804:      432: ldc           #172                // String MaidBaubleInventory
+3805:      434: invokevirtual #2745               // Method net/minecraft/nbt/CompoundTag.getCompound:(Ljava/lang/String;)Lnet/minecraft/nbt/CompoundTag;
+3806:      437: astore_2
+3807:      438: aload_2
+3808:      439: ldc_w         #2808               // String Size
+3809:      442: iconst_3
+3810:      443: invokevirtual #2711               // Method net/minecraft/nbt/CompoundTag.contains:(Ljava/lang/String;I)Z
+3811:      446: ifeq          472
+...
+3819:      463: aload_2
+3820:      464: ldc_w         #2808               // String Size
+3821:      467: bipush        30
+3822:      469: invokevirtual #2638               // Method net/minecraft/nbt/CompoundTag.putInt:(Ljava/lang/String;I)V
+3823:      472: aload_0
+3824:      473: getfield      #378                // Field maidBauble:Lcom/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler;
+3825:      476: aload_0
+3826:      477: invokevirtual #2630               // Method registryAccess:()Lnet/minecraft/core/RegistryAccess;
+3827:      480: aload_2
+3828:      481: invokevirtual #2809               // Method com/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler.deserializeNBT:(Lnet/minecraft/core/HolderLookup$Provider;Lnet/minecraft/nbt/CompoundTag;)V
+3829:      484: aload_1
+3830:      485: ldc           #175                // String MaidHideInventory
+3831:      487: bipush        10
+...
+4158:      160: getfield      #371                // Field maidInv:Lnet/neoforged/neoforge/items/ItemStackHandler;
+4159:      163: aastore
+4160:      164: dup
+4161:      165: iconst_3
+4162:      166: aload_0
+4163:      167: getfield      #378                // Field maidBauble:Lcom/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler;
+4164:      170: aastore
+4165:      171: dup
+4166:      172: iconst_4
+4167:      173: aload_0
+4168:      174: getfield      #383                // Field hideInv:Lnet/neoforged/neoforge/items/ItemStackHandler;
+4169:      177: aastore
+4170:      178: dup
+...
+5890:     Code:
+5891:        0: aload_0
+5892:        1: getfield      #359                // Field armorInvWrapper:Lnet/neoforged/neoforge/items/wrapper/EntityArmorInvWrapper;
+5893:        4: areturn
+5894: 
+5895:   public com.github.tartaricacid.touhoulittlemaid.inventory.handler.BaubleItemHandler getMaidBauble();
+5896:     Code:
+5897:        0: aload_0
+5898:        1: getfield      #378                // Field maidBauble:Lcom/github/tartaricacid/touhoulittlemaid/inventory/handler/BaubleItemHandler;
+5899:        4: areturn
+5900: 
+5901:   public net.neoforged.neoforge.items.wrapper.CombinedInvWrapper getAllInv();
+5902:     Code:
+5903:        0: new           #1627               // class net/neoforged/neoforge/items/wrapper/CombinedInvWrapper
+5904:        3: dup
+5905:        4: iconst_4
