@@ -1,6 +1,8 @@
 # 异步规划与线程边界
 
-当前版本 **0.7.1**。执行承诺与有限证明见 [航迹连续性](TRAJECTORY_CONTINUITY.md)，既有推进边界见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
+0.7.3 统一动力源权威仲裁，永燃独占推进、持续闭环速度保持和客户端双赤尾焰/气流环，见 [动力仲裁与持续控制](PROPULSION_073.md)。饰品与隐藏觉醒机制见 [彗星专题](COMET_HEARTS.md)。
+
+当前版本 **0.7.4**。执行承诺与有限证明见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有推进边界见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
 
 ## 1. 当前架构
 
@@ -58,7 +60,7 @@
 | `Chain` | 主攻击接触预测或次要目标二段追击 | 数值接触状态 / 追击计划；实体筛选和实际目标引用仍在主线程 |
 | `Sweep` | 无 path 时生成连续转弯候选；有 path 时回放当前曲线跟踪 | `Search(Selection, counts)` 或 `Rollout`；命中段射线查询数值碰撞盒。`ignition` 冻结拟点火条件，Worker 内追加首 tick 等待；候选仍需 Rejoin 的完整寿命认证 |
 | `SweepPulse` | 将一枚火箭所有 12 种随机寿命在一个任务中评估 | 任一寿命不安全/不能命中则不可行，否则按平均成本及推进时长评分；避免每种寿命分别排队造成饥饿 |
-| `Propulsion` | 带 Phase 的激流需求，READY 后的最短安全时长及完整路线 | 数值 strength、wet、Demand；主线程重验并由提供器执行，worker 无装备/实体引用 |
+| `Propulsion` | 带 Phase 的激流或虚拟需求，有限安全时长及完整路线 | 数值 source 模式、strength、wet、Demand；来源独占变化使旧任务失效，主线程重验并执行，worker 无装备/实体引用 |
 | `Emergency` | 六个滑翔候选优先，最多三种库存 duration 的全寿命逃逸；已有火箭不叠加 | 提案必须经当前状态和已有 snapshot cells 重验 |
 | `LaunchAttack` | 同战略层最多四个目标，每目标 27 条起飞攻击曲线、全寿命与 Strike→Exit | UUID/姿态/Path 提案，地面预热及离地 Rejoin 最终决定 |
 | `Rejoin` | 用当前运动状态重新验证候选曲线接入；可选择增加出口净空和经验证的库存火箭 | `RejoinResult`；`duration=-1` 表示不新增火箭；此后仍由主线程实际点火 |

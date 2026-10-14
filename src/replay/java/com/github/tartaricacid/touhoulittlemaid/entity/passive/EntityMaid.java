@@ -5,6 +5,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.BlockPos;
 import dev.winefox.skyfarer.replay.ReplayWorld;
 public class EntityMaid extends LivingEntity implements dev.winefox.skyfarer.mixin.LivingRiptideAccessor {
+ public final net.neoforged.neoforge.items.ItemStackHandler baubles=new net.neoforged.neoforge.items.ItemStackHandler(2);
+ public net.neoforged.neoforge.items.ItemStackHandler getMaidBauble(){return baubles;}
+ public final CountingRandom random=new CountingRandom();public CountingRandom getRandom(){return random;}
+ public static class CountingRandom extends java.util.Random {public int draws;@Override public double nextDouble(){return ((draws++)%100+.5)/100;}}
  public net.minecraft.nbt.CompoundTag persistent=new net.minecraft.nbt.CompoundTag();public net.minecraft.nbt.CompoundTag getPersistentData(){return persistent;}
  public java.util.UUID getOwnerUUID(){return owner==null?null:owner.getUUID();}
  public ItemStack chest=new ItemStack(net.minecraft.world.item.Items.ELYTRA);public ItemStack getItemBySlot(Object slot){return chest;}
@@ -56,6 +60,7 @@ public class EntityMaid extends LivingEntity implements dev.winefox.skyfarer.mix
  public static class Swim {boolean value;public boolean wantToSwim(){return value;}public void setWantToSwim(boolean v){value=v;}}
  public static class Inventory {
   public int count=64,duration=1,consumed;
+  public void setStackInSlot(int i,ItemStack stack){consumed-=stack.getCount()-count;count=stack.getCount();duration=stack.duration;}
   public int getSlots(){return 1;} public ItemStack getStackInSlot(int i){return new ItemStack(count,duration,false);}
   public ItemStack extractItem(int i,int n,boolean simulate){int take=Math.min(n,count);if(!simulate){count-=take;consumed+=take;}return new ItemStack(take,duration,false);}
  }

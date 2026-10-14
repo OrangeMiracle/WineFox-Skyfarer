@@ -17,6 +17,7 @@ final class FireworkProvider {
     private String review = "not_requested";
     void begin(EntityMaid maid){candidates=transit?List.of(0):FireworkManager.durations(maid);candidateTick=maid.level().getGameTime();}
     List<Integer> durations(EntityMaid maid) {
+        if(!PropulsionResolver.permits(maid,PropulsionDemand.Source.FIREWORK))return List.of();
         if(transit)return List.of(0);
         if(candidateTick!=maid.level().getGameTime())begin(maid);
         return candidates; // Speculative only. Execution always checks/extracts the live stack again.

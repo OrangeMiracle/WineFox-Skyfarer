@@ -1,0 +1,49 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :compileControllerReplay
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyCometContracts
+Native slot lookup, non-stacking, Skyfarer scope, 1000 successful launches / 600 savings and rejected-launch RNG checks passed
+Production evolution transactions: true source, duplicate death, transferred progress, 63/64 boundary, weather/removal, repeated lightning, shared TNT and owner entitlement passed
+virtual TAKEOFF acceleration=0.1 duration=20
+virtual APPROACH acceleration=0.04 duration=18
+virtual REPOSITION acceleration=0.04 duration=18
+virtual EXIT acceleration=0.04 duration=18
+virtual AIR_RECOVERY acceleration=0.04 duration=18
+virtual EMERGENCY acceleration=0.1 duration=7
+virtual TRANSIT acceleration=0.04 duration=18
+Moving strike/exit, deadline failure, swept collision rejection and continuous speed taper passed
+Actual provider: certified pulse and recovery, one force/tick, no rockets/trident wear, bounded cutoff passed
+Equipment removal, higher-priority steering and a new live obstacle immediately stop virtual thrust while retaining inertia
+Eight virtual-equipped maids obtained certified schedules within shared worker/capture bounds; zero propulsion entities
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyCometData
+Actual ItemStack codec persistence/copy, namespaced components, bounded count, SavedData reload/deduplication, native dependency hook descriptors and loot/advancement resources passed
+
+> Task :verifyArchitecture
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+0.7 architecture: provider-free upper control, closed worker DTOs, dead config/state removal and live config retention passed.
+
+> Task :jarJar NO-SOURCE
+> Task :jar
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 14s
+9 actionable tasks: 7 executed, 2 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

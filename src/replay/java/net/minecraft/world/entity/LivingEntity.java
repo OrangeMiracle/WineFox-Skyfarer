@@ -2,7 +2,9 @@ package net.minecraft.world.entity;
 import net.minecraft.world.phys.*;
 import net.minecraft.world.item.ItemStack;
 import dev.winefox.skyfarer.replay.ReplayWorld;
-public class LivingEntity {
+public class LivingEntity extends Entity {
+ public final net.minecraft.nbt.CompoundTag data=new net.minecraft.nbt.CompoundTag();public net.minecraft.nbt.CompoundTag getPersistentData(){return data;}
+ public boolean isDeadOrDying(){return !alive;}
  public ReplayWorld world; public Vec3 pos=Vec3.ZERO,velocity=Vec3.ZERO; public float yaw,pitch,yBodyRot; public boolean alive=true,ground=true,hostile=true;
  public int usedTicks; public boolean using; public float width=.6f,height=1.8f; public java.util.UUID id=java.util.UUID.randomUUID();
  public final ItemStack weapon=new ItemStack(1,0,true);

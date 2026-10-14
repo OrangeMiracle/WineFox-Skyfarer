@@ -1,0 +1,48 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :compileControllerReplay
+
+> Task :verifyPropulsionAuthority
+Every phase: exclusive virtual source survives pending/timeout/emergency; legacy firework ports denied, no resources or RNG
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Live source change cancels old execution; spawn callback cannot consume after exclusive equipment appears
+700-tick cruise/turn/climb: speed=1.2415783374688794..1.250613839634615 heightError=0.24056096351540646 powered=700 maxForce=0.02500000037252903
+Actual provider speed hold: powered=219/220 minSpeed=1.1897820114612578 heightError=0.06974471454014974
+Actual impulse visual gate: onset/increase/restart rings=3, packets=49/200 ticks, stop and same-tick dedup passed
+Native slot lookup, non-stacking, Skyfarer scope, 1000 successful launches / 600 savings and rejected-launch RNG checks passed
+actual emergency glide=unsolvable Riptide=7 thrustTicks completed=true rockets=0
+Eight virtual-equipped maids obtained certified schedules within shared worker/capture bounds; zero propulsion entities
+Source authority, continuous control, source switching, effects and compatibility passed
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyCometContracts
+Native slot lookup, non-stacking, Skyfarer scope, 1000 successful launches / 600 savings and rejected-launch RNG checks passed
+Kill evolution: confirmed source, duplicate death, transferred stack progress and owner entitlement passed
+virtual TAKEOFF acceleration=0.1 duration=20
+virtual APPROACH acceleration=0.04 duration=18
+virtual REPOSITION acceleration=0.04 duration=18
+virtual EXIT acceleration=0.04 duration=18
+virtual AIR_RECOVERY acceleration=0.04 duration=18
+virtual EMERGENCY acceleration=0.1 duration=7
+virtual TRANSIT acceleration=0.04 duration=18
+Moving strike/exit, deadline failure, swept collision rejection and continuous speed taper passed
+Actual provider: certified pulse and recovery, one force/tick, no rockets/trident wear, bounded cutoff passed
+Equipment removal, higher-priority steering and a new live obstacle immediately stop virtual thrust while retaining inertia
+Eight virtual-equipped maids obtained certified schedules within shared worker/capture bounds; zero propulsion entities
+
+> Task :processResources
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyArchitecture
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+0.7 architecture: provider-free upper control, closed worker DTOs, dead config/state removal and live config retention passed.
+
+BUILD SUCCESSFUL in 12s
+8 actionable tasks: 6 executed, 2 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

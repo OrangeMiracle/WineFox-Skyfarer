@@ -1,6 +1,10 @@
-# WineFox: Skyfarer 0.7.1 工程总索引
+# WineFox: Skyfarer 0.7.4 工程总索引
 
-当前航迹执行、控制仲裁、有限证明与延迟避障见 [航迹连续性](TRAJECTORY_CONTINUITY.md)。已有推进边界和配置迁移见 [0.7.0 审计](ARCHITECTURE_070.md)，本轮定向验证证据见 [验证](VALIDATION.md)。版本化专题是历史证据；当前规则以本索引和源码为准。
+0.7.4 增加 Fullbright 双尾焰/气流环、统一圣物掉落免疫与原版彩色 Glowing，见 [彗星光效与掉落保护](COMET_RADIANCE_074.md)。
+
+0.7.3 统一动力源权威仲裁，永燃独占推进、持续闭环速度保持和客户端双赤尾焰/气流环，见 [动力仲裁与持续控制](PROPULSION_073.md)。饰品与隐藏觉醒机制见 [彗星专题](COMET_HEARTS.md)。
+
+当前航迹执行、控制仲裁、有限证明与延迟避障见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)。已有推进边界和配置迁移见 [0.7.0 审计](ARCHITECTURE_070.md)，本轮定向验证证据见 [验证](VALIDATION.md)。版本化专题是历史证据；当前规则以本索引和源码为准。
 
 ## 先读：长期维护规则
 
@@ -20,16 +24,16 @@
 2. 涉及飞控、攻击或状态机，再读 [FLIGHT_CONTROL_OVERVIEW](FLIGHT_CONTROL_OVERVIEW.md)；物理公式、采集生命周期和完整路线认证见 [VANILLA_PHYSICS](VANILLA_PHYSICS.md)。
 3. 涉及 Snapshot、Worker、Planner、缓存或性能，再读 [ASYNC_PLANNING](ASYNC_PLANNING.md)。
 4. 涉及参数、命令、指挥镜、HUD 或兼容层，再读 [CONFIG_DEBUG_REFERENCE](CONFIG_DEBUG_REFERENCE.md)；验证与复现看 [VALIDATION](VALIDATION.md)。
-5. 需要历史原因，再查 [buildHistory](../buildHistory.md)。历史章节描述当时版本，不是当前规范。
+5. 需要历史原因，再查 [buildHistory](buildHistory.md)。历史章节描述当时版本，不是当前规范。
 6. 真正修改前，仍必须检查对应源码及调用者；完成修改后同步检查并更新相关 `docs/`。
 
-当前开发约定：**不在工作目录安装或启动 Minecraft**。编译与离线验证由开发会话执行，游戏内行为由用户手动测试。构建与更新报告写入 `buildHistory.md`；没有运行的验证不得写成“已通过”。不修改依赖 Mod 的 Jar 来实现本项目行为。
+当前开发约定：**不在工作目录安装或启动 Minecraft**。编译与离线验证由开发会话执行，游戏内行为由用户手动测试。构建与更新报告写入 `docs/buildHistory.md`；没有运行的验证不得写成“已通过”。不修改依赖 Mod 的 Jar 来实现本项目行为。
 
 ## 1. 项目定位与版本事实
 
-当前版本 **0.7.1**，在当前本地 0.7.0 成果上继续修改；Minecraft 1.21.1 / NeoForge 21.1.250 / TLM 1.5.3 / Spears 1.8.0。Gradle 与 Mod 元数据一致，无 Funnel，无 Cataclysm 硬依赖。
+当前版本 **0.7.4**，在当前本地 0.7.3 成果上继续修改；Minecraft 1.21.1 / NeoForge 21.1.250 / TLM 1.5.3 / Spears 1.8.0。Gradle 与 Mod 元数据一致，无 Funnel，无 Cataclysm 硬依赖。
 
-长矛可启用工作模式；起飞需真正可滑翔的合格鞘翅及可用推进或已认证的无推进路线。Unbreakable 不触发低耐久，正常可损坏鞘翅采用剩余 20 门槛。低耐久可换备用；否则空中返航、落地普通左键战斗。远程资格允许合法激流或烟花。
+长矛可启用工作模式；起飞需真正可滑翔的合格鞘翅及可用推进或已认证的无推进路线。Unbreakable 不触发低耐久，正常可损坏鞘翅采用剩余 20 门槛。低耐久可换备用；否则空中返航、落地普通左键战斗。远程资格允许永燃之心、合法激流或烟花。
 
 ## 2. 当前已存在的功能
 
@@ -46,7 +50,7 @@
 | 调试棒 `debug_stick` | 多女仆绑定，左右方向键切 HUD，卸载保留最后数据；远程列表、所有者筛选及权限控制的双向传送；当前女仆亮绿色透视框、多只女仆同时预测线 |
 | 渲染 / 可选模型 | TLM 飞行与持矛姿态适配、YSM 可选接口接入和回退；模型是否提供相应动画/附件决定最终外观，不能把接口检查当成所有模型的视觉保证 |
 
-四个物品在工具与实用物品创造分类注册；当前资源目录没有合成配方。命令、限制与可视化图例详见 [配置与调试参考](CONFIG_DEBUG_REFERENCE.md)。
+六个物品在工具与实用物品创造分类注册；当前资源目录没有合成配方。命令、限制与可视化图例详见 [配置与调试参考](CONFIG_DEBUG_REFERENCE.md)。
 
 ## 3. 总体架构与调用入口
 
@@ -89,7 +93,7 @@ Java 包根为 `src/main/java/dev/winefox/skyfarer/`。目录名称不能直接�
 | [`mixin/`](../src/main/java/dev/winefox/skyfarer/mixin/) | 精确接入 MC/TLM/Spears 的移动、姿态、友伤、蓄力、Home 回收和数据访问；`ysm/` 子包接可选客户端接口。更改目标签名必须核对当前依赖字节码 |
 | [`config/`](../src/main/java/dev/winefox/skyfarer/config/) | 参数目录、SERVER 配置、在线覆盖与 revision；参数增删时同步命令、相关 DTO、文档与验证 |
 | [`item/`](../src/main/java/dev/winefox/skyfarer/item/) | 遥控器、调试棒、两种望远镜的物品入口；复杂服务端行为转交 runtime / command |
-| [`network/`](../src/main/java/dev/winefox/skyfarer/network/) | 有类型的 Payload 与协议注册（当前 registrar `"3"`）；UI 提交必须再次服务端校验，不能相信客户端传来的 UUID/所有者/任务资格 |
+| [`network/`](../src/main/java/dev/winefox/skyfarer/network/) | 有类型的 Payload 与协议注册（当前 registrar `"4"`）；UI 提交必须再次服务端校验，不能相信客户端传来的 UUID/所有者/任务资格 |
 | [`client/`](../src/main/java/dev/winefox/skyfarer/client/) | 客户端按键、指挥输入、动画；`gui/` 管理面板，`debug/` HUD 与世界线框；只消费服务端调试数据，不规划战斗 |
 | [`src/main/resources/`](../src/main/resources/) | Mod 元数据、common/client/可选 YSM mixin 清单、语言和物品模型；资源与协议/版本变动要一起核对 |
 | [`src/verification/`](../src/verification/) | 数学、策略、兼容字节码等独立离线断言；不进入交付 Jar |
@@ -98,7 +102,7 @@ Java 包根为 `src/main/java/dev/winefox/skyfarer/`。目录名称不能直接�
 | [`libs/`](../libs/) | 本机必需依赖 Jar，被 `.gitignore` 忽略；新机器要确认这些文件存在 |
 | [`docs/`](./) | 当前工程知识；本索引分配各技术主题的维护位置 |
 | `build/`、`.gradle/` | 生成物、回放报告和构建缓存；不是事实维护入口。`build/libs` 交付 Jar，`build/reports/controller-replay` 放逐 tick 记录 |
-| [`README.md`](../README.md)、[`buildHistory.md`](../buildHistory.md) | 分别为玩家/普通开发者入口和按版本记录的证据；不可代替当前技术文档 |
+| [`README.md`](../README.md)、[`buildHistory.md`](buildHistory.md) | 分别为玩家/普通开发者入口和按版本记录的证据；不可代替当前技术文档 |
 
 ## 5. 关键类与生命周期
 
@@ -123,7 +127,7 @@ Java 包根为 `src/main/java/dev/winefox/skyfarer/`。目录名称不能直接�
 | [VanillaElytra](../src/main/java/dev/winefox/skyfarer/flight/VanillaElytra.java) / [PhysicsContext](../src/main/java/dev/winefox/skyfarer/flight/PhysicsContext.java) / [PhysicsProvider](../src/main/java/dev/winefox/skyfarer/flight/PhysicsProvider.java) | 1.21.1 mapped 源码自由飞行公式；gravity/缓降冻结 DTO；实体/Level 身份绑定采集 | Provider 只在主线程；step 只读 DTO，不发明空气阻力属性 |
 | [EnergyReserveEnvelope](../src/main/java/dev/winefox/skyfarer/flight/EnergyReserveEnvelope.java) | Approach→Strike→Exit 每步未来需求与最差 reserve | Worker 中的评分/补能指标；普通 AttackCertificate 和曲线 Rejoin 的动力学认证拥有最终否决权 |
 | [SweepingAttackPlanner](../src/main/java/dev/winefox/skyfarer/flight/SweepingAttackPlanner.java) | 当前动量、接触方向、目标 → C1 连续入口/离场曲线与闭环回放 | 候选/评分/接入重验证在 Worker；当前曲线指令与进度判断是主线程轻量跟踪 |
-| [FlightPropulsion](../src/main/java/dev/winefox/skyfarer/compat/tlm/FlightPropulsion.java) | Demand/Route → 统一选择、认证与执行控制权 | 主线程；Riptide 与 Firework 各守自身生命周期，Transit 共享执行边界 |
+| [FlightPropulsion](../src/main/java/dev/winefox/skyfarer/compat/tlm/FlightPropulsion.java) | Demand/Route → 统一选择、认证与执行控制权 | 主线程；Resolver 权威选择，Virtual/Riptide/Firework 各守生命周期，Transit 共享边界 |
 | [LandingApproach](../src/main/java/dev/winefox/skyfarer/flight/LandingApproach.java) / [PropulsionRoute](../src/main/java/dev/winefox/skyfarer/flight/PropulsionRoute.java) | 最终下降触地认证 / Turn、Curve、Glide 需求形状 | 前者有界检查身体和支撑；后者为不可变数值需求，不含 Entity/Level |
 | [HeadingController](../src/main/java/dev/winefox/skyfarer/flight/HeadingController.java) / [FireworkManager](../src/main/java/dev/winefox/skyfarer/flight/FireworkManager.java) | 规划姿态 / 已验证寿命代价和背包 → 朝向 / 实际火箭及消耗 | 主线程；前者每 tick 起始姿态避免多次指令累加转向，后者每控制器维护活动火箭与冷却 |
 | [CommandManager](../src/main/java/dev/winefox/skyfarer/command/CommandManager.java) | 玩家标记、女仆记录、目标与区域 → 分配、赶路、战斗交接、回收 | 主线程服务；玩家退出/死亡/卸载/关服对应清理；不按所有女仆机械选列表第一项 |
@@ -213,7 +217,7 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 - 世界调试：红色目标线、蓝色引导、黄色身体预测通道、绿色入口方块与方向、青绿色拟合曲线；当前 HUD 女仆亮绿色粗透视框。不同线表示不同数据，不能用蓝色单一 waypoint 代替完整预测轨迹。
 - 指挥目标标记：普通亮红橙、创造亮紫，角框 + `▼` + 序号；穿墙简化，只有标记者可见。它和调试棒的女仆选择框是独立系统。
 - 入口命令：`./gradlew.bat build` 触发 `check` 及 44 项 verify；另有独立 `verifyTrajectoryStress` 压力诊断。0.7.1 按本次要求只运行定向验证，未运行全量；只编译可用 `classes`。当前环境包装脚本为 `tools/build.ps1`，参数和限制见 [验证文档](VALIDATION.md)。
-- 完整验证包括 21 个控制器生命周期、2 个特殊攻击入口、2 个镜像山腰、7 个赶路生命周期，以及物理差分与包络验证；本轮实际结果与日志见 [buildHistory](../buildHistory.md)。离线通过不是对任意世界/模组组合的全覆盖证明。
+- 完整验证包括 21 个控制器生命周期、2 个特殊攻击入口、2 个镜像山腰、7 个赶路生命周期，以及物理差分与包络验证；本轮实际结果与日志见 [buildHistory](buildHistory.md)。离线通过不是对任意世界/模组组合的全覆盖证明。
 
 ## 10. 当前开发状态与限制
 

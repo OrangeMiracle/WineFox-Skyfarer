@@ -1,0 +1,101 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :compileControllerReplay FAILED
+F:\AI\AI_Project\骑空士酒狐\src\replay\java\dev\winefox\skyfarer\replay\CometChecks.java:116: 错误: 找不到符号
+        maid.baubles.setStackInSlot(0,eternal());maid.inventory.count=mixed?64:0;
+                                                                      ^
+  符号:   变量 mixed
+  位置: 类 CometChecks
+F:\AI\AI_Project\骑空士酒狐\src\replay\java\dev\winefox\skyfarer\replay\CometChecks.java:117: 错误: 找不到符号
+        if(mixed){maid.baubles.setStackInSlot(1,ordinary());maid.rain=true;maid.offhand=new ItemStack(Items.TRIDENT);maid.offhand.strength=3;}
+           ^
+  符号:   变量 mixed
+  位置: 类 CometChecks
+F:\AI\AI_Project\骑空士酒狐\src\replay\java\dev\winefox\skyfarer\replay\CometChecks.java:144: 错误: 找不到符号
+            java.nio.file.Files.write(dir.resolve((mixed?"authority-":"virtual-")+delayed+".tsv"),rows);java.nio.file.Files.write(dir.resolve((mixed?"authority-":"virtual-")+delayed+".events.log"),ReplayWorld.events);
+                                                   ^
+  符号:   变量 mixed
+  位置: 类 CometChecks
+F:\AI\AI_Project\骑空士酒狐\src\replay\java\dev\winefox\skyfarer\replay\CometChecks.java:144: 错误: 找不到符号
+            java.nio.file.Files.write(dir.resolve((mixed?"authority-":"virtual-")+delayed+".tsv"),rows);java.nio.file.Files.write(dir.resolve((mixed?"authority-":"virtual-")+delayed+".events.log"),ReplayWorld.events);
+                                                                                                                                               ^
+  符号:   变量 mixed
+  位置: 类 CometChecks
+F:\AI\AI_Project\骑空士酒狐\src\replay\java\dev\winefox\skyfarer\replay\CometChecks.java:147: 错误: 找不到符号
+        String summary="virtual controller mixed="+mixed+" delayed="+delayed+" guidedTicks="+virtualTicks+" hit="+hit+" exit="+complete+" collision="+collision+" hold="+heldAt;
+                                                   ^
+  符号:   变量 mixed
+  位置: 类 CometChecks
+F:\AI\AI_Project\骑空士酒狐\src\replay\java\dev\winefox\skyfarer\replay\PropulsionAuthorityChecks.java:13: 错误: 无法将类 CometChecks中的方法 replay应用到给定类型;
+        if(args.length>0&&args[0].equals("replay")){CometChecks.replay(false,true);CometChecks.replay(true,true);PlannerSession.stop();return;}
+                                                               ^
+  需要: boolean
+  找到:    boolean,boolean
+  原因: 实际参数列表和形式参数列表长度不同
+F:\AI\AI_Project\骑空士酒狐\src\replay\java\dev\winefox\skyfarer\replay\PropulsionAuthorityChecks.java:13: 错误: 无法将类 CometChecks中的方法 replay应用到给定类型;
+        if(args.length>0&&args[0].equals("replay")){CometChecks.replay(false,true);CometChecks.replay(true,true);PlannerSession.stop();return;}
+                                                                                              ^
+  需要: boolean
+  找到:    boolean,boolean
+  原因: 实际参数列表和形式参数列表长度不同
+7 个错误
+
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileControllerReplay'.
+> Compilation failed; see the compiler output below.
+  F:\AI\AI_Project\骑空士酒狐\src\replay\java\dev\winefox\skyfarer\replay\PropulsionAuthorityChecks.java:13: 错误: 无法将类 CometChecks中的方法 replay应用到给定类型;
+          if(args.length>0&&args[0].equals("replay")){CometChecks.replay(false,true);CometChecks.replay(true,true);PlannerSession.stop();return;}
+                                                                 ^
+    需要: boolean
+    找到:    boolean,boolean
+    原因: 实际参数列表和形式参数列表长度不同
+  F:\AI\AI_Project\骑空士酒狐\src\replay\java\dev\winefox\skyfarer\replay\PropulsionAuthorityChecks.java:13: 错误: 无法将类 CometChecks中的方法 replay应用到给定类型;
+          if(args.length>0&&args[0].equals("replay")){CometChecks.replay(false,true);CometChecks.replay(true,true);PlannerSession.stop();return;}
+                                                                                                ^
+    需要: boolean
+    找到:    boolean,boolean
+    原因: 实际参数列表和形式参数列表长度不同
+  F:\AI\AI_Project\骑空士酒狐\src\replay\java\dev\winefox\skyfarer\replay\CometChecks.java:116: 错误: 找不到符号
+          maid.baubles.setStackInSlot(0,eternal());maid.inventory.count=mixed?64:0;
+                                                                        ^
+    符号:   变量 mixed
+    位置: 类 CometChecks
+  F:\AI\AI_Project\骑空士酒狐\src\replay\java\dev\winefox\skyfarer\replay\CometChecks.java:117: 错误: 找不到符号
+          if(mixed){maid.baubles.setStackInSlot(1,ordinary());maid.rain=true;maid.offhand=new ItemStack(Items.TRIDENT);maid.offhand.strength=3;}
+             ^
+    符号:   变量 mixed
+    位置: 类 CometChecks
+  F:\AI\AI_Project\骑空士酒狐\src\replay\java\dev\winefox\skyfarer\replay\CometChecks.java:144: 错误: 找不到符号
+              java.nio.file.Files.write(dir.resolve((mixed?"authority-":"virtual-")+delayed+".tsv"),rows);java.nio.file.Files.write(dir.resolve((mixed?"authority-":"virtual-")+delayed+".events.log"),ReplayWorld.events);
+                                                     ^
+    符号:   变量 mixed
+    位置: 类 CometChecks
+  F:\AI\AI_Project\骑空士酒狐\src\replay\java\dev\winefox\skyfarer\replay\CometChecks.java:144: 错误: 找不到符号
+              java.nio.file.Files.write(dir.resolve((mixed?"authority-":"virtual-")+delayed+".tsv"),rows);java.nio.file.Files.write(dir.resolve((mixed?"authority-":"virtual-")+delayed+".events.log"),ReplayWorld.events);
+                                                                                                                                                 ^
+    符号:   变量 mixed
+    位置: 类 CometChecks
+  F:\AI\AI_Project\骑空士酒狐\src\replay\java\dev\winefox\skyfarer\replay\CometChecks.java:147: 错误: 找不到符号
+          String summary="virtual controller mixed="+mixed+" delayed="+delayed+" guidedTicks="+virtualTicks+" hit="+hit+" exit="+complete+" collision="+collision+" hold="+heldAt;
+                                                     ^
+    符号:   变量 mixed
+    位置: 类 CometChecks
+  7 个错误
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to generate a Build Scan (powered by Develocity).
+
+BUILD FAILED in 9s
+3 actionable tasks: 2 executed, 1 up-to-date

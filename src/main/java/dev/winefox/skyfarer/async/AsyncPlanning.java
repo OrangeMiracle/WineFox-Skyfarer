@@ -36,7 +36,11 @@ public final class AsyncPlanning {
     }
     public int pending(){return session.pendingCount();}
     public RiptidePlanner.Plan propulsion(FlightPrediction.State start,PropulsionDemand demand,float strength,boolean wet,GlidePlanner.Corridor bounds){
-        var proposal=(RiptidePlanner.Plan)optional(bounded(new PlanningTask.Propulsion(start,demand,strength,physics().gravity(),wet),bounds),null);
+        return propulsion(start,demand,strength,wet,bounds,false);
+    }
+    public RiptidePlanner.Plan virtualPropulsion(FlightPrediction.State start,PropulsionDemand demand,boolean wet,GlidePlanner.Corridor bounds){return propulsion(start,demand,0,wet,bounds,true);}
+    private RiptidePlanner.Plan propulsion(FlightPrediction.State start,PropulsionDemand demand,float strength,boolean wet,GlidePlanner.Corridor bounds,boolean virtual){
+        var proposal=(RiptidePlanner.Plan)optional(bounded(new PlanningTask.Propulsion(start,demand,strength,physics().gravity(),wet,virtual),bounds),null);
         return proposal==null?null:proposal.withDemand(demand.path()==null&&proposal.demand()!=null&&proposal.demand().path()!=null?proposal.demand().withAim(demand.aim()):demand);
     }
     public RiptidePlanner.Plan certifyRiptide(FlightPrediction.State s,RiptidePlanner.Plan p,int elapsed,boolean wet) {

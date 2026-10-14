@@ -250,15 +250,30 @@ public final class PlannerSession {
     }
     public RiptidePlanner.Plan recertifyRiptide(FlightPrediction.State start,RiptidePlanner.Plan plan,int elapsed,boolean wet){
         check();if(plan==null)return null;
+        return recertifyThrust(start,plan,elapsed,wet,true);
+    }
+    private RiptidePlanner.Plan recertifyThrust(FlightPrediction.State start,RiptidePlanner.Plan plan,int elapsed,boolean wet,boolean refresh){
         var map=new HashMap<Long,CollisionSnapshot.Cell>();
         cells.forEach((k,v)->{if(now-v.tick<=20)map.put(k,v.cell);});
         var space=source.snapshot(Map.copyOf(map),wet,true).space(new java.util.concurrent.atomic.AtomicBoolean());
         space.trackTouched();
         var result=RiptidePlanner.certify(start,plan,elapsed,physics().gravity(),space,wet?space:SurfaceLaunchPlanner.DRY);
-        for(long key:space.missing())request(key,0);
+        for(long key:space.missing()){
+            request(key,0);
+            int x=CollisionSnapshot.x(key),y=CollisionSnapshot.y(key),z=CollisionSnapshot.z(key);
+            request(CollisionSnapshot.key(x-1,y,z),1);request(CollisionSnapshot.key(x+1,y,z),1);
+            request(CollisionSnapshot.key(x,y-1,z),1);request(CollisionSnapshot.key(x,y+1,z),1);
+            request(CollisionSnapshot.key(x,y,z-1),1);request(CollisionSnapshot.key(x,y,z+1),1);
+        }
         // Active thrust must refresh its own remaining corridor before the 20-tick expiry.
         // Enqueue only: existing global/local capture budgets still govern world access.
         for(long key:space.touched()){var entry=cells.get(key);if(entry!=null&&now-entry.tick>=8)request(key,0);}
+        // A moving proposal can otherwise stay one cell ahead of capture forever. Refresh
+        // through the SAME global/local/time budgets, then retry this one selected plan once.
+        // No search, no relaxed missing-cell rule and no certificate age extension.
+        if(result==null&&refresh&&!space.missing().isEmpty()){
+            urgent=start;pump();return recertifyThrust(start,plan,elapsed,wet,false);
+        }
         riptideRejection=result!=null?"NONE":!space.missing().isEmpty()?"SNAPSHOT_MISSING:"+space.missing().size():"TRAJECTORY_REJECTED";
         return result;
     }

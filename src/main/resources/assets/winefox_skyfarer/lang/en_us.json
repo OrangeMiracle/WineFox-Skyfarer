@@ -42,5 +42,12 @@
   "message.winefox_skyfarer.wings_return_equipment": "My flight equipment is not suitable. I will find a safe landing spot!",
   "message.winefox_skyfarer.wings_ground": "Master, these wings are falling apart... I'll fight on foot for now.",
   "message.winefox_skyfarer.wings_return": "Master, my wings are giving out! I'm coming back to land!",
-  "message.winefox_skyfarer.wings_landed": "Wings off duty. Time for the spear!"
+  "message.winefox_skyfarer.wings_landed": "Wings off duty. Time for the spear!",
+  "item.winefox_skyfarer.comet_heart": "Comet Heart",
+  "item.winefox_skyfarer.everburning_comet_heart": "Everburning Comet Heart",
+  "tooltip.winefox_skyfarer.maid_bauble": "Touhou Little Maid Bauble · Skyfarer",
+  "tooltip.winefox_skyfarer.comet_heart": "Conserves fireworks. The dormant comet core seems to hunger for more energy…",
+  "tooltip.winefox_skyfarer.everburning_comet_heart": "An undying spark grants silver wings controlled flight propulsion.",
+  "advancement.winefox_skyfarer.silver_wing_successor": "Heir to the Silver Wings",
+  "advancement.winefox_skyfarer.silver_wing_successor.desc": "The sky is no longer the limit. Where will you go next?"
 }

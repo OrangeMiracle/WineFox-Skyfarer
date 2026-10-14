@@ -1,0 +1,17 @@
+{
+  "artifact": "build\\libs\\winefox_skyfarer-1.21.1-0.7.4.jar",
+  "size": 662808,
+  "sha256": "E7CA2EBA62B9C66EA7929DAF0FD075389F4E428E334B4B1997B07F555A8E30BC",
+  "required_entries": [
+    "dev/winefox/skyfarer/client/CometGlowParticle.class",
+    "dev/winefox/skyfarer/client/CometThrustParticles.class",
+    "dev/winefox/skyfarer/network/CometParticles.class",
+    "dev/winefox/skyfarer/runtime/CometRelicDrops.class",
+    "dev/winefox/skyfarer/mixin/CometOutlineMixin.class",
+    "dev/winefox/skyfarer/mixin/CometRitualItemMixin.class",
+    "assets/winefox_skyfarer/particles/comet_tail.json",
+    "assets/winefox_skyfarer/particles/comet_ring.json"
+  ],
+  "no_replay_fixtures": true,
+  "metadata_version": "0.7.4"
+}

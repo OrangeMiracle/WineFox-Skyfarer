@@ -39,7 +39,7 @@ public final class RiptidePropulsion {
         released=false;releasedAt=-1;lastThrustAt=-1;endReason="";started=m.level().getGameTime();
         log(m,"READY_RESERVED:"+event);return true;
     }
-    public void prepare(EntityMaid m,boolean eligible){RiptideReadiness.of(m).tick(m,eligible,active()&&released);}
+    public void prepare(EntityMaid m,boolean eligible){eligible &= PropulsionResolver.permits(m,PropulsionDemand.Source.RIPTIDE);RiptideReadiness.of(m).tick(m,eligible,active()&&released);}
     public int preparedTicks(EntityMaid m){return RiptideReadiness.of(m).ticks();}
     static boolean contains(EntityMaid m,ItemStack item){
         if(item==m.getOffhandItem())return true;
@@ -97,8 +97,9 @@ public final class RiptidePropulsion {
         return true;
     }
     public boolean begin(EntityMaid m,RiptidePlanner.Plan candidate,FlightPrediction.State s,AsyncPlanning planning,HeadingController heading) {
+        if(!PropulsionResolver.permits(m,PropulsionDemand.Source.RIPTIDE)){beginRejection="SOURCE_POLICY_DENIED";return false;}
         beginRejection="AIR_USE_OR_ENVIRONMENT_UNAVAILABLE";
-        if(candidate==null||!ready(m)||m.onGround()||!m.isFallFlying())return false;
+        if(candidate==null||candidate.profile().source()!=PropulsionDemand.Source.RIPTIDE||!ready(m)||m.onGround()||!m.isFallFlying())return false;
         var proof=planning.certifyRiptide(s,candidate,RiptidePlanner.WINDUP,m.isInWaterOrBubble());
         if(proof==null){beginRejection=planning.riptideRejection();return false;}
         if(!entitiesClear(m,proof,RiptidePlanner.WINDUP)){beginRejection="ENTITY_OR_ANCHOR_REJECTED";return false;}
@@ -114,8 +115,9 @@ public final class RiptidePropulsion {
         return new FlightPrediction.State(m.getX()+v.x,m.getY()+.82,m.getZ()+v.z,v.x*.91,(.42-physics.gravity())*.98,v.z*.91,m.getYRot(),m.getXRot(),physics.nextTick());
     }
     public boolean beginLaunch(EntityMaid m,RiptidePlanner.Plan candidate,AsyncPlanning planning,HeadingController heading) {
+        if(!PropulsionResolver.permits(m,PropulsionDemand.Source.RIPTIDE)){beginRejection="SOURCE_POLICY_DENIED";return false;}
         beginRejection="LAUNCH_USE_OR_ENVIRONMENT_UNAVAILABLE";
-        if(candidate==null||!ready(m)||!m.onGround()||m.isInWaterOrBubble())return false;
+        if(candidate==null||candidate.profile().source()!=PropulsionDemand.Source.RIPTIDE||!ready(m)||!m.onGround()||m.isInWaterOrBubble())return false;
         if(!jumpClear(m)){beginRejection="JUMP_BODY_BLOCKED";return false;}
         var proof=planning.certifyRiptide(RiptidePlanner.aimLaunch(jumpStart(m,planning.physics()),candidate.yaw(),candidate.pitch()),candidate,RiptidePlanner.WINDUP,false);
         if(proof==null){beginRejection=planning.riptideRejection();return false;}
@@ -207,6 +209,7 @@ public final class RiptidePropulsion {
     public static void releaseAuthorized(EntityMaid m,ItemStack stack,int remaining) {
         var call=RELEASING.get();if(call==null||call.maid()!=m)return;
         var self=call.owner();
+        if(!PropulsionResolver.permits(m,PropulsionDemand.Source.RIPTIDE))return;
         if(self.released||self.plan==null||m.getOffhandItem()!=stack||stack!=self.used||!m.isInWaterOrRain()
             ||stack.getUseDuration(m)-remaining<RiptidePlanner.WINDUP||strength(m,stack)!=self.plan.strength())return;
         if(!RiptideReadiness.of(m).consume(m,self.plan.strength()))return;

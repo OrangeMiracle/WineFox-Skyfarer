@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 group = 'dev.winefox.skyfarer'
-version = '0.7.1'
+version = '0.7.4'
 base { archivesName = 'winefox_skyfarer-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
@@ -114,6 +114,11 @@ def replayProduction = fileTree('src/main/java') {
     include 'dev/winefox/skyfarer/command/CreativeTransitPlanner.java'
     include 'dev/winefox/skyfarer/command/RemoteWakeScheduler.java'
     include 'dev/winefox/skyfarer/compat/tlm/RiptidePropulsion.java'
+    include 'dev/winefox/skyfarer/compat/tlm/PropulsionResolver.java', 'dev/winefox/skyfarer/compat/tlm/RiptideProvider.java'
+    include 'dev/winefox/skyfarer/compat/tlm/VirtualPropulsion.java', 'dev/winefox/skyfarer/compat/tlm/CometBaubles.java'
+    include 'dev/winefox/skyfarer/item/CometProgress.java', 'dev/winefox/skyfarer/runtime/CometEvolution.java'
+    include 'dev/winefox/skyfarer/runtime/CometRitual.java'
+    include 'dev/winefox/skyfarer/runtime/CometRelicDrops.java'
     include 'dev/winefox/skyfarer/compat/tlm/FlightPropulsion.java', 'dev/winefox/skyfarer/compat/tlm/FireworkProvider.java'
     include 'dev/winefox/skyfarer/compat/tlm/RiptideReadiness.java', 'dev/winefox/skyfarer/compat/tlm/PropulsionCapability.java'
     include 'dev/winefox/skyfarer/compat/tlm/WingInventory.java'
@@ -343,4 +348,63 @@ tasks.register('verifyTrajectoryStress', JavaExec) {
     classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
     mainClass = 'dev.winefox.skyfarer.replay.UnifiedPropulsionChecks'
     args 'stress'
+}
+
+// Focused Comet checks; deliberately separate from broad verification runs.
+tasks.register('verifyCometContracts', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.CometChecks'
+    args 'contracts'
+}
+tasks.register('verifyCometReplay', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.CometChecks'
+    args 'replay'
+}
+tasks.register('verifyCometData', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath + sourceSets.main.compileClasspath + files('build/moddev/artifacts/neoforge-21.1.250-client-extra-aka-minecraft-resources.jar')
+    mainClass = 'dev.winefox.skyfarer.runtime.CometDataChecks'
+    systemProperty 'log4j.configurationFile', file('tools/offline-log4j2.xml').toURI().toString()
+}
+tasks.register('verifyCometRitual', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.CometRitualChecks'
+}
+
+// Directed 0.7.3 checks, deliberately outside full check.
+tasks.register('verifyPropulsionAuthority', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.PropulsionAuthorityChecks'
+}
+
+tasks.register('verifyPropulsionAuthorityReplay', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.PropulsionAuthorityChecks'
+    args 'replay'
+}
+
+tasks.register('verifyPropulsionPressure', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.PropulsionAuthorityChecks'
+    args 'pressure'
+}
+
+// Focused visual vertices, native damage/glow hooks and relic/ritual regression only.
+tasks.register('verifyCometRadiance', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath + sourceSets.main.compileClasspath + files('build/moddev/artifacts/neoforge-21.1.250-client-extra-aka-minecraft-resources.jar')
+    mainClass = 'dev.winefox.skyfarer.runtime.CometRadianceChecks'
+    systemProperty 'log4j.configurationFile', file('tools/offline-log4j2.xml').toURI().toString()
+}
+tasks.register('verifyCometDrops', JavaExec) {
+    dependsOn compileControllerReplay
+    classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
+    mainClass = 'dev.winefox.skyfarer.replay.CometDropChecks'
 }

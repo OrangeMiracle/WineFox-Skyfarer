@@ -17,6 +17,10 @@ public final class WineFoxSkyfarer {
     public static final String MOD_ID = "winefox_skyfarer";
     public static final Logger LOGGER = LogUtils.getLogger();
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MOD_ID);
+    public static final DeferredItem<dev.winefox.skyfarer.item.CometHeartItem> COMET_HEART=ITEMS.register("comet_heart",()->new dev.winefox.skyfarer.item.CometHeartItem(false));
+    public static final DeferredItem<dev.winefox.skyfarer.item.CometHeartItem> EVERBURNING_COMET_HEART=ITEMS.register("everburning_comet_heart",()->new dev.winefox.skyfarer.item.CometHeartItem(true));
+    private static final DeferredRegister<com.mojang.serialization.MapCodec<? extends net.neoforged.neoforge.common.loot.IGlobalLootModifier>> LOOT_MODIFIERS=DeferredRegister.create(net.neoforged.neoforge.registries.NeoForgeRegistries.Keys.GLOBAL_LOOT_MODIFIER_SERIALIZERS,MOD_ID);
+    static {LOOT_MODIFIERS.register("comet_heart",()->dev.winefox.skyfarer.item.CometLootModifier.CODEC);}
     public static final DeferredItem<dev.winefox.skyfarer.item.MaidRemoteItem> MAID_REMOTE = ITEMS.register("maid_remote", () -> new dev.winefox.skyfarer.item.MaidRemoteItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<dev.winefox.skyfarer.item.DebugStickItem> DEBUG_STICK = ITEMS.register("debug_stick", () -> new dev.winefox.skyfarer.item.DebugStickItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<dev.winefox.skyfarer.item.CommandSpyglassItem> COMMAND_SPYGLASS=ITEMS.register("command_spyglass",()->new dev.winefox.skyfarer.item.CommandSpyglassItem(new Item.Properties().stacksTo(1),false));
@@ -24,6 +28,14 @@ public final class WineFoxSkyfarer {
 
     public WineFoxSkyfarer(IEventBus bus, ModContainer container) {
         ITEMS.register(bus);
+        dev.winefox.skyfarer.network.CometParticles.TYPES.register(bus);
+        LOOT_MODIFIERS.register(bus);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event)->{
+            if(event.getEntity() instanceof net.minecraft.world.entity.item.ItemEntity item)dev.winefox.skyfarer.runtime.CometRelicDrops.refresh(item);
+        });
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event)->{
+            if(event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player)dev.winefox.skyfarer.runtime.CometRewards.get(player.server).deliver(player);
+        });
         dev.winefox.skyfarer.flight.PredictionHorizon.multiplier=()->dev.winefox.skyfarer.config.SkyfarerSettings.get("prediction_length_multiplier");
         dev.winefox.skyfarer.command.CommandManager.install();
         bus.addListener(dev.winefox.skyfarer.command.CommandTickets::register);
@@ -55,6 +67,7 @@ public final class WineFoxSkyfarer {
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(MAID_REMOTE); event.accept(DEBUG_STICK);
             event.accept(COMMAND_SPYGLASS);event.accept(CREATIVE_COMMAND_SPYGLASS);
+            event.accept(COMET_HEART);event.accept(EVERBURNING_COMET_HEART);
         }
     }
 }

@@ -7,6 +7,7 @@ import dev.winefox.skyfarer.WineFoxSkyfarer;
 
 @LittleMaidExtension
 public final class SkyfarerExtension implements ILittleMaid {
+    @Override public void bindMaidBauble(com.github.tartaricacid.touhoulittlemaid.item.bauble.BaubleManager manager){CometBaubles.bind(manager);}
     @net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
     @Override public void addHardcodeAnimation(com.github.tartaricacid.touhoulittlemaid.client.animation.HardcodedAnimationManger manager) {
         manager.addMaidAnimation(new dev.winefox.skyfarer.client.SkyfarerAnimation());

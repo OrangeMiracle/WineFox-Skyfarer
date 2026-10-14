@@ -1,0 +1,12 @@
+{
+  "jar": "build/libs/winefox_skyfarer-1.21.1-0.7.3.jar",
+  "bytes": 652971,
+  "sha256": "F01EC0D3E9213195B1D16F5F34D9D48ED1E903316949E64AEAC2BE2D9E5538A2",
+  "version": "0.7.3",
+  "protocol": 4,
+  "json": "all parsed",
+  "fixtures": "absent",
+  "resolverAndContinuousControl": "present",
+  "clientParticlesAndPayload": "present",
+  "existingRitual": "present"
+}

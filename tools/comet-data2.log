@@ -1,0 +1,54 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\command\CommandManager.java使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyCometData
+WARN: Missing version information!
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.ExceptionInInitializerError
+	at net.minecraft.network.chat.contents.TranslatableContents.decompose(TranslatableContents.java:99)
+	at net.minecraft.network.chat.contents.TranslatableContents.visit(TranslatableContents.java:208)
+	at net.minecraft.network.chat.Component.visit(Component.java:103)
+	at net.minecraft.network.chat.FormattedText.getString(FormattedText.java:88)
+	at net.minecraft.network.chat.Component.getString(Component.java:45)
+	at net.minecraft.world.item.CreativeModeTabs.validate(CreativeModeTabs.java:1832)
+	at net.minecraft.server.Bootstrap.bootStrap(Bootstrap.java:54)
+	at dev.winefox.skyfarer.runtime.CometDataChecks.main(CometDataChecks.java:21)
+Caused by: java.lang.NullPointerException
+	at java.base/java.io.Reader.<init>(Reader.java:168)
+	at java.base/java.io.InputStreamReader.<init>(InputStreamReader.java:123)
+	at net.minecraft.locale.Language.loadFromJson(Language.java:100)
+	at net.minecraft.locale.Language.parseTranslations(Language.java:89)
+	at net.minecraft.locale.Language.loadDefault(Language.java:40)
+	at net.minecraft.locale.Language.<clinit>(Language.java:34)
+	... 8 more
+
+> Task :verifyCometData FAILED
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyCometData'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+5 actionable tasks: 3 executed, 2 up-to-date
+BUILD FAILED in 10s

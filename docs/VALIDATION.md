@@ -1,8 +1,50 @@
 # 验证、离线回放与构建
 
-当前版本 **0.7.1**。本次按用户要求仅编译、打包、定向验证和少量生产控制器离线回放，**未运行全量 build/check，未启动 Minecraft**。下文 0.7.0 的完整验证保留为历史证据，不能替代当前版本全量验证。
+当前版本 **0.7.4**。本次仅编译、打包与四项直接相关的定向验证，**未运行全量 build/check/verify，未启动 Minecraft**。旧版本结果保留为历史证据，不能替代当前版本全量验证。
 
-## 0. 0.7.1 定向范围
+## 0.7.4 Fullbright 与圣物掉落
+
+详见 [实现与诊断](COMET_RADIANCE_074.md)。[comet-radiance-directed.log](../tools/comet-radiance-directed.log) 的 compileJava、CometRadiance、CometDrops、CometData、Architecture 全部成功。
+
+- 实际生产粒子 render 输出的每个光照 UV 均为 `0xF000F0`，不需要 Level 光照数据；白环在 3 个轴向、相机两侧都保持正确平面/朝向，半径扩散、alpha 淡出，12 tick 寿命；双层尾焰 14–20 tick 寿命。使用 UV 夹具与真实 VertexConsumer API，没有创建游戏、服务器或 OpenGL。资源 JSON 引用的原版 PNG 可读取，两项 Provider 已注册。
+- 推进门控在初次加速、减推后再增推、停止后重启于 ticks `[0,40,66]` 发环；重复同 tick 不产生事件。既有门控用例仍为 200 ticks / 49 包 / 3 环。128 个发送者模拟 200 ticks，始终不超过每 tick 96 尾粒子及 2 个单粒子圆环；这不是实机 FPS 基准。
+- 两种物品从 tick 0 至 24000 持续拒绝雷击/火焰/爆炸，普通 TNT 与其他伤害不获永久免疫；恢复/重掉落发光，保留进度、UUID 与原 ItemStack，不覆盖原先已有 glow。夹具测试不代替真实 ItemEntity 区块 IO。
+- 生产雷击事务回归涵盖不足材料、被拾取、范围外、视觉闪电、重复闪电、离线归属与去重奖励；32+40 只耗 64，余 8，原实体转化且数据保留。原版源码/字节码确认仪式入口早于生火，雷击经过 hurt；余料 120 tick 到期，重载不续期。真实 ItemStack codec/SavedData 持久化与击杀进化回归通过。
+- 最终打包与调整后的粒子定向检查记录于 [comet-radiance-release.log](../tools/comet-radiance-release.log)。夜间最终外观、资源包/光影兼容、真实客户端收包、跨区块重载与多女仆性能仍需实机验证。
+
+交付包：`build/libs/winefox_skyfarer-1.21.1-0.7.4.jar`（662,808 bytes），SHA-256 `E7CA2EBA62B9C66EA7929DAF0FD075389F4E428E334B4B1997B07F555A8E30BC`。新增 Provider/Fullbright/掉落策略、Mixin 与粒子资源均已入包，没有离线夹具或 Minecraft 类；[包校验](../tools/comet-radiance-artifact-check.json)。
+
+## 0.7.3 权威仲裁、持续动力与特效
+
+实现与实机证据见 [动力仲裁专题](PROPULSION_073.md)。共执行六项直接相关验证入口：PropulsionAuthority、PropulsionAuthorityReplay、PropulsionPressure、CometContracts、RiptideRelease、Architecture；并未执行其他 verify 或全量 check。
+
+- [propulsion-authority-release.log](../tools/propulsion-authority-release.log)：最终 compileJava、verifyPropulsionAuthority、verifyArchitecture、jar 成功。覆盖所有 Phase 的独占来源/等待超时/紧急不降级、旧直接点火口拒绝、生成回调中换装不扣库存、旧来源取消、同 tick 冲量去重、真实普通节能与激流兼容。架构检查遍历生产字节码，保证唯一点火入口在 Resolver Provider、上层不访问具体动力装备、Worker DTO 无实时对象、服务端特效不链接客户端类。
+- **持续控制**：700 tick 纯物理平飞→转弯→缓升测试，每 tick 推力与独立执行顺序完全一致；稳态水平速度 1.2416–1.2507 格/tick，最大高度误差 0.2406 格。实际 Provider 的 220 tick 快照/实体回放供力 219 ticks，最低速度 1.1898、高度误差 0.0698；冷快照首 tick 不授权推力。之后阻塞全部 Worker 并添加当前步墙体，拒绝继续加力、不清空原动量。
+- **多女仆**：八个实际 Provider 同时保持速度 100 ticks，各自 97–98 ticks 取得当前证书；始终不超过 768 cells / 2 pending jobs，无烟花实体或耗材。此结果证明有界性和该场景不饥饿，不是实机 TPS/FPS 基准。
+- **粒子**：生产数值 gate 检查初次加力、显著增力、停止后重启，共触发 3 次环、200 ticks 内 49 次状态包，重复同 tick 不重复触发。检查双尾流对称、白环正交/向外扩散、近垂直与零速度姿态、全客户端 96 尾粒/64 环粒预算及重置。客户端实际 ParticleEngine API 已编译通过，未启动客户端渲染预览。
+- [propulsion-authority-replay2.log](../tools/propulsion-authority-replay2.log)：两个完整生产控制器回放同时装备两种饰品、合法激流和 64 烟花。正常例 tick 134 命中；Worker 16 tick 停顿后恢复正常节奏的例子 tick 130 命中；均安全离场、无身体碰撞，逐 tick 检查零烟花消耗、零三叉戟耐久、零节能 RNG、无推进源叠加。随后 CometContracts 与 RiptideRelease 通过，包括完整移动 Strike→Exit、前摇截止与碰撞拒绝、卸装/安全/新增障碍抢占。
+- [propulsion-authority-final-checks.log](../tools/propulsion-authority-final-checks.log)：另跑一例**全程保持 5 ms/tick**、所有 Worker 停顿 16 ticks 的混合装备压力回放，在 tick 217 命中并安全离场、无碰撞和耗材。没有在这个压力用例中恢复普通节奏；没有修改硬碰撞或命中断言。这不抹除下方 0.7.2 曾经 500 ticks 无命中的历史记录，也不证明任意延迟都能成功。
+
+中间失败保留于 `propulsion-authority-replay.log`：新增混合装备回放的重载签名遗漏导致夹具编译失败；修正签名后同组通过。`propulsion-authority-compile` / `directed` / `package` 是本轮逐步验证日志，最终交付以 release 日志与产物校验为准。
+
+当前 Jar：[winefox_skyfarer-1.21.1-0.7.3.jar](../build/libs/winefox_skyfarer-1.21.1-0.7.3.jar)，**652,971 bytes**，SHA-256 `F01EC0D3E9213195B1D16F5F34D9D48ED1E903316949E64AEAC2BE2D9E5538A2`。版本/资源检查通过，含来源仲裁、持续控制、客户端粒子与协议 Payload，不含外部 API 夹具；[校验记录](../tools/propulsion-authority-artifact-check.json)。
+
+仍需实机：不同女仆模型的尾焰位置、粒子可见度、网络延迟下的启停表现、复杂地形与移动目标、多人/多女仆真实 MSPT 和 FPS。现有创造高速赶路特权保留；新粒子仅在实际虚拟推进时触发。没有自动安装或启动 Minecraft。
+
+## 历史：0.7.2 彗星饰品与掉落物仪式
+
+- [comet-contracts-final.log](../tools/comet-contracts-final.log)：compileJava、verifyCometContracts、verifyCometData、verifyArchitecture、jar 成功。原生饰品栏、效果互斥、固定随机流的 1,000 次成功发射/600 次节能、生成否决不抽奖、各推进阶段认证、移动 Strike→Exit、限幅/停止、卸装与实时墙体抢占、八女仆共享预算均通过。固定随机流检查概率阈值和调用次数，并非统计抽样结论。
+- [comet-flight4.log](../tools/comet-flight4.log)：verifyCometReplay 与 verifyRiptideRelease 成功。真实生产控制器的无燃料永燃场景分别在 tick 360、408 命中并安全离场，无身体碰撞、无推进实体和耗材。第二例先阻塞全部 Worker 16 ticks，再恢复 15 ms/tick 的正常离线节奏；激流独立准备/释放、主手长矛、否决与失效回归通过。
+- [comet-data3.log](../tools/comet-data3.log)：实际依赖的 ItemStack codec 序列化/复制、CUSTOM_DATA 保留、SavedData 离线资格重载/去重、TLM/Spears/雷击依赖字节码契约及战利品/成就资源通过。该任务仅初始化静态注册表，不启动 Minecraft 实例。
+- **方式 B 修正后的最终验证**：[comet-ritual-correction.log](../tools/comet-ritual-correction.log) 的 compileJava、verifyCometRitual、verifyCometData、jar 全部通过。覆盖无女仆的地面仪式、多堆付款与余料、组件/实体身份保留、材料不足/移除/范围外、非服务端/非主线程/视觉闪电/后续闪光拒绝、重复事件、限时伤害保护及到期/重载。奖励检查引雷玩家优先、已确认离线投掷者、未知归属不奖励旁观者；同一入口回归原方式 A 的真实伤害归属、去重和转移进度。实际 LightningBolt 字节码确认原版生火早于实体雷击事件，成品包含首次 tick 入口与物品保护 Mixin。
+
+失败记录没有删除：`comet-contracts.log` 的首次控制器场景命中后碰撞，调查发现选中方案逐 tick 追赶缺失单元；以原采集预算内的邻域预取和单次当前状态复核修复，最终上述两例通过。`comet-replay2.log` 的持续 **5 ms/tick** 压力在 500 ticks 内未命中（未碰撞），仍是攻击效率限制；短暂 Worker 停顿后恢复的通过结果不能取代它。早期 `comet-compile` / `comet-compile2` 是构造器与夹具 API 编译修正，`comet-focused3` / `comet-data2` 是静态验证缺少 LoadingModList/语言资源的初始化失败，均保留。
+
+最终 Jar：[winefox_skyfarer-1.21.1-0.7.2.jar](../build/libs/winefox_skyfarer-1.21.1-0.7.2.jar)，**621,031 bytes**，SHA-256 `2B2DE212B2FA25AEDDF83881A287A52782B81D14DF2AA5388CB2B356548738DB`。元数据统一为 0.7.2，JSON 全部可解析，包含仪式/物品保护/投掷者 Mixin 和虚拟推进，不含回放夹具或 Minecraft/TLM 替身；两张不同的 32×32 RGBA 纹理已检查。[产物校验](../tools/comet-artifact-check.json)。
+
+边界：离线实体/世界适配器并不执行完整 NeoForge 事件总线和 Mixin 应用。自然雷电/引雷、原版生火及附近爆炸、实际拾取与重载、离线成就补发、原生 Spears 击杀和多女仆 MSPT 仍需实机核查。没有启动游戏、安装 Jar 或宣称任意调度延迟下都有攻击效率保证。方式 B 的最后修正没有重跑无关飞控或全量验证。
+
+## 历史：0.7.1 定向范围
 
 实现与实机日志因果见 [航迹连续性](TRAJECTORY_CONTINUITY.md)。本轮直接相关的七项验证为 `verifyTrajectoryContinuity`、`verifyTrajectoryStress`、`verifyAsyncPlanning`、`verifyEmergencyReplay`、`verifyStabilityLaunch`、`verifyArchitecture`、`verifyRiptideDuration`。
 

@@ -2,7 +2,43 @@
 
 ## 当前交付状态
 
-当前工程为 **0.7.1**，从本地干净提交 `387aa78`（0.7.0）继续修改，未从远程覆盖或回滚本地成果。按本次要求仅编译、七项直接相关定向验证及少量真实控制器离线回放；没有运行全量 build/check、启动 Minecraft 或安装到测试实例。0.7.0 的 43 项全量结果保留在其历史章节。
+当前工程为 **0.7.4**，在本地 0.7.3 基础上完成彗星光效与掉落保护，没有回滚或覆盖既有飞控成果。仅编译、定向验证和打包，未执行全量 build/check/verify，未启动或自动安装 Minecraft。
+
+## 0.7.4 — 彗星 Fullbright 与圣物掉落保护（2026-10-13）
+
+- 用专属 Fullbright 粒子替换受环境光影响的小型 dust：双赤尾迹逐 tick 按实际位移补点、推力增强尺寸与寿命；白色 32 段完整圆环由单粒子绘制，12 ticks 扩散淡出、双面可见。复用原版图集与透明粒子批次，无动态光源/额外实体。
+- 显示范围改为 96 格、保留最少设置的简化效果；至多 128 活动发送者，96 尾粒子 + 2 个圆环/客户端 tick，专属活粒子上限 2304。首包允许等待实体、环有短暂有界排队，UUID 隔离，停止/换世界/过期清理。修复输出从高峰降低后再次增推不能出环的门控问题，补充五秒聚合 tx/rx/创建/剔除诊断。
+- 统一 CometRelicDrops 保护两种饰品 ItemEntity 的雷电、火焰/岩浆及爆炸伤害；物品默认 FIRE_RESISTANT。保留原版拾取、保存、进度、正常年龄行为，不采用全局无敌。
+- 服务端原生 Glowing，普通暖金、永燃鲜红；客户端仅指定物品使用颜色覆盖，原版 outline buffer 实现穿墙高亮，不污染 scoreboard。标记存实体数据，重掉落/加载恢复，外部更换 ItemStack 恢复原 glow。
+- 原雷击 HEAD 原子仪式与 TNT 余料 120 tick 保护保留，击杀进化不改；永燃推进物理、来源仲裁、Worker/安全证书均未改动。
+- 编译与 CometRadiance、CometDrops、CometData、Architecture 定向验证通过；真实粒子渲染方法输出 Fullbright 顶点、环方向/扩散/寿命和预算检查通过，保护/仪式/数据回归通过。证据、限制和最终包见 [VALIDATION](VALIDATION.md)，实现细节见 [COMET_RADIANCE_074](COMET_RADIANCE_074.md)。实际夜间外观、客户端网络/模型兼容、区块重载与多人性能仍需用户实机确认。
+
+交付包：`build/libs/winefox_skyfarer-1.21.1-0.7.4.jar`，662,808 bytes；SHA-256 `E7CA2EBA62B9C66EA7929DAF0FD075389F4E428E334B4B1997B07F555A8E30BC`。新类、Mixin、粒子 JSON 与版本元数据已核对入包，未夹带测试代码。
+
+## 0.7.3 交付状态（历史）
+
+当前工程为 **0.7.3**，基于本地 0.7.2 成果继续开发，没有覆盖或回滚本地改造。按本次要求仅编译、直接相关定向验证、少量生产控制器离线回放和打包；没有运行全量 build/check、启动 Minecraft 或安装到测试实例。旧版完整验证仅保留为历史证据。
+
+### 0.7.3 动力来源权威、持续速度保持与赤色尾焰（2026-10-13）
+
+- **实机根因**：latest.log 中永燃装备资格与 `reason=boosted attached=true` 同时出现；虚拟候选缺少快照/失败后原仲裁继续尝试耗材，三个执行入口还直接点火。只读 [证据摘录](../tools/propulsion-authority-evidence.txt) 与源码相互印证，旧 source 标签表示装备资格而非实际执行。
+- **统一决策**：新增 PropulsionResolver 来源规则与 Provider 契约，所有需求/起飞/Rejoin/Emergency 经过统一来源选择、认证和执行。永燃为独占最高来源，任何失败或等待超时都不能降级烧烟花/使用激流；无永燃时保持合法且安全的 READY 激流先于烟花。普通之心仅保留一次真实烟花节能结算。资源提交处复核同一政策，包括生成事件回调中换装；来源变化取消旧执行并使异步/轨迹证明失效。
+- **持续控制**：在现有有限推力认证器上增加共享比例速度反馈和爬升/阻力前馈，正常 12 tick 动力窗口 + 12 tick 无动力恢复、攻击 1 tick 动力 + 完整 Strike→Exit；仅执行已认证的下一 tick。最高加速度 0.2、加力速度界 2.4，保持真实惯性、原版 Elytra 和身体扫掠。有限虚拟加速结束即可恢复导航与供力，不再强制熄火等待；无动力余量仍认证。没有扩大 Worker、采集预算或证书寿命。
+- **专属视觉**：实际虚拟冲量触发服务端限频状态包；客户端产生对称双赤尾流和沿推力方向向外扩散的白环。稳定同步每 4 ticks、环最短间隔 20 ticks、48 格裁剪、128 实体缓存与全客户端粒子预算，尊重粒子设置；原烟花/激流视觉未改。common 不链接客户端渲染，协议升为 4。诊断区分执行 source 与装备 eligible。
+- **定向验证**：最终 [propulsion-authority-release.log](../tools/propulsion-authority-release.log) 编译、Authority、Architecture、jar 成功；700 tick 平飞/转弯/缓升速度 1.2416–1.2507，高度误差 ≤0.2406，预测与执行一致；实际单 Provider 219/220 ticks 供力，八女仆各 97–98/100 ticks 供力，保持现有预算与零耗材。新增墙体 + 阻塞 Worker 拒绝推力，特效几何/去重/限频通过，普通节能 1,000 次实际发射/600 次节能与激流优先回归通过。
+- **控制器回放**：[replay2](../tools/propulsion-authority-replay2.log) 的全装备正常/16 tick 停顿场景分别 tick 134/130 命中并安全离场，全程零烟花、零耐久、无碰撞；另 [持续压力](../tools/propulsion-authority-final-checks.log) 保持 5 ms/tick 并停顿 Worker 16 ticks，在 tick 217 命中安全离场。没有把普通时序通过代替压力验证；历史失败保留。一次新回放夹具重载签名编译失败已修复，日志未删除。
+- **文档与交付**：同步 README、索引、飞控、异步、物理、配置和 [仲裁专题](PROPULSION_073.md)、[验证记录](VALIDATION.md)。[winefox_skyfarer-1.21.1-0.7.3.jar](../build/libs/winefox_skyfarer-1.21.1-0.7.3.jar)，**652,971 bytes**，SHA-256 `F01EC0D3E9213195B1D16F5F34D9D48ED1E903316949E64AEAC2BE2D9E5538A2`；[校验](../tools/propulsion-authority-artifact-check.json)。未全量 verify/build/check，未启动或安装 Minecraft；模型位置、实际粒子画面和 TPS/FPS 仍需实机验证。
+
+### 0.7.2 彗星饰品、有限虚拟推进与地面觉醒（2026-10-13）
+
+- **原生饰品**：核对实际 TLM 1.5.3 API，通过 IMaidBauble / BaubleManager 注册两件饰品，只从女仆原生饰品栏识别。普通之心在实际烟花生成与库存提交成功后独立判定节能，默认 60%，可配置 50%–70%；预测不抽随机数，原激流优先级和物理认证保留。NeoForge additive GLM 按三种宝箱各自概率注入普通之心；永燃版不自然生成。
+- **独立推进源**：增加 VIRTUAL_PROPULSION，复用统一需求/提供器、原版 Elytra、不可变异步快照与完整 Strike→Exit。有限低/中/高推力、每 tick 限幅，停止保留惯性；无需火箭实体、耗材或耐久。已有推进控制权优先，实时障碍/安全转向/卸装可抢占。选中计划缺失 cells 的局部预取与一次重验仍受既有全局/局部预算限制，未延长证明或放宽碰撞。
+- **持久觉醒与奖励**：方式 A 以真实死亡及伤害来源确认击杀，进度随 ItemStack 数据转移和存档，受害者去重、原槽单件替换。隐藏「银翼的继承者」使用鞘翅图标，资格写入 overworld SavedData，离线后补发，完成后不重复授予。
+- **方式 B 已按最新要求修正**：仪式只检测真实闪电附近的地面掉落物，无需女仆/佩戴。核对原版先生火后逐实体雷击的顺序，在非视觉闪电首次 tick HEAD、服务端主线程验证并转换。多个材料堆叠精确付款、余料保留；原之心实体直接换栈，避免生成否决造成半事务。一次雷击只尝试一次，产物与当地剩余材料限时防雷/火/爆炸并禁合堆；不额外破坏地形。成就归属为引雷玩家优先，其次可由服务器玩家档案确认的之心投掷者（包括离线）；不能确认时不奖励旁观者。原方式 A 保持不变。
+- **资源与文案**：依据参考图制作两张 32×32 RGBA 物品纹理、item/generated 模型和中英文名称/含蓄 Tooltip；玩家 README 不公开隐藏仪式条件。同步索引、配置、飞控、物理、异步及 [饰品专题](COMET_HEARTS.md)，保存 [图像生成提示词](COMET_TEXTURE_PROMPTS.md)。
+- **定向验证**：[comet-contracts-final.log](../tools/comet-contracts-final.log) 验证饰品、节能、物理/控制、多女仆预算及架构；[comet-flight4.log](../tools/comet-flight4.log) 两个无燃料生产控制器场景命中且安全离场，包含实际 Worker 16 tick 停顿恢复，并通过激流释放回归。真实数据 codec 与依赖契约通过。B 修正后的 [comet-ritual-correction.log](../tools/comet-ritual-correction.log) 最终编译、Ritual、Data、jar 成功，含 A 回归、材料事务、限时保护和归属测试；未全量运行。
+- **限制与失败保留**：初始虚拟推进命中后碰撞推动上述选中 cells 修复；持续 5 ms/tick 调度压力仍曾 500 ticks 无命中（无碰撞），不以恢复正常节奏后的通过覆盖。真实 TLM/NeoForge/Mixin 的雷击/生火/拾取/爆炸顺序、Spears 原生伤害、成就弹窗与多女仆性能仍待实机确认。完整证据和中间失败见 [验证文档](VALIDATION.md)。
+- **交付**：[winefox_skyfarer-1.21.1-0.7.2.jar](../build/libs/winefox_skyfarer-1.21.1-0.7.2.jar)，**621,031 bytes**，SHA-256 `2B2DE212B2FA25AEDDF83881A287A52782B81D14DF2AA5388CB2B356548738DB`。元数据、资源和仪式 Mixins 齐全，无测试夹具；[校验记录](../tools/comet-artifact-check.json)。
 
 ### 0.7.1 航迹承诺、控制仲裁与延迟安全（2026-10-08）
 

@@ -1,0 +1,51 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\client\SkyfarerClient.java:12: 警告: [removal] EventBusSubscriber 中的 bus() 已过时, 且标记为待删除
+@EventBusSubscriber(modid = WineFoxSkyfarer.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+                                                                         ^
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\client\SkyfarerClient.java:12: 警告: [removal] EventBusSubscriber 中的 Bus 已过时, 且标记为待删除
+@EventBusSubscriber(modid = WineFoxSkyfarer.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+                                                                                                 ^
+2 个警告
+
+> Task :processResources
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyCometRadiance
+Rendered real particles into vertex sink: every light UV is 0xF000F0, ring visible from both sides on 3 axes, 12-tick ring and 14-20-tick tails expire
+128-emitter / 200-tick budget: <=96 tail particles + 2 ring particles per tick; reacceleration events at [0, 40, 66]
+Actual fullbright particle vertices, two-sided ring plane/expansion, fade/lifetime, burst re-arming, bounded multi-maid geometry and native drop hooks passed
+
+> Task :compileControllerReplay
+
+> Task :verifyCometDrops
+Ritual rejects insufficient, picked-up, out-of-radius, visual, later-flash and off-thread inputs without partial payment
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Atomic conversion: one existing entity, 32+40 TNT -> 8 surplus, component preservation, duplicate rejection and finite persisted aftermath protection passed
+Reward attribution: lightning cause > positively identified offline thrower; unattributed ritual yields item without bystander reward
+Kill evolution: confirmed source, duplicate death, transferred stack progress and owner entitlement passed
+Dropped-item ritual and unchanged kill evolution checks passed
+Actual impulse visual gate: onset/increase/restart rings=3, packets=49/200 ticks, stop and same-tick dedup passed
+Permanent relic damage policy, server glow/reload/re-drop, preserved stack/progress, unrelated items and existing glow passed
+
+> Task :verifyCometData
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Actual ItemStack codec persistence/copy, namespaced components, bounded count, SavedData reload/deduplication, native dependency hook descriptors and loot/advancement resources passed
+
+> Task :verifyArchitecture
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+0.7.3 architecture: provider-free upper control, sole resolver ignition port, server/client effects isolation, closed worker DTOs and live config retention passed.
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 14s
+9 actionable tasks: 8 executed, 1 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

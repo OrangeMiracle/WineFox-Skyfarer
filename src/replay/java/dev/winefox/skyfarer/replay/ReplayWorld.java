@@ -5,6 +5,7 @@ import dev.winefox.skyfarer.flight.FlightCorridor;
 import java.util.*;
 /** Offline external-world adapter: loaded bounds, exact boxes, clocks and inventories only. */
 public class ReplayWorld {
+ public boolean isClientSide;
  public void playSound(Object player,Object entity,Object sound,Object source,float volume,float pitch){}
  public static final List<String> events=new ArrayList<>();
  public final List<LivingEntity> entities=new ArrayList<>();public final List<FireworkRocketEntity> rockets=new ArrayList<>();
@@ -13,7 +14,8 @@ public class ReplayWorld {
  public long getGameTime(){return time;}public boolean hasChunkAt(BlockPos p){return Math.abs(p.x())<loadedRadius&&Math.abs(p.z())<loadedRadius;}
  public void advance(long tick){time=tick;dev.winefox.skyfarer.async.PlannerSession.serverTick();try{Thread.sleep(Long.getLong("wfs.replayTickMillis",50L));}catch(InterruptedException e){Thread.currentThread().interrupt();throw new RuntimeException(e);}}
  public int getMaxBuildHeight(){return 320;}public DimensionType dimensionType(){return new DimensionType();}public static class DimensionType{public boolean hasCeiling(){return false;}}
- public boolean addFreshEntity(FireworkRocketEntity e){rockets.add(e);return true;}
+ public boolean rejectRocket;public Runnable onRocketSpawn=()->{};
+ public boolean addFreshEntity(FireworkRocketEntity e){if(rejectRocket)return false;rockets.add(e);onRocketSpawn.run();return true;}
  public <T extends LivingEntity> List<T> getEntitiesOfClass(Class<T> type,AABB area){return getEntitiesOfClass(type,area,e->true);}
  public <T extends LivingEntity> List<T> getEntitiesOfClass(Class<T> type,AABB area,java.util.function.Predicate<T> test){return entities.stream().filter(type::isInstance).map(type::cast).filter(e->e.alive&&e.getBoundingBox().intersects(area)&&test.test(e)).toList();}
  public Fluid getFluidState(BlockPos pos){return new Fluid();} public static class Fluid {public boolean is(Object tag){return false;}}

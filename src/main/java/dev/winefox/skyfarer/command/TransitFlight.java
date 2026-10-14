@@ -27,7 +27,7 @@ final class TransitFlight {
     }
     boolean tick(EntityMaid maid,Vec3 target,boolean creative) {
         controlled=maid;
-        propulsion.prepare(maid,dev.winefox.skyfarer.compat.tlm.SkyfarerEquipment.elytra(maid));
+        if(propulsion.prepare(maid,dev.winefox.skyfarer.compat.tlm.SkyfarerEquipment.elytra(maid))){if(planning!=null)planning.invalidate();cached=null;launch=null;departure=0;}
         propulsion.context("TRANSIT");
         if(planning==null)planning=new dev.winefox.skyfarer.async.AsyncPlanning(maid);
         planning.begin(maid.level().getGameTime(),"transit:"+creative+":"+maid.isInWaterOrBubble(),
@@ -78,7 +78,7 @@ final class TransitFlight {
             launch=propulsion.launch(maid,start,yaw,launch.height(),planning,gravity,space,SurfaceLaunchPlanner.DRY);
             if(launch==null)return false;
             if(!space.clear(start,SurfaceLaunchPlanner.step(start,launch.yaw(),launch.pitch(),gravity,true,false),.04,.01))return false;
-            heading.steerAngles(maid,launch.yaw(),launch.pitch(),180,90);if(!propulsion.executeLaunch(maid,start,launch,true,planning,gravity,space,SurfaceLaunchPlanner.DRY))return false;departure=1;return true;
+            heading.steerAngles(maid,launch.yaw(),launch.pitch(),180,90);if(!propulsion.executeLaunch(maid,start,launch,true,planning,gravity,space,SurfaceLaunchPlanner.DRY,heading))return false;departure=1;return true;
         }
         if(launch!=null && departure<6) {
             double pitch=SurfaceLaunchPlanner.command(start,launch,departure++,gravity,remaining()>0);
@@ -88,6 +88,7 @@ final class TransitFlight {
         }
         launch=null;
         if(creative)return creativeTravel(maid,target,start,space,gravity);
+        if(propulsion.sustain(maid,start,new PropulsionDemand(PropulsionDemand.Phase.TRANSIT,target.x,target.y+10,target.z,1),planning,heading))return true;
         var request=new GlidePlanner.Request(yaw,target.y+10,0,0,14,Double.NaN,remaining(),5,3,8,gravity,.25,.25,false,null);
         // Only local receding-horizon prediction, no global pathfinding along the entire journey.
         if(cached==null || !cached.safe() || ticks%5==0)cached=planning.glide(start,request,space);
@@ -147,7 +148,7 @@ final class TransitFlight {
         if(launch==null)return false;
         double pitch=SurfaceLaunchPlanner.command(start,launch,departure++,gravity,true);
         if(!space.clear(start,SurfaceLaunchPlanner.step(start,launch.yaw(),pitch,gravity,true,true),.04,.01))return false;
-        if(remaining()==0&&!propulsion.executeLaunch(maid,start,launch,false,planning,gravity,space,s->wet(maid,s)))return false;
+        if(remaining()==0&&!propulsion.executeLaunch(maid,start,launch,false,planning,gravity,space,s->wet(maid,s),heading))return false;
         heading.steerAngles(maid,launch.yaw(),pitch,180,90);return true;
     }
     void debug(net.minecraft.nbt.CompoundTag data,EntityMaid maid) {

@@ -3,7 +3,7 @@ package dev.winefox.skyfarer.flight;
 /** Immutable flight requirement shared by propulsion providers. No entity/item/world on workers. */
 public record PropulsionDemand(Phase phase,double x,double height,double z,double minimumSpeed,
         SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,double rate,boolean exiting,int contactDeadline,CompactTurnPlanner.Goal turn) {
-    public enum Source { COAST, RIPTIDE, FIREWORK }
+    public enum Source { COAST, RIPTIDE, FIREWORK, VIRTUAL_PROPULSION }
     public enum Phase { TAKEOFF, APPROACH, REPOSITION, REJOIN, STRIKE, EXIT, AIR_RECOVERY, EMERGENCY, TRANSIT }
     public PropulsionDemand(Phase phase,double x,double height,double z,double minimumSpeed,SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,double rate,boolean exiting,int deadline){this(phase,x,height,z,minimumSpeed,path,aim,rate,exiting,deadline,null);}
     public PropulsionDemand(Phase phase,double x,double height,double z,double minimumSpeed,SweepingAttackPlanner.Path path,FlightPrediction.Aim aim,double rate,boolean exiting){this(phase,x,height,z,minimumSpeed,path,aim,rate,exiting,Integer.MAX_VALUE);}

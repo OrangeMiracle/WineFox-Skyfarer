@@ -16,10 +16,11 @@ public sealed interface PlanningTask extends PlannerExecutor.Task<Object> {
             &&near(bounds.x(),b.bounds.x(),2)&&near(bounds.z(),b.bounds.z(),2)&&near(bounds.radius(),b.bounds.radius(),2);}
     }
     record Slot(Class<?> type,int variant,long option) {}
-    record Propulsion(FlightPrediction.State start,PropulsionDemand demand,float strength,double gravity,boolean wet) implements PlanningTask {
+    record Propulsion(FlightPrediction.State start,PropulsionDemand demand,float strength,double gravity,boolean wet,boolean virtual) implements PlanningTask {
+        public Propulsion(FlightPrediction.State start,PropulsionDemand demand,float strength,double gravity,boolean wet){this(start,demand,strength,gravity,wet,false);}
         public Slot slot(){return new Slot(getClass(),Float.floatToIntBits(strength),demand.phase().ordinal());}
-        public Object compute(CollisionSnapshot.Space space){return RiptidePlanner.choose(start,demand,strength,gravity,space,wet?space:SurfaceLaunchPlanner.DRY);}
-        public boolean compatible(PlanningTask p){return p instanceof Propulsion r&&strength==r.strength&&gravity==r.gravity&&wet==r.wet
+        public Object compute(CollisionSnapshot.Space space){return virtual?RiptidePlanner.chooseVirtual(start,demand,gravity,space,wet?space:SurfaceLaunchPlanner.DRY):RiptidePlanner.choose(start,demand,strength,gravity,space,wet?space:SurfaceLaunchPlanner.DRY);}
+        public boolean compatible(PlanningTask p){return p instanceof Propulsion r&&virtual==r.virtual&&strength==r.strength&&gravity==r.gravity&&wet==r.wet
             &&demand.phase()==r.demand.phase()&&near(demand.x(),r.demand.x(),1)&&near(demand.height(),r.demand.height(),1)&&near(demand.z(),r.demand.z(),1)
             &&demand.path()==r.demand.path()&&java.util.Objects.equals(demand.turn(),r.demand.turn())&&aim(demand.aim(),r.demand.aim())&&demand.minimumSpeed()==r.demand.minimumSpeed()&&demand.rate()==r.demand.rate()&&demand.exiting()==r.demand.exiting()&&near(demand.contactDeadline(),r.demand.contactDeadline(),2);}
     }

@@ -42,5 +42,12 @@
   "message.winefox_skyfarer.wings_return_equipment": "飞行装备不合适，我先找地方安全落地！",
   "message.winefox_skyfarer.wings_ground": "主人，这副翅膀快散架啦……今天还是老老实实走地面吧。",
   "message.winefox_skyfarer.wings_return": "主人，翅膀在报警！我先撤回来！",
-  "message.winefox_skyfarer.wings_landed": "好啦，翅膀休息，接下来轮到长矛！"
+  "message.winefox_skyfarer.wings_landed": "好啦，翅膀休息，接下来轮到长矛！",
+  "item.winefox_skyfarer.comet_heart": "彗星之心",
+  "item.winefox_skyfarer.everburning_comet_heart": "永燃彗星之心",
+  "tooltip.winefox_skyfarer.maid_bauble": "东方女仆饰品 · 骑空士专用",
+  "tooltip.winefox_skyfarer.comet_heart": "节约烟花。沉睡的彗星之核，似乎仍渴望更多能量……",
+  "tooltip.winefox_skyfarer.everburning_comet_heart": "不灭的星火，为银翼提供可控的飞行动力。",
+  "advancement.winefox_skyfarer.silver_wing_successor": "银翼的继承者",
+  "advancement.winefox_skyfarer.silver_wing_successor.desc": "天空已不再是极限，下一站会是哪里？"
 }

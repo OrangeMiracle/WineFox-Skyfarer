@@ -1,0 +1,30 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :compileControllerReplay
+
+> Task :verifyCometReplay
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+virtual controller delayed=false guidedTicks=64 hit=210 exit=true collision=false hold=-1
+Exception in thread "main" java.lang.AssertionError: virtual controller delayed=true guidedTicks=235 hit=-1 exit=false collision=false hold=8
+virtual controller delayed=true guidedTicks=235 hit=-1 exit=false collision=false hold=8
+	at dev.winefox.skyfarer.replay.CometChecks.require(CometChecks.java:24)
+	at dev.winefox.skyfarer.replay.CometChecks.replay(CometChecks.java:154)
+	at dev.winefox.skyfarer.replay.CometChecks.main(CometChecks.java:30)
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+> Task :verifyCometReplay FAILED
+Execution failed for task ':verifyCometReplay'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 13s
+2 actionable tasks: 2 executed

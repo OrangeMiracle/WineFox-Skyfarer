@@ -8,6 +8,7 @@ public final class SkyfarerConfig {
     public record Parameter(String category, String name, double initial, double min, double max, String unit, boolean integral) {}
     public static final Map<String, Parameter> PARAMETERS = new LinkedHashMap<>();
     static {
+        define("accessories", "comet_firework_saving_chance", .6, .5, .7, "probability");
         define("flight", "max_turn_angle", 120, 10, 180, "degrees");
         define("flight", "turn_rate", 5, 0.1, 20, "degrees/tick");
         define("flight", "attack_turn_rate", 2.5, 0.1, 10, "degrees/tick");

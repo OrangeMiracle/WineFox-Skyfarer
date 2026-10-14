@@ -1,1 +1,1 @@
-package net.minecraft.world.item; public class Items {public static final Object FIREWORK_ROCKET=new Object(),TRIDENT=new Object(),ELYTRA=new Object(),DIAMOND_CHESTPLATE=new Object(),STONE=new Object();}
+package net.minecraft.world.item; public class Items {public static final Object TNT=new Object(),FIREWORK_ROCKET=new Object(),TRIDENT=new Object(),ELYTRA=new Object(),DIAMOND_CHESTPLATE=new Object(),STONE=new Object();}

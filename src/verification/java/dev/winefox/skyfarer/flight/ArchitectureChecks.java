@@ -13,12 +13,29 @@ public final class ArchitectureChecks {
                     return new MethodVisitor(Opcodes.ASM9){
                         @Override public void visitMethodInsn(int opcode,String owner,String method,String descriptor,boolean itf){
                             require(!method.equals("isAutoSpinAttack"),caller+" leaked provider spin lifecycle");
-                            for(String forbidden:List.of("FireworkManager","FireworkRocketEntity","FireworkLifetimeAccessor","RiptidePropulsion","RiptideReadiness","RocketProfile"))
+                            for(String forbidden:List.of("FireworkManager","FireworkRocketEntity","FireworkLifetimeAccessor","RiptidePropulsion","RiptideReadiness","RocketProfile","CometBaubles","PropulsionResolver","VirtualPropulsion"))
                                 require(!owner.endsWith("/"+forbidden),caller+" leaked provider call "+owner+"."+method);
                         }
                     };
                 }
             });
+        }
+        // A new legacy entry must not silently reopen direct resource consumption.
+        try(var files=Files.walk(Path.of("build/classes/java/main/dev/winefox/skyfarer"))){
+            for(var path:files.filter(p->p.toString().endsWith(".class")).toList()){
+                new ClassReader(Files.readAllBytes(path)).accept(new ClassVisitor(Opcodes.ASM9){
+                    @Override public MethodVisitor visitMethod(int a,String name,String descriptor,String signature,String[] exceptions){
+                        return new MethodVisitor(Opcodes.ASM9){
+                            @Override public void visitMethodInsn(int op,String owner,String method,String desc,boolean itf){
+                                if(owner.endsWith("/FireworkManager")&&method.equals("boost"))
+                                    require(path.getFileName().toString().startsWith("PropulsionCapability$"),"direct ignition outside resolver provider: "+path+"."+name);
+                                if(path.getFileName().toString().equals("CometThrustEffects.class"))
+                                    require(!owner.startsWith("net/minecraft/client/"),"client renderer linked from server effects");
+                            }
+                        };
+                    }
+                },0);
+            }
         }
         // Production task records cannot contain live game objects or caller closures.
         try(var files=Files.list(Path.of("build/classes/java/main/dev/winefox/skyfarer/async"))){
@@ -38,7 +55,7 @@ public final class ArchitectureChecks {
         for(String retained:List.of("max_turn_angle","firework_cooldown_ticks","spear_vertical_expansion","prediction_length_multiplier"))
             require(settings.containsKey(retained),"live config removed: "+retained);
         require(Arrays.stream(dev.winefox.skyfarer.ai.AirCombatState.values()).noneMatch(s->Set.of("BREAKAWAY","ABORT","EMERGENCY").contains(s.name())),"unreachable state retained");
-        System.out.println("0.7 architecture: provider-free upper control, closed worker DTOs, dead config/state removal and live config retention passed.");
+        System.out.println("0.7.3 architecture: provider-free upper control, sole resolver ignition port, server/client effects isolation, closed worker DTOs and live config retention passed.");
     }
     private static void visit(String name,ClassVisitor visitor)throws Exception {
         try(var in=ArchitectureChecks.class.getClassLoader().getResourceAsStream("dev/winefox/skyfarer/"+name+".class")){

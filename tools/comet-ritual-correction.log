@@ -1,0 +1,37 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :compileControllerReplay
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyCometRitual
+Ritual rejects insufficient, picked-up, out-of-radius, visual, later-flash and off-thread inputs without partial payment
+Atomic conversion: one existing entity, 32+40 TNT -> 8 surplus, component preservation, duplicate rejection and finite persisted aftermath protection passed
+Reward attribution: lightning cause > positively identified offline thrower; unattributed ritual yields item without bystander reward
+Kill evolution: confirmed source, duplicate death, transferred stack progress and owner entitlement passed
+Dropped-item ritual and unchanged kill evolution checks passed
+
+> Task :processResources
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+> Task :verifyCometData
+Actual ItemStack codec persistence/copy, namespaced components, bounded count, SavedData reload/deduplication, native dependency hook descriptors and loot/advancement resources passed
+
+> Task :jarJar NO-SOURCE
+> Task :jar
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 12s
+8 actionable tasks: 7 executed, 1 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

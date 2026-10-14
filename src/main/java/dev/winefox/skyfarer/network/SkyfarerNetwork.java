@@ -11,8 +11,10 @@ public final class SkyfarerNetwork {
     public static Consumer<AirCombatDebugPayload> debug = payload -> {};
     public static Consumer<CommandMarksPayload> marks=payload->{};
     public static Consumer<DebugPanelPayload> debugPanel=payload->{};
+    public static Consumer<CometThrustPayload> cometThrust=payload->{};
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("3");
+        var registrar = event.registrar("4");
+        registrar.playToClient(CometThrustPayload.TYPE,CometThrustPayload.CODEC,(payload,context)->context.enqueueWork(()->cometThrust.accept(payload)));
         registrar.playToClient(DebugPanelPayload.TYPE,DebugPanelPayload.CODEC,(payload,context)->context.enqueueWork(()->debugPanel.accept(payload)));
         registrar.playToServer(DebugPanelActionPayload.TYPE,DebugPanelActionPayload.CODEC,(payload,context)->context.enqueueWork(()->{if(context.player() instanceof ServerPlayer player)dev.winefox.skyfarer.runtime.DebugPanelManager.action(player,payload.data());}));
         registrar.playToClient(CommandMarksPayload.TYPE,CommandMarksPayload.CODEC,(payload,context)->context.enqueueWork(()->marks.accept(payload)));

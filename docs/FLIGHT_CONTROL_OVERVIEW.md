@@ -1,6 +1,10 @@
 # 飞控系统总设计与当前实现
 
-当前版本 **0.7.1**。航迹承诺、控制仲裁与延迟安全见 [航迹连续性](TRAJECTORY_CONTINUITY.md)，既有推进边界见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
+0.7.4 只调整实际推进之后的客户端光效与圣物掉落行为，物理/认证/动力仲裁未改动，见 [彗星光效与掉落保护](COMET_RADIANCE_074.md)。
+
+0.7.3 统一动力源权威仲裁，永燃独占推进、持续闭环速度保持和客户端双赤尾焰/气流环，见 [动力仲裁与持续控制](PROPULSION_073.md)。饰品与隐藏觉醒机制见 [彗星专题](COMET_HEARTS.md)。
+
+当前版本 **0.7.4**。航迹承诺、控制仲裁与延迟安全见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有推进边界见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
 
 ## 导航
 
@@ -21,7 +25,7 @@
 
 核心目标是从当前动量出发，在真实身体通道可通过、长矛可接触、攻击后有恢复路线的前提下完成攻击，随后尽早评估下一次进场。地形附近的方块数量或单根射线不是攻击可行性的替代品；近处有山体、地板或屋顶不等于航线被堵塞。
 
-正常战斗使用原版鞘翅滑翔、附着烟花或 WineFox 有限时长激流；激流可服务已认证的 Strike/Exit，仍须证明推力及完整后续路线。高度、速度、阻力和有限推进共同影响未来能量；普通控制主要修改观察方向，激流按已有 .2/tick 规则叠加实际推力，不把速度向量直接旋转到目标方向。目标高度、垂直速度反馈和速度阈值仍存在。
+正常战斗使用原版鞘翅滑翔、附着烟花、WineFox 有限时长激流或永燃之心的有限虚拟推力；激流可服务已认证的 Strike/Exit，仍须证明推力及完整后续路线。高度、速度、阻力和有限推进共同影响未来能量；普通控制主要修改观察方向，激流按已有 .2/tick 规则叠加实际推力，不把速度向量直接旋转到目标方向。目标高度、垂直速度反馈和速度阈值仍存在。
 
 关键物理约定：
 
@@ -306,7 +310,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 成本含时间、紧通道、姿态变化平方、与当前转向趋势反向的代价。直达几何 simplicity 为 0、弧线/绕山为 1.5，保留小的简单性优势；不是几何直线能通就强制放弃曲线。控制器还用实际预测 miss、能量亏空、净空和预计时间与已有常规路线竞争。
 
-初始搜索完成后默认隔 12 ticks 再发，pending 按下一 tick 领取。提交攻击前必须用当前状态完成 Rejoin/同等完整认证，可调整出口高度或验证库存推进。提交后 `TrajectoryCommitment` 保存路径，后台刷新使用时间对齐的有限证明，必要时从当前状态重验同一路径；另每 16 ticks 可选搜索明显更好候选，满足承诺窗口和切换成本才更换。接入和换路都不能绕过前摇、身体碰撞或完整 Exit，详见 [航迹连续性](TRAJECTORY_CONTINUITY.md)。
+初始搜索完成后默认隔 12 ticks 再发，pending 按下一 tick 领取。提交攻击前必须用当前状态完成 Rejoin/同等完整认证，可调整出口高度或验证库存推进。提交后 `TrajectoryCommitment` 保存路径，后台刷新使用时间对齐的有限证明，必要时从当前状态重验同一路径；另每 16 ticks 可选搜索明显更好候选，满足承诺窗口和切换成本才更换。接入和换路都不能绕过前摇、身体碰撞或完整 Exit，详见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)。
 
 源码：[SweepingAttackPlanner](../src/main/java/dev/winefox/skyfarer/flight/SweepingAttackPlanner.java)、[AttackLanePlanner](../src/main/java/dev/winefox/skyfarer/flight/AttackLanePlanner.java)、[AttackLinePlanner](../src/main/java/dev/winefox/skyfarer/flight/AttackLinePlanner.java)、[DiveProfile](../src/main/java/dev/winefox/skyfarer/flight/DiveProfile.java)。
 
@@ -385,7 +389,9 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 ## 8. 统一推进与能量
 
-`manageEnergy`/曲线跟随先评估 coast；飞控向 `FlightPropulsion` 提交需求与 Turn/Curve/Glide 路线，合法且通过全段认证的 READY 激流优先，烟花后备。普通等待有界、紧急不等待未准备资源。低速本身不能推翻已经可命中的滑翔曲线；pending 不等于 coast 失败。
+`manageEnergy`/曲线跟随先评估 coast；飞控向 `FlightPropulsion` 提交需求与 Turn/Curve/Glide 路线，由 `PropulsionResolver` 权威选择。永燃独占时只允许虚拟推进或安全恢复，没有永燃时合法且通过全段认证的 READY 激流优先，烟花后备。普通等待有界、紧急不等待未准备资源。低速本身不能推翻已经可命中的滑翔曲线；pending 不等于 coast 失败。
+
+持续速度保持由可选 Provider.sustain 接入，在当前路线下重验有界动力窗口，仅提交下一 tick。有限虚拟加速结束可继续供力，保留无动力恢复证明；推力、姿态和预测共用纯数值模型。详见 [0.7.3 仲裁与持续控制](PROPULSION_073.md)。
 
 激流拥有推进期间的姿态与剩余路线认证；附着推力继续使用既有 Vanilla 积分器，预测参数只由推进服务提供。火箭完整随机寿命、冷却、爆炸惩罚、库存和点火延迟留在提供器。激流环境、装备、READY、可控时长与副手释放留在激流层。没有把两者视作同一种力。
 
@@ -418,7 +424,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 `TransitFlight` 是订单专用控制器，不是 `AirCombatState` 的另一个枚举值。订单赶路时 `CommandManager.beforeMaidTick()` 返回接管，跳过 `AirCombatController`。已分配目标在到达交接半径前保持，不因途中发现别的怪而掉头；普通订单 48 格，创造订单 **3D 距离 32 格** 交接。
 
-赶路免费推进，不写女仆库存。普通赶路生成显式 Flight 0 的附着烟花，仍按有限寿命、真实起飞/局部预测和安全通道移动；它不是整个世界的全局寻路器，普通 Glide 请求每约 5 ticks 刷新并做当前步 live 检查。交接销毁免费火箭、关闭赶路会话，速度长度超过 1.7 则缩到 1.7，再交 `acceptCommand(target)`。之后战斗使用真实库存和正常伤害规则。
+赶路免费推进，不写女仆库存。普通赶路也遵守永燃独占/激流优先；允许烟花后备时生成显式 Flight 0 的附着烟花，仍按有限寿命、真实起飞/局部预测和安全通道移动；它不是整个世界的全局寻路器，普通 Glide 请求每约 5 ticks 刷新并做当前步 live 检查。交接销毁免费火箭、关闭赶路会话，速度长度超过 1.7 则缩到 1.7，再交 `acceptCommand(target)`。之后战斗使用真实库存和正常伤害规则。
 
 赶路失败关闭 transit，请求普通返航并设置 200 ticks 重试等待；创造女仆落地且目标仍远时可重新创建赶路控制器，不能一直保留“曾经已经到达”的状态。
 

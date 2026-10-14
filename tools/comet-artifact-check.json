@@ -1,0 +1,23 @@
+{
+  "jar": "build\\libs\\winefox_skyfarer-1.21.1-0.7.2.jar",
+  "bytes": 621031,
+  "sha256": "2B2DE212B2FA25AEDDF83881A287A52782B81D14DF2AA5388CB2B356548738DB",
+  "version": "0.7.2",
+  "json": "all parsed",
+  "fixtures": "absent",
+  "ritualMixins": "present",
+  "textures": {
+    "comet_heart": {
+      "width": 32,
+      "height": 32,
+      "rgba": true,
+      "sha256": "44f469e65f9bb07f04eb2393e6acc59bbe85c63094bc502a1b87c7aa4a0ee451"
+    },
+    "everburning_comet_heart": {
+      "width": 32,
+      "height": 32,
+      "rgba": true,
+      "sha256": "09167594419a36ddc4ff074eb732ac3900f78f0fffe2767bd00834f911be896e"
+    }
+  }
+}

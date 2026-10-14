@@ -3,7 +3,35 @@
   "minVersion": "0.8",
   "package": "dev.winefox.skyfarer.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": ["EntityFlightAccessor", "LivingRiptideAccessor", "MaidRiptideReleaseMixin", "RiptideUseAuditMixin", "FlightFlagAuditMixin", "TlmFollowOwnerMixin", "MobAirControlMixin", "TlmAirControlMixin", "SpearFriendlyFireMixin", "SpearMovementMixin", "MaidSpearChargeMixin", "MaidSpearMeleeMixin", "MaidFlightPoseMixin", "FireworkLifetimeAccessor", "CommandHomeRecallMixin", "MaidWorldDataAccessor"],
-  "client": ["TlmSpearItemPoseMixin", "MaidFlightRenderMixin", "CommandSpyglassModelMixin"],
-  "injectors": {"defaultRequire": 1}
+  "mixins": [
+    "EntityFlightAccessor",
+    "LivingRiptideAccessor",
+    "MaidRiptideReleaseMixin",
+    "RiptideUseAuditMixin",
+    "FlightFlagAuditMixin",
+    "TlmFollowOwnerMixin",
+    "MobAirControlMixin",
+    "TlmAirControlMixin",
+    "SpearFriendlyFireMixin",
+    "SpearMovementMixin",
+    "MaidSpearChargeMixin",
+    "MaidSpearMeleeMixin",
+    "MaidFlightPoseMixin",
+    "FireworkLifetimeAccessor",
+    "CommandHomeRecallMixin",
+    "MaidWorldDataAccessor",
+    "CometDeathMixin",
+    "CometLightningMixin",
+    "ItemThrowerAccessor",
+    "CometRitualItemMixin"
+  ],
+  "client": [
+    "CometOutlineMixin",
+    "TlmSpearItemPoseMixin",
+    "MaidFlightRenderMixin",
+    "CommandSpyglassModelMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

@@ -1,0 +1,169 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :compileControllerReplay FAILED
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:3: 错误: 程序包com.github.tartaricacid.touhoulittlemaid.api.bauble不存在
+import com.github.tartaricacid.touhoulittlemaid.api.bauble.IMaidBauble;
+                                                          ^
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:5: 错误: 程序包com.github.tartaricacid.touhoulittlemaid.item.bauble不存在
+import com.github.tartaricacid.touhoulittlemaid.item.bauble.BaubleManager;
+                                                           ^
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:13: 错误: 找不到符号
+    public static void bind(BaubleManager manager) {
+                            ^
+  符号:   类 BaubleManager
+  位置: 类 CometBaubles
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\FireworkManager.java:67: 错误: 找不到符号
+                &&maid.getRandom().nextDouble()<SkyfarerSettings.get("comet_firework_saving_chance")) {
+                      ^
+  符号:   方法 getRandom()
+  位置: 类型为EntityMaid的变量 maid
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\FireworkManager.java:71: 错误: 找不到符号
+                var restored=consumed.copy();restored.setCount(remainder.getCount()+consumed.getCount());
+                                                     ^
+  符号:   方法 setCount(int)
+  位置: 类型为ItemStack的变量 restored
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\FireworkManager.java:72: 错误: 找不到符号
+                inventory.setStackInSlot(selected,restored);
+                         ^
+  符号:   方法 setStackInSlot(int,ItemStack)
+  位置: 类型为Inventory的变量 inventory
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:14: 错误: 找不到符号
+        manager.bind(WineFoxSkyfarer.COMET_HEART.get(),new IMaidBauble() {});
+                                                           ^
+  符号:   类 IMaidBauble
+  位置: 类 CometBaubles
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:14: 错误: 找不到符号
+        manager.bind(WineFoxSkyfarer.COMET_HEART.get(),new IMaidBauble() {});
+                                    ^
+  符号:   变量 COMET_HEART
+  位置: 类 WineFoxSkyfarer
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:15: 错误: 找不到符号
+        manager.bind(WineFoxSkyfarer.EVERBURNING_COMET_HEART.get(),new IMaidBauble() {});
+                                                                       ^
+  符号:   类 IMaidBauble
+  位置: 类 CometBaubles
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:15: 错误: 找不到符号
+        manager.bind(WineFoxSkyfarer.EVERBURNING_COMET_HEART.get(),new IMaidBauble() {});
+                                    ^
+  符号:   变量 EVERBURNING_COMET_HEART
+  位置: 类 WineFoxSkyfarer
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:18: 错误: 找不到符号
+        var inventory=maid.getMaidBauble();int found=-1;
+                          ^
+  符号:   方法 getMaidBauble()
+  位置: 类型为EntityMaid的变量 maid
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:21: 错误: 找不到符号
+            if(stack.is(WineFoxSkyfarer.EVERBURNING_COMET_HEART.get()))return -1;
+                                       ^
+  符号:   变量 EVERBURNING_COMET_HEART
+  位置: 类 WineFoxSkyfarer
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:26: 错误: 找不到符号
+    public static boolean ordinary(ItemStack stack){return stack.getCount()==1&&stack.is(WineFoxSkyfarer.COMET_HEART.get());}
+                                                                                                        ^
+  符号:   变量 COMET_HEART
+  位置: 类 WineFoxSkyfarer
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:29: 错误: 找不到符号
+        var inventory=maid.getMaidBauble();
+                          ^
+  符号:   方法 getMaidBauble()
+  位置: 类型为EntityMaid的变量 maid
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:30: 错误: 找不到符号
+        for(int slot=0;slot<inventory.getSlots();slot++)if(inventory.getStackInSlot(slot).is(WineFoxSkyfarer.EVERBURNING_COMET_HEART.get()))return true;
+                                                                                                            ^
+  符号:   变量 EVERBURNING_COMET_HEART
+  位置: 类 WineFoxSkyfarer
+15 个错误
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileControllerReplay'.
+> Compilation failed; see the compiler output below.
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:13: 错误: 找不到符号
+      public static void bind(BaubleManager manager) {
+                              ^
+    符号:   类 BaubleManager
+    位置: 类 CometBaubles
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:14: 错误: 找不到符号
+          manager.bind(WineFoxSkyfarer.COMET_HEART.get(),new IMaidBauble() {});
+                                                             ^
+    符号:   类 IMaidBauble
+    位置: 类 CometBaubles
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:14: 错误: 找不到符号
+          manager.bind(WineFoxSkyfarer.COMET_HEART.get(),new IMaidBauble() {});
+                                      ^
+    符号:   变量 COMET_HEART
+    位置: 类 WineFoxSkyfarer
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:15: 错误: 找不到符号
+          manager.bind(WineFoxSkyfarer.EVERBURNING_COMET_HEART.get(),new IMaidBauble() {});
+                                                                         ^
+    符号:   类 IMaidBauble
+    位置: 类 CometBaubles
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:15: 错误: 找不到符号
+          manager.bind(WineFoxSkyfarer.EVERBURNING_COMET_HEART.get(),new IMaidBauble() {});
+                                      ^
+    符号:   变量 EVERBURNING_COMET_HEART
+    位置: 类 WineFoxSkyfarer
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:21: 错误: 找不到符号
+              if(stack.is(WineFoxSkyfarer.EVERBURNING_COMET_HEART.get()))return -1;
+                                         ^
+    符号:   变量 EVERBURNING_COMET_HEART
+    位置: 类 WineFoxSkyfarer
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:26: 错误: 找不到符号
+      public static boolean ordinary(ItemStack stack){return stack.getCount()==1&&stack.is(WineFoxSkyfarer.COMET_HEART.get());}
+                                                                                                          ^
+    符号:   变量 COMET_HEART
+    位置: 类 WineFoxSkyfarer
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:30: 错误: 找不到符号
+          for(int slot=0;slot<inventory.getSlots();slot++)if(inventory.getStackInSlot(slot).is(WineFoxSkyfarer.EVERBURNING_COMET_HEART.get()))return true;
+                                                                                                              ^
+    符号:   变量 EVERBURNING_COMET_HEART
+    位置: 类 WineFoxSkyfarer
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\FireworkManager.java:67: 错误: 找不到符号
+                  &&maid.getRandom().nextDouble()<SkyfarerSettings.get("comet_firework_saving_chance")) {
+                        ^
+    符号:   方法 getRandom()
+    位置: 类型为EntityMaid的变量 maid
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\FireworkManager.java:71: 错误: 找不到符号
+                  var restored=consumed.copy();restored.setCount(remainder.getCount()+consumed.getCount());
+                                                       ^
+    符号:   方法 setCount(int)
+    位置: 类型为ItemStack的变量 restored
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\flight\FireworkManager.java:72: 错误: 找不到符号
+                  inventory.setStackInSlot(selected,restored);
+                           ^
+    符号:   方法 setStackInSlot(int,ItemStack)
+    位置: 类型为Inventory的变量 inventory
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:18: 错误: 找不到符号
+          var inventory=maid.getMaidBauble();int found=-1;
+                            ^
+    符号:   方法 getMaidBauble()
+    位置: 类型为EntityMaid的变量 maid
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:29: 错误: 找不到符号
+          var inventory=maid.getMaidBauble();
+                            ^
+    符号:   方法 getMaidBauble()
+    位置: 类型为EntityMaid的变量 maid
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:3: 错误: 程序包com.github.tartaricacid.touhoulittlemaid.api.bauble不存在
+  import com.github.tartaricacid.touhoulittlemaid.api.bauble.IMaidBauble;
+                                                            ^
+  F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\compat\tlm\CometBaubles.java:5: 错误: 程序包com.github.tartaricacid.touhoulittlemaid.item.bauble不存在
+  import com.github.tartaricacid.touhoulittlemaid.item.bauble.BaubleManager;
+                                                             ^
+  15 个错误
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to generate a Build Scan (powered by Develocity).
+
+BUILD FAILED in 9s
+3 actionable tasks: 2 executed, 1 up-to-date

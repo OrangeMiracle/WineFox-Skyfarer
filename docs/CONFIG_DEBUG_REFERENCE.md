@@ -1,12 +1,14 @@
 # 配置、指挥、调试与兼容接口
 
-当前版本 **0.7.1**。航迹/控制权诊断见 [航迹连续性](TRAJECTORY_CONTINUITY.md)，既有配置迁移见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。本轮没有新增配置。源码为最终权威。
+0.7.3 统一动力源权威仲裁，永燃独占推进、持续闭环速度保持和客户端双赤尾焰/气流环，见 [动力仲裁与持续控制](PROPULSION_073.md)。饰品与隐藏觉醒机制见 [彗星专题](COMET_HEARTS.md)。
+
+当前版本 **0.7.4**。航迹/控制权诊断见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有配置迁移见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。新增 SERVER 配置 `accessories.comet_firework_saving_chance`，默认 0.6、范围 0.5–0.7。源码为最终权威。
 
 ## 1. 配置的入口与生效方式
 
 定义源为 [SkyfarerConfig](../src/main/java/dev/winefox/skyfarer/config/SkyfarerConfig.java)，统一读取与写入入口为 [SkyfarerSettings](../src/main/java/dev/winefox/skyfarer/config/SkyfarerSettings.java)。[WineFoxSkyfarer](../src/main/java/dev/winefox/skyfarer/WineFoxSkyfarer.java) 注册的是 NeoForge **SERVER** 配置；没有单独的客户端飞控配置。常规服务端配置文件名为 `winefox_skyfarer-server.toml`，由 NeoForge 管理其存档配置位置。
 
-- TOML 使用 `flight`、`targeting`、`combat`、`safety`、`command`、`debug`、`equipment` 分组；命令使用不带组名的键，例如 `turn_rate`。
+- TOML 使用 `flight`、`targeting`、`combat`、`safety`、`command`、`debug`、`equipment`、`accessories` 分组；命令使用不带组名的键，例如 `turn_rate`。
 - 数值都声明为 `DoubleValue`。`ticks`、`attempts` 单位的键在 `/wfs config set` 中额外要求整数；其余值允许小数。运行时 `ticks()` 转为 int，因此不要把手工文件中的小数 tick 当作受支持的细粒度调度。
 - 未载入配置时读取定义的默认值；写入要求配置已载入，并校验有限数、上下限及整数要求。
 - 数值 `set` / `reset`、全量 reset、配置 reload 会提升 settings revision，让异步 session 淘汰旧参数任务。`debuglog` 单独开关只影响日志并保存，不递增规划配置版本。
@@ -304,3 +306,7 @@ ATTACK_SEARCH 每女仆通常 20 ticks 限频（commit 另记），显示目标�
 ## 0.7.0 配置迁移
 
 移除无行为消费者的 `previous_target_bonus`、`climb_height`、`forward_collision_check_distance`，不再由 `/wfs config` 暴露。旧值无需映射；NeoForge 配置校正可删除这些旧键。依据见 [审计](ARCHITECTURE_070.md)。
+
+## 彗星光效诊断（0.7.4）
+
+通过现有 `/wfs debuglog on` 启用 `debug.debuglog` 后，每约 5 秒聚合记录服务端 `[WFS comet-fx server]` 的 tx/rings/stops/currentPower，以及客户端 `[WFS comet-fx client]` 的 rx/active/spawned/awaitingEntity/distanceCulled/budgetLimited/providerMissing。tx 是 tracking 包提交，spawned 是客户端创建提交，均不直接证明屏幕可见。计数随世界/服务器生命周期清理。完整排查顺序、Fullbright 和粒子上限见 [彗星光效专题](COMET_RADIANCE_074.md)。
