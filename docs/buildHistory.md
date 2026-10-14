@@ -4,6 +4,13 @@
 
 当前工程为 **0.7.6**，基于本地 0.7.5 修复 Home 回收后重复远程任务的接单/起飞交接。仅编译、五项定向验证和打包，未运行全量 build/check/verify，未启动或安装 Minecraft。
 
+## 0.7.6 — 名称与封面更新（2026-10-14）
+
+- 中文名改为「车万女仆: 骑空士」，英文名改为「Touhou Little Maid: Skyfarer」。NeoForge 列表使用固定英文名，介绍含中文名，资源包名称提供中英文翻译。
+- 发行包改为 `touhou_little_maid_skyfarer-1.21.1-0.7.6.jar`；保留原 Mod ID、注册 ID 和版本以兼容存档。
+- 原样收录用户提供的 `Mod封面.png` 为 `mod_logo.png`，通过 `logoFile` 接入模组列表。
+- 本轮仅编译与 Jar 资源检查；不运行全量验证，不启动 Minecraft。
+
 ## 0.7.6 — 重复远程接单与 Home 重载接触（2026-10-13）
 
 - 最新日志实际显示第二次 generation=3 已成功发现、申请票据、加载并接单，随后取消赶路进入 transit_retry；不是 attempted 永久锁定或永燃资格丢失。首次完成 Home 回收及后续接单的完整证据见 [专题](REMOTE_RECALL_076.md)。

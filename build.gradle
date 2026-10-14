@@ -4,7 +4,7 @@ plugins {
 }
 group = 'dev.winefox.skyfarer'
 version = '0.7.6'
-base { archivesName = 'winefox_skyfarer-1.21.1' }
+base { archivesName = 'touhou_little_maid_skyfarer-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
 neoForge {

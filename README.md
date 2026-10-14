@@ -1,9 +1,11 @@
-# WineFox: Skyfarer
+# 车万女仆: 骑空士
+
+**Touhou Little Maid: Skyfarer**
 
 > 酒狐会种田、会做饭、会施法、会打架
 > 所以会飞，应该也很合理吧？
 
-**WineFox: Skyfarer** 是一个为 **Touhou Little Maid** 制作的 NeoForge 附属模组，为女仆新增工作模式 **「骑空士」**。
+**车万女仆: 骑空士** 是一个为 **Touhou Little Maid** 制作的 NeoForge 附属模组，为女仆新增工作模式 **「骑空士」**。
 
 装备好 **鞘翅、长矛和推进装备（永燃彗星之心、雨中/水中的激流三叉戟或烟花）** 后，女仆将不再满足于站在地上和怪物互殴。
 

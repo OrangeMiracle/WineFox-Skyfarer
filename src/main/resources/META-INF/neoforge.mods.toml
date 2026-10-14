@@ -8,9 +8,11 @@ config="winefox_skyfarer.ysm.mixins.json"
 [[mods]]
 modId="winefox_skyfarer"
 version="0.7.6"
-displayName="WineFox: Skyfarer"
+displayName="Touhou Little Maid: Skyfarer"
+logoFile="mod_logo.png"
 authors="WineFox"
-description='''Elytra airborne spear attack task and maid remote for Touhou Little Maid.'''
+description='''车万女仆: 骑空士
+Elytra airborne spear attack task and maid remote for Touhou Little Maid.'''
 [[dependencies.winefox_skyfarer]]
 modId="neoforge"
 type="required"

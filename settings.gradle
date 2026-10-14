@@ -1,4 +1,4 @@
 pluginManagement {
     repositories { gradlePluginPortal(); maven { url = 'https://maven.neoforged.net/releases' } }
 }
-rootProject.name = 'winefox-skyfarer'
+rootProject.name = 'touhou-little-maid-skyfarer'

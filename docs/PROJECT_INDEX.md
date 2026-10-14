@@ -1,4 +1,6 @@
-# WineFox: Skyfarer 0.7.6 工程总索引
+# 车万女仆: 骑空士 / Touhou Little Maid: Skyfarer 0.7.6 工程总索引
+
+显示名称及发行包已更名；Mod ID `winefox_skyfarer` 保留以兼容存档。当前产物为 `touhou_little_maid_skyfarer-1.21.1-0.7.6.jar`，Mod 列表封面来自 `tools/素材参考/Mod封面.png`。
 
 0.7.6 修复 Home 回收后再次接单的控制权与地面接触交接，补齐虚拟起飞的局部赶路范围及拒绝日志；三轮重复任务证据见 [重复远程召唤](REMOTE_RECALL_076.md)。
 
