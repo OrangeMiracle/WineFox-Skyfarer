@@ -1,10 +1,6 @@
 # 飞控系统总设计与当前实现
 
-0.7.4 只调整实际推进之后的客户端光效与圣物掉落行为，物理/认证/动力仲裁未改动，见 [彗星光效与掉落保护](COMET_RADIANCE_074.md)。
-
-0.7.3 统一动力源权威仲裁，永燃独占推进、持续闭环速度保持和客户端双赤尾焰/气流环，见 [动力仲裁与持续控制](PROPULSION_073.md)。饰品与隐藏觉醒机制见 [彗星专题](COMET_HEARTS.md)。
-
-当前版本 **0.7.6**。航迹承诺、控制仲裁与延迟安全见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有推进边界见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
+当前版本 **0.7.7**。Fox3 作为独立武器旁路运行，不增加飞控状态或改写原有目标。航迹承诺、控制仲裁与延迟安全见 [TrajectoryCommitment](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有推进和饰品规则见 [装备生存与兼容](EQUIPMENT_SURVIVAL.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
 
 ## 导航
 
@@ -20,6 +16,7 @@
 - [10. 指挥镜赶路及高速特例](#10-指挥镜赶路及高速特例)
 - [11. 异步 Planner 与实际飞控之间的关系](#11-异步-planner-与实际飞控之间的关系)
 - [12. 调试、回归与当前限制](#12-调试回归与当前限制)
+- [13. Fox3 独立制导武器](#13-fox3-独立制导武器)
 
 ## 1. 控制目标与物理边界
 
@@ -379,7 +376,7 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 普通 Glide 首 24 ticks 是硬安全窗口；`prediction_length_multiplier` 扩大的远端碰撞仍采样并增加风险成本，不能把无限无动力延伸最终落地当成禁止现在起飞。完整烟花寿命 + 后续滑翔的验证另有硬窗口，不因远端软惩罚而省略。
 
-0.6.2.1 在状态分支前另有真实动量 TTC 检测：速度、转向角差决定 6–32 ticks 余量，危险保持 12 ticks；曲线使用动态控制律。独立紧急请求先验六个滑翔候选，无解才搜索全寿命烟花转向，执行前用当前状态复核，详见 [紧急避障](STABILITY_LAUNCH_0621.md#紧急避障)。陡角 Exit 俯仰上限为 14°/tick，预测与执行一致。
+0.6.2.1 在状态分支前另有真实动量 TTC 检测：速度、转向角差决定 6–32 ticks 余量，危险保持 12 ticks；曲线使用动态控制律。独立紧急请求先验六个滑翔候选，无解才搜索全寿命烟花转向，执行前用当前状态复核，执行入口见 [AirCombatController](../src/main/java/dev/winefox/skyfarer/ai/AirCombatController.java)。陡角 Exit 俯仰上限为 14°/tick，预测与执行一致。
 
 0.7.1 等待紧急 Worker 时不再仅抬头：保留可用的 12 tick 逃逸姿态，失效才比较最多六个姿态；全部以实时身体扫掠检查，不授权点火，也不取代完整逃逸认证。连旧姿态复核最多 84 步。安全控制可立即抢占路线/激流，相关动态墙体 + 12 tick Worker 停顿反例见航迹专题。guided 运行时仍由自身的完整推力/恢复复核守卫，避免漏算激流推力的 coast TTC 误抢占。
 
@@ -391,11 +388,11 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 `manageEnergy`/曲线跟随先评估 coast；飞控向 `FlightPropulsion` 提交需求与 Turn/Curve/Glide 路线，由 `PropulsionResolver` 权威选择。永燃独占时只允许虚拟推进或安全恢复，没有永燃时合法且通过全段认证的 READY 激流优先，烟花后备。普通等待有界、紧急不等待未准备资源。低速本身不能推翻已经可命中的滑翔曲线；pending 不等于 coast 失败。
 
-持续速度保持由可选 Provider.sustain 接入，在当前路线下重验有界动力窗口，仅提交下一 tick。有限虚拟加速结束可继续供力，保留无动力恢复证明；推力、姿态和预测共用纯数值模型。详见 [0.7.3 仲裁与持续控制](PROPULSION_073.md)。
+持续速度保持由可选 Provider.sustain 接入，在当前路线下重验有界动力窗口，仅提交下一 tick。有限虚拟加速结束可继续供力，保留无动力恢复证明；推力、姿态和预测共用纯数值模型。权威入口见 [PropulsionResolver](../src/main/java/dev/winefox/skyfarer/compat/tlm/PropulsionResolver.java)。
 
 激流拥有推进期间的姿态与剩余路线认证；附着推力继续使用既有 Vanilla 积分器，预测参数只由推进服务提供。火箭完整随机寿命、冷却、爆炸惩罚、库存和点火延迟留在提供器。激流环境、装备、READY、可控时长与副手释放留在激流层。没有把两者视作同一种力。
 
-完整需求矩阵、READY 生命周期与物理差异见 [0.7.0 架构](ARCHITECTURE_070.md)。`EnergyReserveEnvelope` 仍衡量整段未来需求；碰撞、接触和完整 Strike→Exit 是硬否决条件。预测伤害不能直接扣血。
+需求矩阵、READY 生命周期与物理差异由 [FlightPropulsion](../src/main/java/dev/winefox/skyfarer/compat/tlm/FlightPropulsion.java) 及提供器实现。`EnergyReserveEnvelope` 仍衡量整段未来需求；碰撞、接触和完整 Strike→Exit 是硬否决条件。预测伤害不能直接扣血。
 
 ## 9. 长矛实际命中与多目标连续攻击
 
@@ -428,9 +425,9 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 
 赶路失败走统一 cancel，移除订单并关闭 Provider/PlannerSession、释放滚动票据；离开 Home 范围的创造女仆沿用最多 200 ticks 的有限回收宽限。目标标记保留，200 ticks 冷却后允许重新分配。地面起飞结果为空时区分 pending 与真正无解，前者最多等 100 游戏 ticks（包括 Worker/Provider 等待），后者安全拒绝；均不能跳过认证或降级绕过永燃独占。该规划等待与初始票据 ready 等待分开计时。实体实例改变先关闭旧会话。
 
-虚拟推进从跳跃进入滑翔后，必须以新姿态的真实眼位/速度重新构造 State，再完成当前认证和 live 身体扫掠；不能沿用切姿态前的站立眼位。0.7.5 实机堆栈、回归证据及范围见 [远程唤醒修复](REMOTE_WAKE_075.md)。
+虚拟推进从跳跃进入滑翔后，必须以新姿态的真实眼位/速度重新构造 State，再完成当前认证和 live 身体扫掠；不能沿用切姿态前的站立眼位。0.7.5 实机堆栈、回归证据及范围见 [历史验证记录](VALIDATION.md#075-永燃远程唤醒)。
 
-0.7.6 接单先按 transit 划分控制权：即使新实体还没有战斗控制器，远程订单也不调用 `acceptCommand`。未滑翔且下落、脚下 0.5 格内有实际支撑的重载实体先由原版 travel 完成接触（最多 20 游戏 ticks），不伪造 OnGround。虚拟 TAKEOFF 与激流共用本地赶路上下文/128 格范围，保留完整认证；回 Home 撤票前即时记录实际位置。见 [重复召唤证据与边界](REMOTE_RECALL_076.md)。
+0.7.6 接单先按 transit 划分控制权：即使新实体还没有战斗控制器，远程订单也不调用 `acceptCommand`。未滑翔且下落、脚下 0.5 格内有实际支撑的重载实体先由原版 travel 完成接触（最多 20 游戏 ticks），不伪造 OnGround。虚拟 TAKEOFF 与激流共用本地赶路上下文/128 格范围，保留完整认证；回 Home 撤票前即时记录实际位置。见 [历史验证记录](VALIDATION.md#076-home-回收后的重复召唤)。
 
 ### 10.2 创造高速赶路
 
@@ -509,14 +506,52 @@ GROUNDED -> TARGET_ACQUIRE -> TARGET_SELECTED -> TAKEOFF_PREP -> TAKEOFF
 - 本文记录实现和既有验证入口，不宣称每种自然地形都能命中；有限候选和有限已加载空间可以正确返回无安全路线。
 - 曲线、坡面、普通 Glide、Compact 和 Chain 是组合控制，尚非统一全局最优路线求解器。不存在整维度导航图或保证最终可达的绕障搜索。
 - 快照更新有间隔；实体碰撞、特殊方块动态逻辑、第三方运动实现和渲染仍需实机确认。安全 guard 降低旧结果风险，不等于全世界动态变化的数学保证。
-- 0.7.0 已删除不可达枚举与三个无效配置，迁移依据见架构审计。
+- 0.7.0 已删除不可达枚举与三个无效配置，当前参数见 [配置参考](CONFIG_DEBUG_REFERENCE.md)。
 - `prediction_length_multiplier` 增长的是接入了 PredictionHorizon 的预测采样；不能声称所有 Planner、曲线长度、搜索半径和快照预算同时按该倍率放大。
 - 主线程仍承担目标实体扫描、实际接触、有限高度/着陆探测和当前步真实碰撞，创造高倍率 live 扫掠是显著需要实机剖析的边界。合成负载数字不是 MC MSPT/GC 优化率。
-- 用户负责 Minecraft 实机测试。当前工程维护规则是不安装/启动 Minecraft，仅构建与离线验证；构建与更新报告写 [buildHistory.md](../buildHistory.md)。
+- 用户负责 Minecraft 实机测试。当前工程维护规则是不安装/启动 Minecraft，仅构建与离线验证；构建与更新报告写 [buildHistory.md](buildHistory.md)。
 
 
 ### 0.7.0 最终下降与紧急交接
 
-LANDING 使用 LandingApproach 有界复核实际下降轨迹；仅有支撑、站立净空合格的预定触地可作为安全终点，不把地面接触一律当作应点火逃离的障碍。紧急路线仍完整认证，但初始脱险姿态只占用 8 tick，之后由当前恢复状态重新决策，保留实际活动推进预测。详见 [架构审计](ARCHITECTURE_070.md)。
+LANDING 使用 LandingApproach 有界复核实际下降轨迹；仅有支撑、站立净空合格的预定触地可作为安全终点，不把地面接触一律当作应点火逃离的障碍。紧急路线仍完整认证，但初始脱险姿态只占用 8 tick，之后由当前恢复状态重新决策，保留实际活动推进预测。源码见 [LandingApproach](../src/main/java/dev/winefox/skyfarer/flight/LandingApproach.java)。
 
 暂时遮挡的已观察合法目标可在 loiter_time_ticks 内复用有界 CompactTurn 恢复视线；固定观察点、推进需求和实际路线保持一致，隐藏目标本身不进入攻击候选。可见记忆每 5 tick 最多刷新一次，过期/返航/释放清除。
+
+## 13. Fox3 独立制导武器
+
+Fox3 是飞行中的独立武器，不增加 `AirCombatState`，不调用空战主目标选择器，不修改女仆朝向、当前标记目标或战略优先级。调度与目标过滤由 [Fox3System](../src/main/java/dev/winefox/skyfarer/weapon/Fox3System.java) / [Fox3Targets](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Targets.java) 负责；发射后的目标解析、制导、碰撞和伤害由导弹自身执行。配置及手动触发见 [配置参考](CONFIG_DEBUG_REFERENCE.md#fox3-配置)。
+
+### 13.1 发射与独立目标
+
+自动判定要求女仆正在安全飞行、没有已承诺的俯冲/突刺、合法怪物达到阈值，并已到自动检查时间。默认 8 只、1200 ticks 冷却和 50% 概率；概率成功、失败都进入下一轮冷却。每轮齐射默认 4 波，每 12 ticks 尝试同时发射两枚，首枚实际发射时只广播一次随机橙色加粗消息。
+
+服务通过 `EntityTickEvent.Post` 观察本 tick 已完成的飞控决定，不改 `AirCombatController`。新齐射排除 `ATTACK_RUN`、`DIVE`、`SPEAR_CHARGE`、`CHAIN_ATTACK`；已开始的齐射可与之后进入的长矛攻击并行，不要求飞控等待。任何时候失去安全滑翔、进入起飞/水中脱离/着陆或主人无效则取消剩余波；已发射导弹按自身生命周期处理。
+
+首次观察时把主世界游戏时间写入女仆持久数据 `wfs_fox3_last_check`，先等待完整冷却。到期但怪物不足时最多每 20 ticks 再扫描，不抽概率；获得足够目标后先写冷却再抽签，重载女仆不会重置成功/失败的检查时间。手动启动不读写此时间，自动开关不禁止手动。已开始齐射的波钟设有限截止，不在服务器延迟后一次补射多波。
+
+每枚独立随机选取合法怪物，优先主人附近的候选，并按本轮已分配次数尽量分散；Fox3 不因指挥镜的显式标记放宽友军保护。玩家、主人、女仆及受保护友军均不是伤害目标。默认免费模式不访问弹药库存；开启 `consume_fireworks` 后成功生成一枚才扣一枚普通烟花，彗星饰品不豁免武器消耗。
+
+### 13.2 连续轨迹与实体边界
+
+[Fox3MissileEntity](../src/main/java/dev/winefox/skyfarer/weapon/Fox3MissileEntity.java) 继承 `FireworkRocketEntity` 复用原版火箭外观/渲染接口，但覆盖其 tick 和爆炸事件，不调用原版自动加速或未过滤的烟花伤害。注册为临时、不保存、不可召唤实体，不申请区块票据、不使用传送门或跨维度。
+
+[Fox3Guidance](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Guidance.java) 是纯数值转向器。导弹自身分爬升、翻转和追踪阶段；左右初速度含反向横向分量，先向外爬升，再用较大的连续转向完成向下翻转，进入追踪后严格限制大幅转向。这些阶段仅属于导弹，不加入女仆飞控状态。各阶段保留转向速度与曲率半径约束，即使目标在正后方也平滑转弯，不瞬间对齐；位置只沿本 tick 已扫掠的速度步进。
+
+| 导弹阶段 | 转向与切换规则 |
+| --- | --- |
+| `CLIMB` | 前 12 ticks 向左右外侧抬升，最多 6°/tick |
+| `ROLLOVER` | 最多 12°/tick，向发射时冻结的目标区域点翻转；该点 Y 不高于发射高度−4。此时不追踪目标移动或重索敌；经过至少 4 ticks、速度已向下且与该区域方向相差≤25°即可结束，最迟在年龄 36 ticks 进入追踪 |
+| `TRACK` | 最多 6°/tick，按目标当前身体中心及有界提前量持续制导；重新选目标也不重新获得翻转额度 |
+
+速度从 0.85 增至最多 1.10 格/tick，每步增量 0.025。所有阶段额外限制离散曲率半径≥5 格；最大速度下 12°翻转约对应 5.26 格半径，6°追踪约对应 10.51 格半径。这个差异允许先明显向下翻转，再以较柔和的弧线追踪。
+
+追踪以目标身体中心加最多 4 ticks 的运动提前量瞄准。目标失效或移出本轮固定作战中心 96 格后，重索敌按导弹 UUID 错开：首次资格年龄为 20–39 ticks，且只能在 TRACK 内执行；后续每 20–26 ticks 最多尝试一次，受共享搜索预算约束。新目标仍在本轮作战范围内且距导弹≤64 格，不因女仆已经飞远而失去重新选择的局部候选；未找到时沿当前方向继续。实体最多活动 160 ticks（正常速率约 8 秒），发射女仆死亡、卸载、实体实例被替换、换维度或所有者改变后丢弃；下一步涉及未加载区块也直接清理。
+
+每步使用原版方块碰撞形状射线和附近实体 AABB 线段扫掠，由 [Fox3Impact](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Impact.java) 选最近碰撞点。每步最多收集 64 个实体候选，满额时保守引爆，防止穿过未检查障碍；其他 Fox3 导弹互不阻挡，前 12 ticks 忽略发射女仆和主人以允许离仓。之后友军仍可挡住火箭，但不会被爆炸伤害。
+
+### 13.3 伤害与原版效果
+
+爆炸只由服务端结算一次。最多检查 128 个局部 LivingEntity，由 [Fox3Blast](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Blast.java) 按 UUID 去重、重新验证合法目标，并以爆心至目标碰撞箱最近点的球形距离检查配置半径。范围内统一使用配置基础伤害（默认 5 点，无距离衰减）；到身体中心或低位的两条方块遮挡射线至少一条可见才调用原版 `fireworks` 伤害源。护甲、免疫与伤害事件仍由原版/其他 Mod 正常处理。不会调用破坏方块的世界爆炸。
+
+客户端复用原版 `SMALL_BALL` 烟花，主色鲜橙并带橙黄/橙红渐变及 trail，发射音效也使用原版。引爆先发送原版最终位置包再发送烟花事件，避免客户端插值尚未追上时把爆炸画在接触点后方。每枚每客户端 tick 最多生成 2 个白色 `FIREWORK` 尾迹粒子，全客户端最多 128 个/tick；原版粒子寿命形成较长尾迹。真实颜色、弧线观感、粒子设置/资源包、网络插值与多人负载仍需用户实机确认；离线验证不宣称已观看实际游戏效果。

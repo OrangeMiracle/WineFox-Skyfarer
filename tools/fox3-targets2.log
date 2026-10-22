@@ -1,0 +1,44 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileVerificationJava UP-TO-DATE
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses UP-TO-DATE
+> Task :fox3OfflineAgent UP-TO-DATE
+
+> Task :verifyFox3Targets
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Fox3 offline fixture: replaying 38 declared TLM access rules in this test JVM only.
+Exception in thread "main" java.lang.ExceptionInInitializerError
+	at java.base/jdk.internal.misc.Unsafe.allocateInstance(Native Method)
+	at jdk.unsupported/sun.misc.Unsafe.allocateInstance(Unsafe.java:884)
+	at dev.winefox.skyfarer.weapon.Fox3TargetsChecks.maid(Fox3TargetsChecks.java:134)
+	at dev.winefox.skyfarer.weapon.Fox3TargetsChecks.main(Fox3TargetsChecks.java:31)
+Caused by: java.lang.IllegalStateException: Registry is already frozen
+	at net.minecraft.core.MappedRegistry.validateWrite(MappedRegistry.java:111)
+	at net.minecraft.core.MappedRegistry.createIntrusiveHolder(MappedRegistry.java:384)
+	at net.minecraft.world.entity.EntityType.<init>(EntityType.java:175)
+	at net.minecraft.world.entity.EntityType$Builder.build(EntityType.java:1396)
+	at com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid.<clinit>(EntityMaid.java:173)
+	... 4 more
+
+> Task :verifyFox3Targets FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyFox3Targets'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+6 actionable tasks: 1 executed, 5 up-to-date
+BUILD FAILED in 12s

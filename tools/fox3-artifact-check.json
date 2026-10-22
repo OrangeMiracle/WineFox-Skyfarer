@@ -1,0 +1,31 @@
+{
+  "artifact": "F:\\AI\\AI_Project\\骑空士酒狐\\build\\libs\\touhou_little_maid_skyfarer-1.21.1-0.7.7.jar",
+  "version": "0.7.7",
+  "bytes": 2813755,
+  "sha256": "4D35665CABE2938704EE231583A48BBA9FE81652026D0FF07F244B40145F6779",
+  "fox3_classes": [
+    "Fox3System",
+    "Fox3Salvo",
+    "Fox3Budget",
+    "Fox3Ammo",
+    "Fox3Targets",
+    "Fox3Guidance",
+    "Fox3Impact",
+    "Fox3Blast",
+    "Fox3Entities",
+    "Fox3MissileEntity"
+  ],
+  "json_resources_valid": true,
+  "test_and_dependency_classes_absent": true,
+  "targeted_suites_passed": [
+    "Salvo",
+    "Guidance",
+    "Geometry",
+    "Ammo",
+    "Integration",
+    "Targets"
+  ],
+  "integration_assertions": 534,
+  "target_and_lifecycle_assertions": 67,
+  "minecraft_started": false
+}

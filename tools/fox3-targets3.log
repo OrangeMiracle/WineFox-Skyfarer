@@ -1,0 +1,38 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+> Task :fox3OfflineAgent UP-TO-DATE
+
+> Task :verifyFox3Targets
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Fox3 offline fixture: replaying 38 declared TLM access rules in this test JVM only.
+Fox3 real target filtering and choice: 64 assertions passed (actual MC/TLM subclasses; no live world or client started).
+
+> Task :verifyFox3Integration FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.AssertionError: manual launch retains configured ammo gate: check does not dominate sensitive call
+	at dev.winefox.skyfarer.weapon.Fox3IntegrationChecks.requireDominates(Fox3IntegrationChecks.java:231)
+	at dev.winefox.skyfarer.weapon.Fox3IntegrationChecks.triggerBoundaries(Fox3IntegrationChecks.java:194)
+	at dev.winefox.skyfarer.weapon.Fox3IntegrationChecks.main(Fox3IntegrationChecks.java:31)
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyFox3Integration'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 14s
+7 actionable tasks: 3 executed, 4 up-to-date

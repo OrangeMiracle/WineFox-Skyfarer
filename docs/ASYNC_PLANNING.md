@@ -1,8 +1,8 @@
 # 异步规划与线程边界
 
-0.7.3 统一动力源权威仲裁，永燃独占推进、持续闭环速度保持和客户端双赤尾焰/气流环，见 [动力仲裁与持续控制](PROPULSION_073.md)。饰品与隐藏觉醒机制见 [彗星专题](COMET_HEARTS.md)。
+动力源的权威仲裁、永燃独占推进与持续闭环速度保持见 [飞控总览](FLIGHT_CONTROL_OVERVIEW.md)；饰品规则见 [装备生存与兼容](EQUIPMENT_SURVIVAL.md)。
 
-当前版本 **0.7.6**。执行承诺与有限证明见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有推进边界见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
+当前版本 **0.7.7**。执行承诺与有限证明见 [TrajectoryCommitment](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有推进边界见 [飞控总览](FLIGHT_CONTROL_OVERVIEW.md)，定向结果见 [验证](VALIDATION.md)。Fox3 使用有界、轻量的主线程实体 tick，不进入飞控 Planner 或创建导弹线程；具体预算见本文末节。源码为最终权威。
 
 ## 1. 当前架构
 
@@ -132,9 +132,9 @@
 
 `MaidTerrainSource` 经主线程 `PhysicsProvider` 捕获 gravity/缓降，按 entity、Level、dimension、游戏 tick 缓存，同 tick 只读一次。Worker 只接收 `State.physics` 数值 DTO 与 `rocketDelay`，不会收到 Provider/身份引用。物理改变取消旧 generation；正常缓降倒计时按任务年龄比较。读取失败回退 vanilla，close 释放引用，重新加入世界按新身份采集。每个预测 tick 只推进冻结 DTO。
 
-0.7.6 接单不再在没有旧控制器时提前构造空战 session/进入 APPROACH。重载 standing 实体的有界接触等待由主线程/原版 travel 完成，不交 Worker 修改实体；虚拟推进接收与激流相同的 Transit 上下文。见 [重复召唤修复](REMOTE_RECALL_076.md)。
+0.7.6 接单不再在没有旧控制器时提前构造空战 session/进入 APPROACH。重载 standing 实体的有界接触等待由主线程/原版 travel 完成，不交 Worker 修改实体；虚拟推进接收与激流相同的 Transit 上下文。见 [历史验证记录](VALIDATION.md#076-home-回收后的重复召唤)。
 
-赶路订单的 `TransitFlight` 也按 Java 实体实例隔离：同 UUID 重新加载为新实例时，关闭旧 Provider/PlannerSession 后创建新 Source。地面 `Pending` 不再延长起飞等待预算，连续等待最多 100 游戏 ticks；失败/取消订单关闭会话并撤销 pending，不改结果年龄或快照安全门槛。见 [0.7.5 修复](REMOTE_WAKE_075.md)。
+赶路订单的 `TransitFlight` 也按 Java 实体实例隔离：同 UUID 重新加载为新实例时，关闭旧 Provider/PlannerSession 后创建新 Source。地面 `Pending` 不再延长起飞等待预算，连续等待最多 100 游戏 ticks；失败/取消订单关闭会话并撤销 pending，不改结果年龄或快照安全门槛。见 [历史验证记录](VALIDATION.md#075-永燃远程唤醒)。
 
 空战的逻辑阶段有意合并：
 
@@ -215,3 +215,25 @@ HUD 的 `planner_status` 包含 waiting/ready、session generation、cells/reque
 - 全局计数在 stop 后没有统一清零，不应用它们直接推断新世界当前 tick 性能。
 
 优先组合 `verifyAsyncPlanning`（安全边界）、`verifyAsyncSweep`（冷快照获得候选）、`verifyPlannerLoad`（有界调度）、`verifyControllerReplay` / `verifySweepingReplay` / `verifyDispatchReplay`（真实控制器衔接）。具体覆盖与限制见 [VALIDATION.md](VALIDATION.md)。尚无实机 MSPT/GC 的前后基准，不能把合成空世界报告当作提速百分比。
+
+## 11. Fox3 主线程轻量武器预算
+
+Fox3 不提交 `PlanningTask`、不持有 `PlannerSession`、不等待 Future，也不为导弹建立线程。独立服务监听女仆实体 tick，导弹自身执行常量级向量转向及局部碰撞；这些实时世界查询和实际伤害保留在服务器主线程。女仆原有飞控和共享 Planner 池的预算均不因此改变。
+
+| 边界 | 当前上限 / 节流 | 达到边界时的行为 |
+| --- | --- | --- |
+| 活动导弹 | 全服 128 枚、每女仆 16 枚 | 拒绝继续生成；实体移除回调释放名额 |
+| 导弹生成 | 全服每 tick 16 枚 | 暂缓/跳过未获得预算的发射，不创建后台等待线程 |
+| 独立目标扫描 | 全服每 tick 8 次，跨维度共享 | 返回预算等待，不进行额外世界扫描 |
+| 一次目标扫描 | 最多 128 个原始 LivingEntity 候选；半径最多 64 格 | 先限制原始数量再过滤，不因大量友军继续无限枚举 |
+| 目标优先 | 主人周围 16 格候选优先，候选仍须在作战范围内且距发射女仆（重索敌时为导弹）≤64 格 | 最少本轮分配次数中随机选取；不读主飞控目标/指挥标记 |
+| 导弹重索敌 | 仅 TRACK 内；首次资格年龄 20–39 ticks，后续 20–26 ticks，均按 UUID 错开 | 无目标沿当前方向继续，仍受 160 ticks 寿命限制 |
+| 单次碰撞 / 爆炸 | 最多 64 个实体碰撞候选 / 128 个伤害候选 | 碰撞候选满额保守引爆；伤害保持 UUID 去重和遮挡检查 |
+| 单次齐射 | 最多 16 波、间隔最多 100 ticks；截止为起始时间＋波数×间隔＋200 ticks | 每次只推进一波，不追补延迟造成的多波瞬时爆发；超时结束 |
+| 白色尾迹 | 单导弹最多 2 粒/tick，全客户端 128 粒/tick | 达到上限停止本 tick 追加粒子 |
+
+索敌范围取已有 combat 配置与 Home 限制半径的较大值，再钳制到 64 格；扫描只读已加载实体，不强行加载世界。导弹下一步涉及未加载区块、发射女仆失效/换维度时直接丢弃。实体不持久化，卸载不留下重载后继续追踪的武器；服务器关闭清空齐射及预算账本。主线程始终可以正常推进，不存在跨线程实体访问或同步等待。
+
+名额回收同时接入导弹的 `remove` 与 `onRemovedFromLevel`，共用可重入且仅执行一次的 `releaseOnce`：真实区块卸载直接调用 final `setRemoved`，不会经过 `remove`，仍由 tracking-end 回调触达 `onRemovedFromLevel`。爆炸的 `finally` 在伤害/事件回调异常时也丢弃实体。生成失败、主动丢弃、区块卸载和重复移除都不能泄漏或重复扣减活动名额。
+
+这些是代码中的数量/生命周期上限，不是已经测出的 MSPT 或 FPS 保证。多女仆的真实网络、粒子和实体调度成本仍需用户实机观测。源码：[Fox3Budget](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Budget.java)、[Fox3Targets](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Targets.java)、[Fox3Salvo](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Salvo.java)、[Fox3MissileEntity](../src/main/java/dev/winefox/skyfarer/weapon/Fox3MissileEntity.java)。

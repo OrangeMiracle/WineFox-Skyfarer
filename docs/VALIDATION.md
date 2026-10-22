@@ -1,6 +1,35 @@
 # 验证、离线回放与构建
 
-当前版本 **0.7.6**。本次仅编译、五项远程重复任务相关验证与打包；未执行全量 build/check/verify，未启动或安装 Minecraft。
+当前版本 **0.7.7**。本次编译、六项 Fox3 定向检查和打包均已通过；未执行全量 build/check/verify，未启动或安装 Minecraft。以下历史章节保留当时的结果，不等于当前版本重新运行了它们。
+
+## 0.7.7 Fox3 定向验证
+
+实现入口见 [飞控总览第 13 节](FLIGHT_CONTROL_OVERVIEW.md#13-fox3-独立制导武器)，预算见 [异步架构第 11 节](ASYNC_PLANNING.md#11-fox3-主线程轻量武器预算)。本轮针对性任务不挂接完整 `check`，也不运行 Minecraft 客户端或服务端：
+
+| 定向入口 | 验证对象与证据边界 |
+| --- | --- |
+| `verifyFox3Salvo` | 执行生产波钟/共享预算账本：默认 4×2、12 tick 间隔、延迟不补射、有限截止、冷却边界、64 女仆×500 tick 的活动/发射/搜索上限及移除回收 |
+| `verifyFox3Guidance` | 执行生产向量制导：双侧外张爬升、连续翻转与追踪的阶段转向上限/曲率、固定与移动目标、正后方和零向量；不以数值回放代替真实画面 |
+| `verifyFox3Ammo` | 真实 mapped ItemStack/组件和 NeoForge ItemStackHandler：免费零库存读取、普通/装饰烟花、仅 3 发库存尝试 8 发、生成否决、回调更换库存与实际提取拒绝 |
+| `verifyFox3Geometry` | 生产 Fox3Impact/Fox3Blast 配合真实 Vec3/AABB：薄墙/实体扫掠、最近命中和初始重叠、球形半径、遮挡/保护/UUID 去重及配置伤害；世界碰撞形状与伤害事件仍需实机 |
+| `verifyFox3Integration` | 实际 NeoForge 配置默认/范围/命令/reload/reset 与编译字节码控制流：nonce、持物、UUID/owner/权限、手动绕过自动条件但保留安全/付费门控、主线程派发、原版 renderer 和双语资源；核对真实依赖的区块卸载 `setRemoved`→tracking-end→`onRemovedFromLevel` 调用链 |
+| `verifyFox3Targets` | 生产独立目标过滤、选择、安全门控和手动拒绝：玩家/女仆/有主实体/双向盟友/失效实体排除、主人附近优先、战区备选、八目标分散、主飞控目标不读写、UUID 隔离及承诺攻击禁止启动；实际导弹卸载钩子/重复/重入/异常后的唯一释放。真实 MC/TLM 测试子类用离线属性探针，并跳过实体构造器 |
+
+最终 [fox3-release.log](../tools/fox3-release.log) 的 `compileJava`、上述六项 `verifyFox3*` 和 `jar` 全部通过：**BUILD SUCCESSFUL in 25s**，12 个任务（9 执行、3 已是最新）。Integration **534** 项断言，Targets 与实际生命周期 **67** 项断言；Salvo 的 64 女仆×500 ticks 检查触及全服 128 枚上限且全部释放。编译仅保留现有客户端事件订阅注解的两条弃用警告。
+
+```powershell
+.\tools\build.ps1 -Stage fox3-release -Tasks compileJava,verifyFox3Salvo,verifyFox3Guidance,verifyFox3Geometry,verifyFox3Ammo,verifyFox3Integration,verifyFox3Targets,jar
+```
+
+本轮核对真实依赖后发现区块卸载直接 `setRemoved`，绕过 `remove`，因此补齐 `onRemovedFromLevel` 与共享 `releaseOnce`；实际钩子的重复、重入及异常后再次释放通过。爆炸的 `finally` 保证第三方伤害/事件回调异常时仍丢弃导弹，不留下活动名额。
+
+早期失败日志原样保留，不记为成功：[fox3-directed.log](../tools/fox3-directed.log) 的 sealed `ILoadedConfig` 测试夹具编译错误；[fox3-directed2.log](../tools/fox3-directed2.log) 中前五项通过、Targets 因未应用依赖 AT 失败；[fox3-targets.log](../tools/fox3-targets.log) 的 Windows javaagent 非 ASCII 路径问题、[fox3-targets2.log](../tools/fox3-targets2.log) 的离线 registry 初始化问题；[fox3-targets3.log](../tools/fox3-targets3.log) 中 Targets 64 项先通过、Integration 旧断言未适配免费模式跳过库存读取而失败。最终检查保留并验证免费分支零库存访问及付费分支不可绕过弹药要求，没有为通过测试撤销这些边界。
+
+交付包：[touhou_little_maid_skyfarer-1.21.1-0.7.7.jar](../build/libs/touhou_little_maid_skyfarer-1.21.1-0.7.7.jar)，**2,813,755 bytes**，SHA-256 `4D35665CABE2938704EE231583A48BBA9FE81652026D0FF07F244B40145F6779`。Mod 元数据与 Manifest 同为 0.7.7；10 个 Fox3 生产类、JSON 资源、离线测试/javaagent/外部夹具排除均已核对，见 [产物校验](../tools/fox3-artifact-check.json)。
+
+实机仍需确认：上爬→翻转→追踪的双弧线观感、白尾长度/橙色爆炸、复杂动态地形与碰撞形状、实体追踪/卸载/网络插值、伤害事件与整合包交互、多人多女仆实际 MSPT/FPS。静态控制流检查不是实际点击面板，几何/数值检查不是完整 Minecraft 端到端测试。
+
+Targets 的普通 Java 进程没有游戏的 AccessTransformer，测试专用 javaagent 只读取并应用 TLM 自己声明的 38 条访问规则；离线引导临时允许 TLM 静态 TYPE 的 holder 创建后恢复 registry bookkeeping。此适配不改写依赖 Jar、不进入交付 Mod Jar，也不启动游戏或实际服务器世界；不能据此宣称完整 TLM/Mixin 与 NeoForge 事件总线已经实机通过。
 
 ## 0.7.6 Home 回收后的重复召唤
 
@@ -105,9 +134,9 @@ TLM 持久化检查使用已注册原版物品代替 Mod ID；回放的实体重
 2. 数值检查使用生产物理/规划函数；Vanilla physics 差分验证实际依赖方程和固定随机种子。
 3. Controller replay 编译真实控制器、提供器和 worker，对天气、实体/库存、世界碰撞和原生伤害使用离线夹具。它不是 Minecraft 内的端到端实测。
 
-## 3. 全部验证任务
+## 3. 基础验证任务与专项入口
 
-以下 44 项来自当前 build.gradle；每项均由 check 依赖。ControllerReplay 不设置 wfs.replayCase 时覆盖全部 21 场景。本轮没有执行这份全量清单。独立 `verifyTrajectoryStress` 不在其中。
+以下 44 项为由 `check` 依赖的基础验证任务。ControllerReplay 不设置 wfs.replayCase 时覆盖全部 21 场景。本轮没有执行这份全量清单。独立 `verifyTrajectoryStress`、后续彗星/远程专项及本页 0.7.7 的 Fox3 定向入口不在此基础清单中；完整注册以 [build.gradle](../build.gradle) 为准。
 
 - `verifyScanCadence`
 - `verifyFlightMath`

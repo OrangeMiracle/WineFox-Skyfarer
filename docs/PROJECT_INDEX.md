@@ -1,16 +1,10 @@
-# 车万女仆: 骑空士 / Touhou Little Maid: Skyfarer 0.7.6 工程总索引
+# 车万女仆: 骑空士 / Touhou Little Maid: Skyfarer 0.7.7 工程总索引
 
-显示名称及发行包已更名；Mod ID `winefox_skyfarer` 保留以兼容存档。当前产物为 `touhou_little_maid_skyfarer-1.21.1-0.7.6.jar`，Mod 列表封面来自 `tools/素材参考/Mod封面.png`。
+显示名称及发行包已更名；Mod ID `winefox_skyfarer` 保留以兼容存档。当前产物为 `touhou_little_maid_skyfarer-1.21.1-0.7.7.jar`，Mod 列表封面来自 `tools/素材参考/Mod封面.png`。
 
-0.7.6 修复 Home 回收后再次接单的控制权与地面接触交接，补齐虚拟起飞的局部赶路范围及拒绝日志；三轮重复任务证据见 [重复远程召唤](REMOTE_RECALL_076.md)。
+0.7.7 增加独立 Fox3 制导烟花武器系统：飞行中按冷却/敌群数量/概率发射多波导弹，逐枚独立索敌，不接管飞控。当前机制维护于 [飞控总览](FLIGHT_CONTROL_OVERVIEW.md#13-fox3-独立制导武器)，参数和手动发射入口见 [配置与调试参考](CONFIG_DEBUG_REFERENCE.md)，实际定向验证证据见 [验证](VALIDATION.md)。
 
-0.7.5 修复永燃 Home 女仆远程唤醒后的赶路空起飞方案崩溃，补齐有界等待、失败订单清理及跳跃→滑翔的物理状态交接，见 [远程唤醒修复与证据](REMOTE_WAKE_075.md)。
-
-0.7.4 增加 Fullbright 双尾焰/气流环、统一圣物掉落免疫与原版彩色 Glowing，见 [彗星光效与掉落保护](COMET_RADIANCE_074.md)。
-
-0.7.3 统一动力源权威仲裁，永燃独占推进、持续闭环速度保持和客户端双赤尾焰/气流环，见 [动力仲裁与持续控制](PROPULSION_073.md)。饰品与隐藏觉醒机制见 [彗星专题](COMET_HEARTS.md)。
-
-当前航迹执行、控制仲裁、有限证明与延迟避障见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)。已有推进边界和配置迁移见 [0.7.0 审计](ARCHITECTURE_070.md)，本轮定向验证证据见 [验证](VALIDATION.md)。版本化专题是历史证据；当前规则以本索引和源码为准。
+已有 Home 重复召唤、远程唤醒、彗星光效和动力仲裁的历史证据保留于 [buildHistory](buildHistory.md) 与 [验证](VALIDATION.md)。当前航迹执行、控制仲裁、有限证明与延迟避障见 [飞控总览](FLIGHT_CONTROL_OVERVIEW.md) 和 [TrajectoryCommitment](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)；饰品和装备规则见 [装备生存与兼容](EQUIPMENT_SURVIVAL.md)。源码为最终权威。
 
 ## 先读：长期维护规则
 
@@ -21,6 +15,8 @@
 > 不允许出现“源码已经改变，但文档仍然描述旧版本实现”的情况。
 >
 > 完成重要修改后，应主动检查 `PROJECT_INDEX.md`、`FLIGHT_CONTROL_OVERVIEW.md` 以及其他相关技术文档是否需要同步更新。
+>
+> 发布新版本时只更新已有相关专题、README 和 buildHistory；不得为每次发版新增独立的 `XXX_VERSION.md` 或版本技术文档。新内容优先作为现有专题的章节维护。
 
 **文档描述当前实现事实。文档与源码冲突时，以源码为最终权威；发现冲突后应立即修正文档。** 历史需求、聊天记录、类名、注释、旧构建日志均不能替代对实际调用路径的检查。未接入的枚举、配置或方法必须注明，不能当成现有功能。
 
@@ -37,7 +33,7 @@
 
 ## 1. 项目定位与版本事实
 
-当前版本 **0.7.6**，在当前本地 0.7.5 成果上继续修改；Minecraft 1.21.1 / NeoForge 21.1.250 / TLM 1.5.3 / Spears 1.8.0。Gradle 与 Mod 元数据一致，无 Funnel，无 Cataclysm 硬依赖。
+当前版本 **0.7.7**，在已发布 0.7.6 的飞控与装备机制上增加 Fox3；Minecraft 1.21.1 / NeoForge 21.1.250 / TLM 1.5.3 / Spears 1.8.0。Gradle 与 Mod 元数据一致，无 Funnel，无 Cataclysm 硬依赖。
 
 长矛可启用工作模式；起飞需真正可滑翔的合格鞘翅及可用推进或已认证的无推进路线。Unbreakable 不触发低耐久，正常可损坏鞘翅采用剩余 20 门槛。低耐久可换备用；否则空中返航、落地普通左键战斗。远程资格允许永燃之心、合法激流或烟花。
 
@@ -49,11 +45,12 @@
 | 飞行 / 地形 | 地面与水中起飞、原版鞘翅滑翔、有限烟花推进、坡面入口、平地俯冲、持续转弯曲线、侧向/爬升离场、紧凑重定位、低能量恢复和紧急姿态 |
 | 长矛 | 使用 Spears 原生蓄力与伤害；女仆限定的上下虚拟命中扩展，真实方块截断、每次攻击流程 UUID 去重。没有修改目标实际尺寸，也没有改 Spears Jar |
 | 持续作战 | 分层索敌、失败次数换目标、主目标后的可行二段追击、保留蓄力尾段；无机会后搜索、返航与落地 |
+| Fox3 导弹 | 独立武器调度、逐枚目标筛选、受限曲率制导、障碍碰撞和服务端橙色烟花爆炸；默认 4 波×2 枚、间隔 12 ticks，免费发射，不改变飞控目标与航向 |
 | 跟随 / Home | 战斗中心由指挥任务、Home 工作中心、主人位置依次决定；攻击周期中保存战斗中心，避免每 tick 追随移动主人重写已承诺航线 |
 | 女仆遥控器 `maid_remote` | 右键所属女仆绑定，使用时打开同维度已加载女仆的工作模式面板；服务端 nonce、持有物、所有权、启用条件复核 |
 | 指挥镜 `command_spyglass` / `creative_command_spyglass` | 原版望远镜右键缩放；左键切换目标标记，最多 5 个，超出按旧到新淘汰；逐女仆分配路线。创造镜可从注册表唤醒远方女仆，赶路区块票据、免费赶路推进与任务结束 Home 回收均已实现 |
 | 标记限制 | 生存 Home 呼叫范围默认 128 格；创造镜默认呼叫半径 1000 格，设 0 才无限。创造镜不等于无限目标标记距离；默认标记仍是 256 格。显式标记可覆盖普通友好关系筛选，但玩家、主人、自己等保护仍存在 |
-| 调试棒 `debug_stick` | 多女仆绑定，左右方向键切 HUD，卸载保留最后数据；远程列表、所有者筛选及权限控制的双向传送；当前女仆亮绿色透视框、多只女仆同时预测线 |
+| 调试棒 `debug_stick` | 多女仆绑定，左右方向键切 HUD，卸载保留最后数据；远程列表、所有者筛选、权限控制的双向传送和逐女仆「立即发射 Fox3」；当前女仆亮绿色透视框、多只女仆同时预测线 |
 | 渲染 / 可选模型 | TLM 飞行与持矛姿态适配、YSM 可选接口接入和回退；模型是否提供相应动画/附件决定最终外观，不能把接口检查当成所有模型的视觉保证 |
 
 六个物品在工具与实用物品创造分类注册；当前资源目录没有合成配方。命令、限制与可视化图例详见 [配置与调试参考](CONFIG_DEBUG_REFERENCE.md)。
@@ -76,6 +73,8 @@ NeoForge EntityTick.Pre → SkyfarerRuntime.tick
 
 ServerTick.Pre  → PlannerSession.serverTick：结果领取、预算重置、轮转增量采集
 ServerTick.Post → CommandManager.tick / DebugWatchManager.tick：调度、票据、同步
+EntityTick.Post → Fox3System：独立自动检查 / 多波发射（不写飞控）
+Fox3 导弹 tick  → 自身有界制导 / 局部扫掠 / 服务端伤害 / 客户端原版烟花
 客户端         ← Payload → HUD / 标记 / 预测线 / 管理面板
 ```
 
@@ -90,6 +89,7 @@ Java 包根为 `src/main/java/dev/winefox/skyfarer/`。目录名称不能直接�
 | [`ai/`](../src/main/java/dev/winefox/skyfarer/ai/) | 控制器、17 状态枚举、战斗中心、目标分层与每次攻击记录；由 runtime 驱动。改变决策顺序、阶段衔接、目标锁定或连续作战时进入这里 |
 | [`async/`](../src/main/java/dev/winefox/skyfarer/async/) | 主线程 facade / 快照源 / 会话邮箱，以及纯 DTO、共享执行器、快照查询；性能、缓存、取消、旧结果与线程问题首先看这里 |
 | [`flight/`](../src/main/java/dev/winefox/skyfarer/flight/) | 滑翔方程、身体扫掠、坡面/入口/曲线/离场/追击/起飞数学；同时有 `HeadingController`、`FireworkManager`、`ElytraFlightController` 等主线程执行器。改变实际航线或预测/执行一致性时看具体调用路径 |
+| [`weapon/`](../src/main/java/dev/winefox/skyfarer/weapon/) | Fox3 独立齐射、原始候选有界索敌、弹药事务、共享预算和导弹实体；Guidance/Salvo/Budget 为纯数值/账本，其余世界与库存操作仅在主线程；不加入飞控状态 |
 | [`safety/`](../src/main/java/dev/winefox/skyfarer/safety/) | `CorridorProbe` 和 `AirCollisionChecker` 访问真实世界，负责即时身体、射线、支撑面和加载范围检查；不传给 Worker |
 | [`command/`](../src/main/java/dev/winefox/skyfarer/command/) | `/wfs` 命令、标记队列、逐女仆调度、注册表、区块票据、赶路与创造高速数学。远方唤醒、Home 回收或指令抢目标时检查这里 |
 | [`runtime/`](../src/main/java/dev/winefox/skyfarer/runtime/) | 每 UUID 控制器生命周期、遥控会话、多女仆调试会话和远程面板/传送；管理实体卸载、玩家退出及服务器停止清理 |
@@ -99,7 +99,7 @@ Java 包根为 `src/main/java/dev/winefox/skyfarer/`。目录名称不能直接�
 | [`mixin/`](../src/main/java/dev/winefox/skyfarer/mixin/) | 精确接入 MC/TLM/Spears 的移动、姿态、友伤、蓄力、Home 回收和数据访问；`ysm/` 子包接可选客户端接口。更改目标签名必须核对当前依赖字节码 |
 | [`config/`](../src/main/java/dev/winefox/skyfarer/config/) | 参数目录、SERVER 配置、在线覆盖与 revision；参数增删时同步命令、相关 DTO、文档与验证 |
 | [`item/`](../src/main/java/dev/winefox/skyfarer/item/) | 遥控器、调试棒、两种望远镜的物品入口；复杂服务端行为转交 runtime / command |
-| [`network/`](../src/main/java/dev/winefox/skyfarer/network/) | 有类型的 Payload 与协议注册（当前 registrar `"4"`）；UI 提交必须再次服务端校验，不能相信客户端传来的 UUID/所有者/任务资格 |
+| [`network/`](../src/main/java/dev/winefox/skyfarer/network/) | 有类型的 Payload 与协议注册（当前 registrar `"5"`）；UI 提交必须再次服务端校验，不能相信客户端传来的 UUID/所有者/任务资格 |
 | [`client/`](../src/main/java/dev/winefox/skyfarer/client/) | 客户端按键、指挥输入、动画；`gui/` 管理面板，`debug/` HUD 与世界线框；只消费服务端调试数据，不规划战斗 |
 | [`src/main/resources/`](../src/main/resources/) | Mod 元数据、common/client/可选 YSM mixin 清单、语言和物品模型；资源与协议/版本变动要一起核对 |
 | [`src/verification/`](../src/verification/) | 数学、策略、兼容字节码等独立离线断言；不进入交付 Jar |
@@ -122,6 +122,10 @@ Java 包根为 `src/main/java/dev/winefox/skyfarer/`。目录名称不能直接�
 | [TargetEvaluator](../src/main/java/dev/winefox/skyfarer/ai/TargetEvaluator.java) / [TargetPriority](../src/main/java/dev/winefox/skyfarer/ai/TargetPriority.java) | 已加载实体、锚点、标记/上一目标/失败集合 → 有效目标与分层排名 | 前者主线程读实体与射线，后者纯比较。获取时检查可见性，已锁定接近不能每 tick 强制直视目标 |
 | [CombatAnchor](../src/main/java/dev/winefox/skyfarer/ai/CombatAnchor.java) | 指挥任务 / Home 限制中心 / 主人 → 工作中心 | 主线程；控制器在攻击周期间保存，不能因主人移动打断已承诺攻击 |
 | [SpearPassHistory](../src/main/java/dev/winefox/skyfarer/ai/SpearPassHistory.java) | 每轮主目标、命中 UUID、结算 → 去重和失败换目标记录 | 控制器所有；主线程，避免原生命中与扩展判定双击 |
+| [Fox3System](../src/main/java/dev/winefox/skyfarer/weapon/Fox3System.java) / [Fox3Salvo](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Salvo.java) | 女仆实际安全飞行、持久自动检查时间、独立候选 → 有限多波发射 | EntityTick.Post 主线程；按 UUID 与实体实例拥有会话，卸载/换维度/关服清理，手动不动自动冷却 |
+| [Fox3Targets](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Targets.java) / [Fox3Ammo](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Ammo.java) | 有界本地怪物与友军过滤 / 免费或实际烟花付款 → 逐枚目标与生成结果 | 主线程；不访问 TargetEvaluator 或指挥标记；原始候选最多 128，普通烟花不要求爆炸组件 |
+| [Fox3MissileEntity](../src/main/java/dev/winefox/skyfarer/weapon/Fox3MissileEntity.java) / [Fox3Guidance](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Guidance.java) | 当前速度、目标、当前步真实碰撞 → 连续受限转向和一次权威爆炸 | 实体主线程，纯数值 Guidance；最大 160 ticks；导弹独立爬升/翻转/追踪阶段，翻转允许较大连续转向、追踪严格限速；继承原版火箭外观但自行结算安全伤害 |
+| [Fox3Budget](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Budget.java) | 活动名额、当前 tick 发射/扫描请求 → 拒绝或有界授权 | 全服跨维度共享主线程账本；活动≤128、每女仆≤16、发射≤16/tick、扫描≤8/tick |
 | [AsyncPlanning](../src/main/java/dev/winefox/skyfarer/async/AsyncPlanning.java) | 主线程请求 → 封闭 PlanningTask；已验证结果或等待/轻量控制 | 每控制器/赶路实例一份；不是可从后台访问的“世界代理” |
 | [TrajectoryCommitment](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java) | 已选曲线、原始时间戳证明、时间对齐后缀、切换收益门槛 | 每空战控制器所有；路径持续存在不等于证明永久有效；重验/中断规则见航迹连续性专题 |
 | [MaidTerrainSource](../src/main/java/dev/winefox/skyfarer/async/MaidTerrainSource.java) | 已加载实体可 tick 区域、真实形状、女仆尺寸、边界 → 数值 Cell / Snapshot | 主线程专用，持有 Maid；绝不能随任务传递 |
@@ -213,8 +217,12 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 | `creative_transit_speed_multiplier` / `creative_transit_height` | 2 倍 / 世界 Y=200 | 创造赶路，最大 100 倍；高度还受维度与路线限制 |
 | `sync_interval_ticks` / `log_interval_ticks` | 5 / 100 ticks | 调试同步 / 周期诊断，不是所有事件日志的统一频率 |
 | `debuglog` | false | 诊断日志开关；与调试棒绑定/HUD 显示不是同一个开关 |
+| `fox3_min_monsters` / `fox3_cooldown_ticks` / `fox3_chance` | 8 / 1200 ticks / 0.5 | 独立自动检查；实际抽签成功或失败都消耗冷却 |
+| `fox3_waves` / `fox3_wave_interval_ticks` / `fox3_missiles_per_wave` | 4 / 12 ticks / 2 | 启动时冻结的波数、波间隔和每波枚数 |
+| `fox3_damage` / `fox3_blast_radius` | 5 点生命值 / 2 格半径 | 服务端范围基础伤害，不破坏地形 |
+| TOML `fox3.enabled` / `fox3.consume_fireworks` | true / false | 自动开关 / 每枚烟花弹药开关；布尔项不通过数值命令设置，`reset all` 恢复默认 |
 
-0.7.0 已删除三个无效参数 `previous_target_bonus`、`forward_collision_check_distance`、`climb_height`。原因与配置迁移见 [审计](ARCHITECTURE_070.md)。
+0.7.0 已删除三个无效参数 `previous_target_bonus`、`forward_collision_check_distance`、`climb_height`。当前支持的键以 [配置参考](CONFIG_DEBUG_REFERENCE.md) 和配置注册源码为准。
 
 ## 9. 调试与验证入口
 
@@ -232,7 +240,7 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 | 已实现 | 骑空士空战、直线/曲线与坡面攻击、持续作战、指挥调度/区块票据、调试体系、共享异步流水线，以及 0.6.1 mapped 物理预测/冻结上下文/全程能量包络 |
 | 正在长期维护 | 预测与实际执行一致性、取消/旧结果边界、兼容 Mixin、配置消费者、离线回放，以及这套 `docs/`；不是承诺后台另有自动维护任务 |
 | 当前边界 | 预测不覆盖第三方 travel Mixin、外部火箭或外力；完整攻击认证时域最多 160 ticks。原生效果/实体 tick 时序与复杂模组组合仍需实机确认 |
-| 本轮改造 | 曲线承诺与有限证明分离、推进/安全仲裁、同路径延续及切换成本、几何延迟和动态避障；具体证据见航迹连续性专题 |
+| 本轮改造 | Fox3 独立多波导弹、自主目标与受限转向、原版烟花视觉、服务端友军/遮挡保护、可选弹药和逐女仆调试按钮；既有飞控保持自身控制权 |
 | 性能边界 | 快照约 2 ms 是全服单 tick 累计采集软预算，不包含所有 Mod 工作；即时世界查询、实体扫描和创造极高速实际位移仍在主线程。缓存可短暂陈旧，依赖验收和实时安全检查 |
 | 验证边界 | 离线世界与外部 API 是夹具，不能完全复现真实区块时序、服务端调度、碰撞形状模组或网络同步；合成负载不是 MC MSPT/GC 基准 |
 | 需要实机验证 | 异步延迟对复杂地形命中与连续作战的影响、多女仆 MSPT/内存/GC、区块加载/卸载/回家竞态、高速赶路、YSM 各模型视觉与客户端同步 |
@@ -247,10 +255,11 @@ RETURN_TO_OWNER → 可恢复时重新攻击；否则 LANDING → GROUNDED
 | 不起飞、水中卡住、起飞立即急转 | [飞控总览](FLIGHT_CONTROL_OVERVIEW.md) | prepare / launchFlight / waterEscape、SurfaceLaunchPlanner；verifySurfaceLaunch、verifyControllerReplay |
 | 盘旋、不攻击、错误返航/跟主人 | 飞控总览、配置参考 | approach / compactTurn / CombatAnchor / TargetEvaluator；完整生命周期回放 |
 | 山腰、斜坡、曲线提前离场、掠过 | 飞控总览 | AttackLanePlanner、SlopeSampler、SweepingAttackPlanner / passedContact / Rejoin；verifySweepingAttacks、verifySweepingReplay |
-| 推进补能迟滞/过冲/连续作战变差 | 飞控总览、[推进审计](ARCHITECTURE_070.md)、[异步架构](ASYNC_PLANNING.md) | FlightPropulsion、各提供器、manageEnergy、Demand/Route 与 slot 兼容性；verifyUnifiedPropulsion、verifyCombatEntries、Controller replay |
+| 推进补能迟滞/过冲/连续作战变差 | 飞控总览、[装备生存与兼容](EQUIPMENT_SURVIVAL.md)、[异步架构](ASYNC_PLANNING.md) | FlightPropulsion、各提供器、manageEnergy、Demand/Route 与 slot 兼容性；verifyUnifiedPropulsion、verifyCombatEntries、Controller replay |
 | 主线程卡顿、任务一直 waiting、GC | 异步架构、[验证体系](VALIDATION.md) | capture / pump / enqueue、MaidTerrainSource、PlannerExecutor；verifyAsyncPlanning、verifyPlannerLoad，再做实机测量 |
 | 远处唤醒、标记分配、落地回家 | 配置参考、飞控总览 | CommandManager、RemoteWakeScheduler、Registry、Tickets、TransitFlight、CommandHomeRecallMixin；verifyRemoteWake、verifyCommandDispatch、verifyDispatchReplay |
 | 双击、友好目标、小碰撞箱 | 飞控总览、配置参考 | SpearPassHistory、MaidSpearCollisions、Spears mixins；verifyMaidCombat、verifySpearIntercept |
+| Fox3 不发射、目标、转弯、伤害、弹药 | 飞控总览第 13 节、配置参考、异步架构第 11 节 | weapon/Fox3System、Targets、Guidance、MissileEntity、Ammo、Budget；Fox3 定向验证入口见 VALIDATION |
 | HUD/卸载/多绑定/远程传送 | 配置参考 | DebugWatchManager、DebugPanelManager、Payload、ClientDebugState、Renderer；verifyDebugTools |
 | 更新 TLM/Spears/YSM、模型姿态 | 配置参考、验证体系 | compat、mixin 清单与依赖字节码；verifyYsmCompatibility 等，不猜 API 名 |
 | 发版、新机器构建、报告解释 | 验证体系、buildHistory | build.gradle、mods.toml、libs、Jar 内容/双版本、成功日志与实际任务数 |

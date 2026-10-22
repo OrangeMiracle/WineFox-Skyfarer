@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 group = 'dev.winefox.skyfarer'
-version = '0.7.6'
+version = '0.7.7'
 base { archivesName = 'touhou_little_maid_skyfarer-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
@@ -426,4 +426,32 @@ tasks.register('verifyRemoteRecall', JavaExec) {
     dependsOn compileControllerReplay
     classpath = files(layout.buildDirectory.dir('classes/controllerReplay'))
     mainClass = 'dev.winefox.skyfarer.command.RemoteRecallChecks'
+}
+
+// Fox3 directed checks only; these do not attach the full verification suite or launch Minecraft.
+['Salvo', 'Guidance', 'Ammo', 'Integration', 'Geometry', 'Targets'].each { suite ->
+    tasks.register("verifyFox3${suite}", JavaExec) {
+        dependsOn verificationClasses
+        classpath = sourceSets.verification.runtimeClasspath + sourceSets.main.compileClasspath + files('build/moddev/artifacts/neoforge-21.1.250-client-extra-aka-minecraft-resources.jar')
+        mainClass = "dev.winefox.skyfarer.weapon.Fox3${suite}Checks"
+        systemProperty 'log4j.configurationFile', file('tools/offline-log4j2.xml').toURI().toString()
+    }
+}
+
+// Plain Java verification does not run NeoForge's access transformers. Reproduce only the
+// dependency's declared access flags in the target-test JVM; never rewrite dependency jars.
+tasks.register('fox3OfflineAgent', Jar) {
+    dependsOn verificationClasses
+    from(sourceSets.verification.output) { include 'dev/winefox/skyfarer/weapon/Fox3OfflineAccessAgent*.class' }
+    archiveFileName = 'fox3-offline-access-agent.jar'
+    destinationDirectory = layout.buildDirectory.dir('verification')
+    manifest { attributes('Premain-Class': 'dev.winefox.skyfarer.weapon.Fox3OfflineAccessAgent') }
+}
+tasks.named('verifyFox3Targets') {
+    dependsOn fox3OfflineAgent
+    doFirst {
+        // ASCII relative arguments avoid the Windows JVM instrumentation parser's ANSI path conversion.
+        workingDir projectDir
+        jvmArgs '-javaagent:build/verification/fox3-offline-access-agent.jar=libs/touhoulittlemaid-1.5.3-neoforge+mc1.21.1.jar'
+    }
 }

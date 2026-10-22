@@ -9,6 +9,14 @@ public final class SkyfarerConfig {
     public static final Map<String, Parameter> PARAMETERS = new LinkedHashMap<>();
     static {
         define("accessories", "comet_firework_saving_chance", .6, .5, .7, "probability");
+        define("fox3", "fox3_min_monsters", 8, 1, 128, "count");
+        define("fox3", "fox3_cooldown_ticks", 1200, 20, 72000, "ticks");
+        define("fox3", "fox3_chance", .5, 0, 1, "probability");
+        define("fox3", "fox3_waves", 4, 1, 16, "count");
+        define("fox3", "fox3_wave_interval_ticks", 12, 1, 100, "ticks");
+        define("fox3", "fox3_missiles_per_wave", 2, 1, 4, "count");
+        define("fox3", "fox3_damage", 5, 0, 100, "health points");
+        define("fox3", "fox3_blast_radius", 2, .25, 8, "blocks radius");
         define("flight", "max_turn_angle", 120, 10, 180, "degrees");
         define("flight", "turn_rate", 5, 0.1, 20, "degrees/tick");
         define("flight", "attack_turn_rate", 2.5, 0.1, 10, "degrees/tick");
@@ -63,21 +71,31 @@ public final class SkyfarerConfig {
         define("debug", "log_interval_ticks", 100, 20, 1200, "ticks");
     }
     private static void define(String category, String name, double initial, double min, double max, String unit) {
-        PARAMETERS.put(name, new Parameter(category, name, initial, min, max, unit, unit.equals("ticks") || unit.equals("attempts")));
+        PARAMETERS.put(name, new Parameter(category, name, initial, min, max, unit, unit.equals("ticks") || unit.equals("attempts") || unit.equals("count")));
     }
     public static final Map<String, ModConfigSpec.DoubleValue> VALUES = new LinkedHashMap<>();
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.BooleanValue DEBUG_LOGGING;
+    public static final ModConfigSpec.BooleanValue FOX3_ENABLED;
+    public static final ModConfigSpec.BooleanValue FOX3_CONSUME_FIREWORKS;
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> EXTRA_ELYTRA_ITEMS;
     public static final java.util.List<String> DEFAULT_ELYTRA_ITEMS=java.util.List.of("cataclysm:ignitium_elytra_chestplate");
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         for (Parameter p : PARAMETERS.values()) {
             builder.push(p.category());
+            String configKey = p.category().equals("fox3") ? p.name().substring("fox3_".length()) : p.name();
             VALUES.put(p.name(), builder.comment("Unit: " + p.unit() + ". Live editable with /wfs config set.")
-                .defineInRange(p.name(), p.initial(), p.min(), p.max()));
+                .defineInRange(configKey, p.initial(), p.min(), p.max()));
             builder.pop();
         }
+        FOX3_ENABLED = builder.push("fox3")
+            .comment("Enable automatic Fox3 salvos. Debug manual launches remain available for testing.")
+            .define("enabled", true);
+        FOX3_CONSUME_FIREWORKS = builder
+            .comment("Consume one ordinary firework rocket per actually launched missile. No star, color or explosion data is required. Comet accessories do not waive Fox3 ammunition costs.")
+            .define("consume_fireworks", false);
+        builder.pop();
         DEBUG_LOGGING = builder.push("debug")
             .comment("Diagnostic logging for target scans, blocked takeoff and state transitions. /wfs debuglog on|off|status. Disabled by default.")
             .define("debuglog", false);

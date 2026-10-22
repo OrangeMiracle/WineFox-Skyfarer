@@ -1,19 +1,17 @@
 # 配置、指挥、调试与兼容接口
 
-0.7.3 统一动力源权威仲裁，永燃独占推进、持续闭环速度保持和客户端双赤尾焰/气流环，见 [动力仲裁与持续控制](PROPULSION_073.md)。饰品与隐藏觉醒机制见 [彗星专题](COMET_HEARTS.md)。
-
-当前版本 **0.7.6**。航迹/控制权诊断见 [航迹连续性](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，既有配置迁移见 [架构审计](ARCHITECTURE_070.md)，定向结果见 [验证](VALIDATION.md)。新增 SERVER 配置 `accessories.comet_firework_saving_chance`，默认 0.6、范围 0.5–0.7。源码为最终权威。
+当前版本 **0.7.7**。Fox3 的 SERVER 配置与逐女仆调试按钮见本页；独立武器边界见 [飞控总览](FLIGHT_CONTROL_OVERVIEW.md#13-fox3-独立制导武器)。航迹/控制权诊断见 [TrajectoryCommitment](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)，饰品与推进规则见 [装备生存与兼容](EQUIPMENT_SURVIVAL.md)，定向结果见 [验证](VALIDATION.md)。源码为最终权威。
 
 ## 1. 配置的入口与生效方式
 
 定义源为 [SkyfarerConfig](../src/main/java/dev/winefox/skyfarer/config/SkyfarerConfig.java)，统一读取与写入入口为 [SkyfarerSettings](../src/main/java/dev/winefox/skyfarer/config/SkyfarerSettings.java)。[WineFoxSkyfarer](../src/main/java/dev/winefox/skyfarer/WineFoxSkyfarer.java) 注册的是 NeoForge **SERVER** 配置；没有单独的客户端飞控配置。常规服务端配置文件名为 `winefox_skyfarer-server.toml`，由 NeoForge 管理其存档配置位置。
 
-- TOML 使用 `flight`、`targeting`、`combat`、`safety`、`command`、`debug`、`equipment`、`accessories` 分组；命令使用不带组名的键，例如 `turn_rate`。
-- 数值都声明为 `DoubleValue`。`ticks`、`attempts` 单位的键在 `/wfs config set` 中额外要求整数；其余值允许小数。运行时 `ticks()` 转为 int，因此不要把手工文件中的小数 tick 当作受支持的细粒度调度。
+- TOML 使用 `flight`、`targeting`、`combat`、`safety`、`command`、`debug`、`equipment`、`accessories`、`fox3` 分组；通常命令使用不带组名的键，例如 `turn_rate`。Fox3 命令保留 `fox3_` 前缀：TOML `fox3.waves` 对应命令 `fox3_waves`。
+- 数值都声明为 `DoubleValue`。`ticks`、`attempts`、`count` 单位的键在 `/wfs config set` 中额外要求整数；其余值允许小数。运行时 `ticks()` 转为 int，因此不要把手工文件中的小数 tick/数量当作受支持的细粒度调度。
 - 未载入配置时读取定义的默认值；写入要求配置已载入，并校验有限数、上下限及整数要求。
 - 数值 `set` / `reset`、全量 reset、配置 reload 会提升 settings revision，让异步 session 淘汰旧参数任务。`debuglog` 单独开关只影响日志并保存，不递增规划配置版本。
 - 命令修改会校验 `combat_range <= hard_combat_range < emergency_teleport_range`；扩大范围时先调整外层。配置读取还有钳制：Settings 的 combat 不大于 hard，hard 不大于 emergency−1。**实际 Home 范围另会扩大**，见后文，不能将这条设置约束理解成所有实际路径的绝对边界。
-- `reset all` 恢复所有数值默认值、默认额外鞘翅列表并关闭 debuglog。旧存档已设置的数值和列表不会因为新版本默认值变化自动被改写。
+- `reset all` 恢复所有数值默认值、默认额外鞘翅列表、Fox3 自动启用/免费发射默认值并关闭 debuglog。旧存档已设置的数值和列表不会因为新版本默认值变化自动被改写。
 - 工作线程不直接读取 Settings/NeoForge 配置；主线程构造数值任务，`PredictionHorizon` 在 worker 中使用任务冻结的倍率上下文。
 
 ### 1.1 完整数值配置表
@@ -76,6 +74,27 @@
 | debug.log_interval_ticks | 100 | 20–1200 | ticks | C / CommandManager 周期日志间隔；状态变化及部分诊断另有触发，不是所有日志总速率上限。 |
 
 另外 `debug.debuglog=false` 是 BooleanValue，开启条件通过 Settings.debugLogging 读取。没有线程数、队列长度、快照预算的公开 TOML 键；这些当前是异步系统代码常量。不能向玩家建议不存在的“planner_threads”或“snapshot_budget”参数。
+
+### Fox3 配置
+
+Fox3 使用独立的 `fox3` 分类，数值命令键与 TOML 键的映射如下。每次齐射在启动时冻结波数、间隔、每波数量、伤害、半径和耗材开关，配置修改作用于后续新齐射。20 ticks 在正常游戏速率下约为 1 秒。
+
+| TOML 键 | `/wfs config` 数值键 | 默认 | 范围 | 含义 |
+| --- | --- | ---: | --- | --- |
+| `fox3.min_monsters` | `fox3_min_monsters` | 8 | 1–128 整数 | 自动概率检查所需合法怪物数量 |
+| `fox3.cooldown_ticks` | `fox3_cooldown_ticks` | 1200 | 20–72000 整数 | 两次自动概率判定之间的最短间隔，默认 60 秒；成功、失败均消耗本轮机会 |
+| `fox3.chance` | `fox3_chance` | 0.5 | 0–1 | 每次合格检查的触发概率 |
+| `fox3.waves` | `fox3_waves` | 4 | 1–16 整数 | 一次齐射波数 |
+| `fox3.wave_interval_ticks` | `fox3_wave_interval_ticks` | 12 | 1–100 整数 | 相邻两波间隔，默认 0.6 秒 |
+| `fox3.missiles_per_wave` | `fox3_missiles_per_wave` | 2 | 1–4 整数 | 每波同时尝试发射的导弹数 |
+| `fox3.damage` | `fox3_damage` | 5 | 0–100 | 每次爆炸的基础生命值伤害，默认 2.5 颗心 |
+| `fox3.blast_radius` | `fox3_blast_radius` | 2 | 0.25–8 格 | 爆炸半径；默认直径 4 格 |
+
+`fox3.enabled=true` 与 `fox3.consume_fireworks=false` 为 BooleanValue，修改 SERVER TOML 后重载生效；当前 `/wfs config set/get` 数值接口不暴露这两个键，`reset all` 会恢复它们。`enabled` 只控制自动触发，调试面板仍可手动测试。
+
+免费模式完全不查询或消耗烟花库存。开启 `consume_fireworks` 后，每枚成功生成的导弹消费一枚普通 `minecraft:firework_rocket`；不要求烟火之星，不读取其颜色/爆炸特效。永燃之心的免费飞行和普通彗星之心的推进节能概率均不豁免 Fox3 弹药消耗；这是武器弹药规则，不参与动力源仲裁。余弹不足时只发射能够付款的枚数，不补发或复制缺失弹药。
+
+例如 `/wfs config set fox3_waves 6` 改为六波，`/wfs config set fox3_chance 1` 令符合其余条件的自动检查必定成功；手动发射仍通过下文调试面板按女仆 UUID 执行。
 
 ### 1.2 实际范围与排序不能只看配置表
 
@@ -220,7 +239,7 @@ HUD 当前字段包含名称/UUID 前缀/维度/选中序号、状态、原因/�
 
 ### 5.2 调试管理面板的权限与传送
 
-源：[DebugPanelManager](../src/main/java/dev/winefox/skyfarer/runtime/DebugPanelManager.java)、[DebugMaidScreen](../src/main/java/dev/winefox/skyfarer/client/gui/DebugMaidScreen.java)。右键空气打开自己的 owner 列表：名称、UUID、最近位置、维度、同维度三维距离 `(Nm)`；跨维度显示 `(None)`。有绑定勾选和“玩家 → 女仆 / 女仆 → 玩家”按钮。可以分页、刷新、按玩家名/UUID 搜索及下拉切换 owner。
+源：[DebugPanelManager](../src/main/java/dev/winefox/skyfarer/runtime/DebugPanelManager.java)、[DebugMaidScreen](../src/main/java/dev/winefox/skyfarer/client/gui/DebugMaidScreen.java)。右键空气打开自己的 owner 列表：名称、UUID、最近位置、维度、同维度三维距离 `(Nm)`；跨维度显示 `(None)`。有绑定勾选、“玩家 → 女仆 / 女仆 → 玩家”和逐行「立即发射 Fox3」按钮。可以分页、刷新、按玩家名/UUID 搜索及下拉切换 owner。
 
 - 普通玩家只管理自己的女仆；权限等级 2 才可搜索/管理其他 owner。**本人女仆的调试传送当前不要求创造或 OP**，这是现有权限事实，不应把它误写为仅管理员工具。
 - 数据列表来自本模组 registry + TLM seed + 当前已加载女仆 + 本次绑定缓存；当前没有未知历史实体的全世界扫描。列出面板会枚举各维度已加载实体以刷新该 owner 记录，不加载其余地形。
@@ -230,15 +249,17 @@ HUD 当前字段包含名称/UUID 前缀/维度/选中序号、状态、原因/�
 - 采用原版命令式 `teleportTo(ServerLevel,...)`，不走 TLM 门户用的 changeDimension；移动前退出载具并卸下乘客。带女仆过来会先取消订单/唤醒/回收及飞控；成功后清速度和 fallDistance、刷新 registry。
 - 完成、失效、权限变化、登出、关服释放临时票据。记录存在不保证能加载实体；超时会明确显示记录可能失效。
 
+「立即发射 Fox3」以该行 UUID 发送 `fox3` 动作；服务端仍验证 session nonce、持物、owner/权限、真实实体存活及当前飞行安全条件。只使用已加载实体，不为发射注册区块票据；卸载或面板存在待处理传送时按钮禁用。手动请求绕过怪物数量、自动概率和自动冷却，且不改写自动冷却；正在齐射、安全状态不合格、没有合法目标或弹药不足时给出对应反馈。导弹仍执行正常目标过滤、资源限制和生命周期。
+
 ### 5.3 指挥标记视觉
 
 普通标记颜色 `0xFF8070`，创造 `0xE58CFF`；四角框 + 头顶 `▼` + 1–5 编号。客户端从相机向目标中心做方块射线，遮挡时仅画透视 `▼`，隐藏框及编号。新标记使用 0.35 秒三次缓动，由 1.8 倍框缩到 1 倍；重复同步不重新触发动画。服务端仅向标记者发送该列表；成功音效 `EXPERIENCE_ORB_PICKUP`（0.8 音量/1.4 音高），取消 `UI_BUTTON_CLICK`（0.8/0.8）。
 
 ### 5.4 日志与排查
 
-0.7.6 增加 `REMOTE_WAKE stage=ticket_location` 的实际唤醒维度/位置、按原因变化输出的 `assignment_rejected`、关闭前的 `COMMAND_TRANSIT_FAILED`（generation/位置/速度/ground/glide/retryAt/provider/proof），以及 `COMMAND_HOME_RETURN` 的实际 pos/dimension。`GROUND_CONTACT_TIMEOUT` 表示重载站立实体等待原版接触超过 20 ticks；原先每 40 ticks 才偶尔输出的接单资格拒绝改为原因去重。详见 [二次召唤诊断](REMOTE_RECALL_076.md)。
+0.7.6 增加 `REMOTE_WAKE stage=ticket_location` 的实际唤醒维度/位置、按原因变化输出的 `assignment_rejected`、关闭前的 `COMMAND_TRANSIT_FAILED`（generation/位置/速度/ground/glide/retryAt/provider/proof），以及 `COMMAND_HOME_RETURN` 的实际 pos/dimension。`GROUND_CONTACT_TIMEOUT` 表示重载站立实体等待原版接触超过 20 ticks；原先每 40 ticks 才偶尔输出的接单资格拒绝改为原因去重。详见 [历史验证记录](VALIDATION.md#076-home-回收后的重复召唤)。
 
-0.7.5 新增 `TRANSIT_LAUNCH_REJECTED`：`NO_CERTIFIED_LAUNCH` 是无可执行起飞结果，`LAUNCH_WAIT_TIMEOUT` 是包含 Worker/Provider 等待的 100 游戏 tick 地面规划截止。记录 Resolver 和 planning 原因；后续应有 `COMMAND_RELEASE` 与撤票或有限 Home 回收。不要将装备 `READY` 当成起飞已认证，也不要将 wake 的 `transferred_to_order` 当成真正撤票；见 [实机堆栈与修复](REMOTE_WAKE_075.md)。
+0.7.5 新增 `TRANSIT_LAUNCH_REJECTED`：`NO_CERTIFIED_LAUNCH` 是无可执行起飞结果，`LAUNCH_WAIT_TIMEOUT` 是包含 Worker/Provider 等待的 100 游戏 tick 地面规划截止。记录 Resolver 和 planning 原因；后续应有 `COMMAND_RELEASE` 与撤票或有限 Home 回收。不要将装备 `READY` 当成起飞已认证，也不要将 wake 的 `transferred_to_order` 当成真正撤票；见 [历史验证记录](VALIDATION.md#075-永燃远程唤醒)。
 
 `/wfs debuglog on` 会产生 `[WFS debug]` 状态、扫描/阻断、能量/火箭决定、任务分配、赶路、回收等日志。周期由 log_interval_ticks 控制，转移与部分 sweep 诊断有独立事件/节流；大量女仆开启后会增加日志量。
 
@@ -248,7 +269,7 @@ HUD 当前字段包含名称/UUID 前缀/维度/选中序号、状态、原因/�
 
 ## 6. 网络与兼容边界
 
-[SkyfarerNetwork](../src/main/java/dev/winefox/skyfarer/network/SkyfarerNetwork.java) 使用协议版本字符串 **`3`**，所有 handler 通过 `context.enqueueWork` 转交对应游戏主线程。客户端消费者由 `SkyfarerClient` 安装；common 网络类不直接引用 Screen/Minecraft，保持 dedicated server 可加载。
+[SkyfarerNetwork](../src/main/java/dev/winefox/skyfarer/network/SkyfarerNetwork.java) 使用协议版本字符串 **`5`**，要求两端理解新增 Fox3 实体与事件；没有新增独立 Fox3 动作 Payload，调试按钮沿用现有 NBT 请求。所有 handler 通过 `context.enqueueWork` 转交对应游戏主线程。客户端消费者由 `SkyfarerClient` 安装；common 网络类不直接引用 Screen/Minecraft，保持 dedicated server 可加载。
 
 | 方向 / Payload | 权威边界 |
 | --- | --- |
@@ -305,12 +326,12 @@ HUD 当前字段包含名称/UUID 前缀/维度/选中序号、状态、原因/�
 
 ### 0.6.2.10 攻击搜索诊断
 
-ATTACK_SEARCH 每女仆通常 20 ticks 限频（commit 另记），显示目标实际位移、提前量、距离、重试数、候选统计和 Rejoin 原因。ATTACK_CONTINUATION_REJECT 区分执行阶段丢失的接触/离场。noContact 表示未认证接触，包含接触前碰撞，不能一律当成射程不足。字段含义见 [移动目标专项](MOVING_ATTACK_06210.md#诊断)。
+ATTACK_SEARCH 每女仆通常 20 ticks 限频（commit 另记），显示目标实际位移、提前量、距离、重试数、候选统计和 Rejoin 原因。ATTACK_CONTINUATION_REJECT 区分执行阶段丢失的接触/离场。noContact 表示未认证接触，包含接触前碰撞，不能一律当成射程不足。当前输出字段以 [AirCombatController](../src/main/java/dev/winefox/skyfarer/ai/AirCombatController.java) 为准。
 
 ## 0.7.0 配置迁移
 
-移除无行为消费者的 `previous_target_bonus`、`climb_height`、`forward_collision_check_distance`，不再由 `/wfs config` 暴露。旧值无需映射；NeoForge 配置校正可删除这些旧键。依据见 [审计](ARCHITECTURE_070.md)。
+移除无行为消费者的 `previous_target_bonus`、`climb_height`、`forward_collision_check_distance`，不再由 `/wfs config` 暴露。旧值无需映射；NeoForge 配置校正可删除这些旧键。当前有效键见本文完整配置表及 [SkyfarerConfig](../src/main/java/dev/winefox/skyfarer/config/SkyfarerConfig.java)。
 
 ## 彗星光效诊断（0.7.4）
 
-通过现有 `/wfs debuglog on` 启用 `debug.debuglog` 后，每约 5 秒聚合记录服务端 `[WFS comet-fx server]` 的 tx/rings/stops/currentPower，以及客户端 `[WFS comet-fx client]` 的 rx/active/spawned/awaitingEntity/distanceCulled/budgetLimited/providerMissing。tx 是 tracking 包提交，spawned 是客户端创建提交，均不直接证明屏幕可见。计数随世界/服务器生命周期清理。完整排查顺序、Fullbright 和粒子上限见 [彗星光效专题](COMET_RADIANCE_074.md)。
+通过现有 `/wfs debuglog on` 启用 `debug.debuglog` 后，每约 5 秒聚合记录服务端 `[WFS comet-fx server]` 的 tx/rings/stops/currentPower，以及客户端 `[WFS comet-fx client]` 的 rx/active/spawned/awaitingEntity/distanceCulled/budgetLimited/providerMissing。tx 是 tracking 包提交，spawned 是客户端创建提交，均不直接证明屏幕可见。计数随世界/服务器生命周期清理。Fullbright 和粒子预算的历史定向证据见 [验证](VALIDATION.md#074-fullbright-与圣物掉落)，实现见 [CometThrustParticles](../src/main/java/dev/winefox/skyfarer/client/CometThrustParticles.java)。

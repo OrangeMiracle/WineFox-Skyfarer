@@ -1,0 +1,43 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\client\SkyfarerClient.java:12: 警告: [removal] EventBusSubscriber 中的 bus() 已过时, 且标记为待删除
+@EventBusSubscriber(modid = WineFoxSkyfarer.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+                                                                         ^
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\client\SkyfarerClient.java:12: 警告: [removal] EventBusSubscriber 中的 Bus 已过时, 且标记为待删除
+@EventBusSubscriber(modid = WineFoxSkyfarer.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+                                                                                                 ^
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+2 个警告
+
+> Task :processResources
+> Task :classes
+
+> Task :compileVerificationJava FAILED
+F:\AI\AI_Project\骑空士酒狐\src\verification\java\dev\winefox\skyfarer\weapon\Fox3IntegrationChecks.java:67: 错误: 匿名 类不得扩展密封类
+        SkyfarerConfig.SPEC.acceptConfig(new IConfigSpec.ILoadedConfig() {
+
+                                                                         ^
+1 个错误
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileVerificationJava'.
+> Compilation failed; see the compiler output below.
+  F:\AI\AI_Project\骑空士酒狐\src\verification\java\dev\winefox\skyfarer\weapon\Fox3IntegrationChecks.java:67: 错误: 匿名 类不得扩展密封类
+          SkyfarerConfig.SPEC.acceptConfig(new IConfigSpec.ILoadedConfig() {
+                                                                           ^
+  1 个错误
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to generate a Build Scan (powered by Develocity).
+
+BUILD FAILED in 10s
+4 actionable tasks: 3 executed, 1 up-to-date

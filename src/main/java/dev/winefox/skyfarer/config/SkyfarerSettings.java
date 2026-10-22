@@ -43,6 +43,8 @@ public final class SkyfarerSettings {
             revision.incrementAndGet();
             SkyfarerConfig.PARAMETERS.forEach((key, p) -> SkyfarerConfig.VALUES.get(key).set(p.initial()));
             SkyfarerConfig.DEBUG_LOGGING.set(false);
+            SkyfarerConfig.FOX3_ENABLED.set(true);
+            SkyfarerConfig.FOX3_CONSUME_FIREWORKS.set(false);
             SkyfarerConfig.EXTRA_ELYTRA_ITEMS.set(SkyfarerConfig.DEFAULT_ELYTRA_ITEMS);
             SkyfarerConfig.SPEC.save();
         } else {
@@ -66,6 +68,16 @@ public final class SkyfarerSettings {
     public static double breakawayDistance() { return get("breakaway_distance"); }
     public static double attackExitDistance() { return breakawayDistance()*2/3; }
     public static int ticks(String name) { return (int) get(name); }
+    public static boolean fox3Enabled() { return !SkyfarerConfig.SPEC.isLoaded() || SkyfarerConfig.FOX3_ENABLED.get(); }
+    public static boolean fox3ConsumeFireworks() { return SkyfarerConfig.SPEC.isLoaded() && SkyfarerConfig.FOX3_CONSUME_FIREWORKS.get(); }
+    public static int fox3MinMonsters() { return ticks("fox3_min_monsters"); }
+    public static int fox3CooldownTicks() { return ticks("fox3_cooldown_ticks"); }
+    public static double fox3Chance() { return get("fox3_chance"); }
+    public static int fox3Waves() { return ticks("fox3_waves"); }
+    public static int fox3WaveIntervalTicks() { return ticks("fox3_wave_interval_ticks"); }
+    public static int fox3MissilesPerWave() { return ticks("fox3_missiles_per_wave"); }
+    public static double fox3Damage() { return get("fox3_damage"); }
+    public static double fox3BlastRadius() { return get("fox3_blast_radius"); }
     public static boolean debugLogging() { return SkyfarerConfig.SPEC.isLoaded() && SkyfarerConfig.DEBUG_LOGGING.get(); }
     public static void setDebugLogging(boolean enabled) {
         if (!SkyfarerConfig.SPEC.isLoaded()) throw new IllegalArgumentException("Server configuration is not loaded");

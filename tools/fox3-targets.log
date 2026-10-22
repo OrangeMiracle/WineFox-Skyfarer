@@ -1,0 +1,69 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\client\SkyfarerClient.java:12: 警告: [removal] EventBusSubscriber 中的 bus() 已过时, 且标记为待删除
+@EventBusSubscriber(modid = WineFoxSkyfarer.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+                                                                         ^
+F:\AI\AI_Project\骑空士酒狐\src\main\java\dev\winefox\skyfarer\client\SkyfarerClient.java:12: 警告: [removal] EventBusSubscriber 中的 Bus 已过时, 且标记为待删除
+@EventBusSubscriber(modid = WineFoxSkyfarer.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+                                                                                                 ^
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+2 个警告
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+> Task :fox3OfflineAgent
+
+> Task :verifyFox3Targets FAILED
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Exception in thread "main" java.lang.reflect.InvocationTargetException
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:118)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.instrument/sun.instrument.InstrumentationImpl.loadClassAndStartAgent(InstrumentationImpl.java:560)
+	at java.instrument/sun.instrument.InstrumentationImpl.loadClassAndCallPremain(InstrumentationImpl.java:572)
+Caused by: java.nio.file.NoSuchFileException: F:\AI\AI_Project\???????��\libs\touhoulittlemaid-1.5.3-neoforge+mc1.21.1.j
+	at java.base/sun.nio.fs.WindowsException.translateToIOException(WindowsException.java:85)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:103)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:108)
+	at java.base/sun.nio.fs.WindowsFileAttributeViews$Basic.readAttributes(WindowsFileAttributeViews.java:53)
+FATAL ERROR in native method: processing of -javaagent failed, processJavaStart failed
+	at java.base/sun.nio.fs.WindowsFileAttributeViews$Basic.readAttributes(WindowsFileAttributeViews.java:38)
+	at java.base/sun.nio.fs.WindowsFileSystemProvider.readAttributes(WindowsFileSystemProvider.java:197)
+	at java.base/java.nio.file.Files.readAttributes(Files.java:1853)
+	at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+	at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+	at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+	at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+	at java.base/java.util.jar.JarFile.<init>(JarFile.java:345)
+	at java.base/java.util.jar.JarFile.<init>(JarFile.java:316)
+	at java.base/java.util.jar.JarFile.<init>(JarFile.java:255)
+	at dev.winefox.skyfarer.weapon.Fox3OfflineAccessAgent.premain(Fox3OfflineAccessAgent.java:23)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	... 3 more
+*** java.lang.instrument ASSERTION FAILED ***: "!errorOutstanding" with message Outstanding error when calling method in invokeJavaAgentMainMethod at s\open\src\java.instrument\share\native\libinstrument\JPLISAgent.c line: 627
+*** java.lang.instrument ASSERTION FAILED ***: "success" with message invokeJavaAgentMainMethod failed at s\open\src\java.instrument\share\native\libinstrument\JPLISAgent.c line: 466
+*** java.lang.instrument ASSERTION FAILED ***: "result" with message agent load/premain call failed at s\open\src\java.instrument\share\native\libinstrument\JPLISAgent.c line: 429
+
+[Incubating] Problems report is available at: file:///F:/AI/AI_Project/%E9%AA%91%E7%A9%BA%E5%A3%AB%E9%85%92%E7%8B%90/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyFox3Targets'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 15s
+6 actionable tasks: 4 executed, 2 up-to-date

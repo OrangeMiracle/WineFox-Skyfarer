@@ -17,7 +17,8 @@ public final class DebugMaidScreen extends Screen {
     public void update(CompoundTag next){if(search!=null)query=search.getValue();data=next;rebuildWidgets();}
     private int left(){return Math.max(8,(width-740)/2);}
     private int span(){return width-2*left();}
-    private int rows(){return Math.clamp((height-132)/65,1,20);}
+    private int rowHeight(){return span()>=390?65:88;}
+    private int rows(){return Math.clamp((height-132)/rowHeight(),1,20);}
     private void request(String action,UUID maid,boolean enabled,int page,UUID owner){
         var tag=new CompoundTag();tag.putUUID("session",session());tag.putString("action",action);
         if(maid!=null)tag.putUUID("maid",maid);tag.putBoolean("enabled",enabled);
@@ -44,10 +45,14 @@ public final class DebugMaidScreen extends Screen {
         }else{
             var maids=data.getList("maids",Tag.TAG_COMPOUND);
             for(int i=0;i<Math.min(rows(),maids.size());i++){
-                var maid=maids.getCompound(i);int y=80+i*65;
+                var maid=maids.getCompound(i);int y=80+i*rowHeight(),teleportY=y+(span()>=390?37:60);
                 addRenderableWidget(Checkbox.builder(Component.literal("绑定"),font).pos(x,y+38).selected(maid.getBoolean("bound")).onValueChange((box,value)->request("bind",maid.getUUID("id"),value,data.getInt("page"),data.getUUID("owner"))).build());
-                var visit=addRenderableWidget(Button.builder(Component.literal("玩家 → 女仆"),b->request("visit",maid.getUUID("id"),false,data.getInt("page"),data.getUUID("owner"))).bounds(x+w-200,y+37,98,20).build());
-                var bring=addRenderableWidget(Button.builder(Component.literal("女仆 → 玩家"),b->request("bring",maid.getUUID("id"),false,data.getInt("page"),data.getUUID("owner"))).bounds(x+w-99,y+37,99,20).build());
+                var fox3=addRenderableWidget(Button.builder(Component.translatable("screen.winefox_skyfarer.fox3.launch"),b->request("fox3",maid.getUUID("id"),false,data.getInt("page"),data.getUUID("owner")))
+                    .bounds(x+w-(span()>=390?326:122),y+37,122,20)
+                    .tooltip(Tooltip.create(Component.translatable(maid.getBoolean("loaded")?"screen.winefox_skyfarer.fox3.hint":"screen.winefox_skyfarer.fox3.unloaded"))).build());
+                fox3.active=maid.getBoolean("loaded")&&!data.getBoolean("busy");
+                var visit=addRenderableWidget(Button.builder(Component.literal("玩家 → 女仆"),b->request("visit",maid.getUUID("id"),false,data.getInt("page"),data.getUUID("owner"))).bounds(x+w-200,teleportY,98,20).build());
+                var bring=addRenderableWidget(Button.builder(Component.literal("女仆 → 玩家"),b->request("bring",maid.getUUID("id"),false,data.getInt("page"),data.getUUID("owner"))).bounds(x+w-99,teleportY,99,20).build());
                 visit.active=bring.active=!data.getBoolean("busy");
             }
             int page=data.getInt("page"),size=data.getInt("size");
@@ -66,7 +71,7 @@ public final class DebugMaidScreen extends Screen {
         if(dropdown){if(data.getList("owners",Tag.TAG_COMPOUND).isEmpty())g.drawString(font,"没有匹配的玩家",left(),82,0xAAAAAA);return;}
         var maids=data.getList("maids",Tag.TAG_COMPOUND);int x=left(),w=span();
         for(int i=0;i<Math.min(rows(),maids.size());i++){
-            var maid=maids.getCompound(i);var pos=DebugSnapshot.vector(maid,"position");int y=80+i*65;
+            var maid=maids.getCompound(i);var pos=DebugSnapshot.vector(maid,"position");int y=80+i*rowHeight();
             String distance=maid.getDouble("distance")<0?"(None)":String.format(Locale.ROOT,"(%.0fm)",maid.getDouble("distance"));
             fit(g,maid.getString("name")+"  "+distance+(maid.getBoolean("loaded")?"":"  （已卸载／最后记录）"),x,y,w,0x9DFFAD);
             fit(g,maid.getUUID("id").toString(),x,y+12,w,0xDDDDDD);

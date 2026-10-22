@@ -6,6 +6,7 @@ import dev.winefox.skyfarer.WineFoxSkyfarer;
 import dev.winefox.skyfarer.command.*;
 import dev.winefox.skyfarer.mixin.MaidWorldDataAccessor;
 import dev.winefox.skyfarer.network.DebugPanelPayload;
+import dev.winefox.skyfarer.weapon.Fox3System;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.*;
@@ -52,8 +53,18 @@ public final class DebugPanelManager {
             if(entry==null||!entry.owner().equals(session.owner)||!DebugWatchManager.allowed(player,entry.owner())){message(player,"女仆记录失效或没有管理权限");send(player,session);return;}
             if(action.equals("bind"))DebugWatchManager.set(player,entry,request.getBoolean("enabled"));
             else if(action.equals("visit")||action.equals("bring"))startTeleport(player,session,entry,action.equals("bring"));
+            else if(action.equals("fox3"))launchFox3(player,session,entry);
         }
         send(player,session);
+    }
+    /** Manual weapons never create chunk tickets or trust the registry's cached ownership. */
+    private static void launchFox3(ServerPlayer player,Session session,SkyfarerMaidRegistry.Entry entry){
+        var maid=DebugWatchManager.loaded(player.server,entry.id());
+        if(maid==null||maid.isRemoved()||!maid.isAlive()||!session.owner.equals(maid.getOwnerUUID())
+            ||!DebugWatchManager.allowed(player,maid.getOwnerUUID())){
+            player.displayClientMessage(Component.translatable("message.winefox_skyfarer.fox3.unavailable"),false);return;
+        }
+        player.displayClientMessage(Component.translatable(Fox3System.manualLaunch(maid)),false);
     }
     private static String ownerName(MinecraftServer server,UUID owner){
         var online=server.getPlayerList().getPlayer(owner);if(online!=null)return online.getGameProfile().getName();

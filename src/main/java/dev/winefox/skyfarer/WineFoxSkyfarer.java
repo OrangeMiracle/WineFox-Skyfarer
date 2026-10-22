@@ -28,6 +28,10 @@ public final class WineFoxSkyfarer {
 
     public WineFoxSkyfarer(IEventBus bus, ModContainer container) {
         ITEMS.register(bus);
+        dev.winefox.skyfarer.weapon.Fox3Entities.TYPES.register(bus);
+        NeoForge.EVENT_BUS.addListener(dev.winefox.skyfarer.weapon.Fox3System::tick);
+        NeoForge.EVENT_BUS.addListener(dev.winefox.skyfarer.weapon.Fox3System::leave);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppingEvent event)->dev.winefox.skyfarer.weapon.Fox3System.clear());
         dev.winefox.skyfarer.network.CometParticles.TYPES.register(bus);
         LOOT_MODIFIERS.register(bus);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event)->{
