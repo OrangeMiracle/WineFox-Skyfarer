@@ -32,7 +32,26 @@ public final class Fox3IntegrationChecks {
         hooksAndIsolation();
         unloadLifecycle();
         locales();
+        burstRouting();
         System.out.println("Fox3 integration: " + assertions + " real config, authorization control-flow, per-maid UI, queued network, lifecycle/renderer and localization checks passed.");
+    }
+
+    private static void burstRouting() throws Exception {
+        var missile=read(ROOT+"weapon/Fox3MissileEntity");
+        var explosion=method(missile,"explodeFox3");
+        require(Arrays.stream(explosion.instructions.toArray()).filter(i->i instanceof MethodInsnNode c && c.name.equals("nextBoolean")).count()==1,"server draws exactly one fair boolean per detonation");
+        require(Arrays.stream(explosion.instructions.toArray()).filter(i->i instanceof MethodInsnNode c && c.name.equals("broadcastEntityEvent")).count()==1,"one visual event per explosion");
+        int event=callIndex(explosion,c->c.name.equals("broadcastEntityEvent"));
+        requireDominates(explosion,event,i->i instanceof MethodInsnNode c && c.name.equals("broadcast"),"authoritative position precedes visual event");
+        var handler=method(missile,"handleEntityEvent");
+        int vanilla=callIndex(handler,c->c.name.equals("createFireworks")), custom=callIndex(handler,c->c.name.equals("addParticle"));
+        require(vanilla>=0 && custom>=0 && !reachable(handler,vanilla,custom,-1) && !reachable(handler,custom,vanilla,-1),"creeper and fox branches mutually exclusive");
+        fieldGate(handler,vanilla,"burstShown",Opcodes.GETFIELD,"duplicate creeper suppressed");
+        fieldGate(handler,custom,"burstShown",Opcodes.GETFIELD,"duplicate emblem suppressed");
+        require(field(method(missile,"<clinit>"),"net/minecraft/world/item/component/FireworkExplosion$Shape","CREEPER"),"native CREEPER firework shape is used");
+        require(!field(method(missile,"<clinit>"),"net/minecraft/world/item/component/FireworkExplosion$Shape","SMALL_BALL"),"old ball explosion removed");
+        var client=read(ROOT+"client/SkyfarerClient");
+        require(field(method(client,"particles"),ROOT+"network/CometParticles","FOX3_EMBLEM"),"client sprite provider registered");
     }
 
     private static void config() throws Exception {

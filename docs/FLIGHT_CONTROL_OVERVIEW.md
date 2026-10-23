@@ -554,7 +554,19 @@ Fox3 是飞行中的独立武器，不增加 `AirCombatState`，不调用空战�
 
 爆炸只由服务端结算一次。最多检查 128 个局部 LivingEntity，由 [Fox3Blast](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Blast.java) 按 UUID 去重、重新验证合法目标，并以爆心至目标碰撞箱最近点的球形距离检查配置半径。范围内统一使用配置基础伤害（默认 5 点，无距离衰减）；到身体中心或低位的两条方块遮挡射线至少一条可见才调用原版 `fireworks` 伤害源。护甲、免疫与伤害事件仍由原版/其他 Mod 正常处理。不会调用破坏方块的世界爆炸。
 
-客户端复用原版 `SMALL_BALL` 烟花，主色鲜橙并带橙黄/橙红渐变及 trail，发射音效也使用原版。引爆先发送原版最终位置包再发送烟花事件，避免客户端插值尚未追上时把爆炸画在接触点后方。每枚每客户端 tick 最多生成 2 个白色 `FIREWORK` 尾迹粒子，全客户端最多 128 个/tick；原版粒子寿命形成较长尾迹。真实颜色、弧线观感、粒子设置/资源包、网络插值与多人负载仍需用户实机确认；离线验证不宣称已观看实际游戏效果。
+服务端引爆时只调用一次 `random.nextBoolean()`，等概率选择事件 17（原版 `FireworkExplosion.Shape.CREEPER`）或 18（酒狐头像），每次只显示一种主要图案，不再附加 `SMALL_BALL`。仍先发送原版最终位置包再发送一个实体事件；客户端 `burstShown` 防止重复事件叠加。伤害仍由原有服务端流程结算一次，没有逐点网络包。
+
+苦力怕分支直接调用原版 `createFireworks`，复用 CREEPER 多平面星芒、拖尾、橙黄/橙红渐变与音效，不生成苦力怕实体。原有白色飞行尾迹不变：每枚每客户端 tick 最多 2 个 `FIREWORK` 粒子，全客户端最多 128 个/tick。
+
+#### 酒狐头像烟花
+
+- [export-fox3-emblem.py](../tools/export-fox3-emblem.py) 从 `tools/素材参考/爆炸特效.png` 提取黑线，经 256×256 二值化、Zhang-Suen 骨架细化与至少 4.8 像素间距采样，生成 [Fox3EmblemData](../src/main/java/dev/winefox/skyfarer/weapon/Fox3EmblemData.java) 的 **444 点**。保留狐耳、头发、睁眼/眨眼和笑嘴。原图不修改、不打包；运行时只读预生成常量，不解析 PNG。
+- [Fox3EmblemParticle](../src/main/java/dev/winefox/skyfarer/client/Fox3EmblemParticle.java) 在原版粒子管线内批量绘制独立星芒四边形，纹理为 `minecraft:spark_5`，没有整张头像纹理。橙金色、顶点 Fullbright、少量闪烁，展开期每四点增加一个短尾点；复用原版近/远烟花爆炸音效。
+- [Fox3BurstVisuals](../src/main/java/dev/winefox/skyfarer/weapon/Fox3BurstVisuals.java) 控制 8 ticks 展开、保持到 22 ticks、40 ticks 完全消散。视觉尺寸约 6 格，向上升约 3 格改善贴地可读性，随后轻微散开/下坠；不修改实际伤害半径。
+- 每帧使用当前客户端相机 right/up 基向量，整幅点阵随观察方向转向，各玩家看到正面的头像，避免侧视变窄或镜像。保持正常深度遮挡，不穿墙显示。
+- 原版 `ParticleGroup(16)` 限制同时存在的头像批次；每个 444 主点＋最多 111 短尾点，最多 **8,880 四边形/帧**。超限拒绝新头像，不叠加别的主要图案；40 ticks 移除，切世界/断线由原版引擎清空队列与计数。没有导弹引用、子粒子扩散或线程。苦力怕分支保留原版粒子管线的数量和生命周期限制。
+
+`verifyFox3Burst` 将实际 renderer 输出至顶点记录器，检查 12 种相机朝向、全亮/UV、展开/保持/淡出、包围盒与移除，并实际调用 ParticleEngine 验证 32 次同时请求最多接纳 16 个及切世界清理。离线预览不代表实际资源包、深度混合、网络与多人 FPS；未启动 Minecraft。
 
 #### 酒狐尾巴导弹外观
 

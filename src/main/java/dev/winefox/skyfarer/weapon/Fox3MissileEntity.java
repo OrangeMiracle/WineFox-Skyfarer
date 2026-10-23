@@ -35,7 +35,7 @@ public final class Fox3MissileEntity extends FireworkRocketEntity {
     public static final int DAMAGE_CANDIDATES = 128;
     public static final int ORANGE = 0xFF7800;
     private static final List<FireworkExplosion> EXPLOSIONS = List.of(new FireworkExplosion(
-        FireworkExplosion.Shape.SMALL_BALL, IntList.of(ORANGE, 0xFFAA20), IntList.of(0xFF4500), true, false));
+        FireworkExplosion.Shape.CREEPER, IntList.of(ORANGE, 0xFFAA20), IntList.of(0xFF4500), true, false));
     private UUID maidId;
     private UUID ownerId;
     private EntityMaid sourceIdentity;
@@ -54,6 +54,7 @@ public final class Fox3MissileEntity extends FireworkRocketEntity {
     private int clientLerpSteps;
     private static long trailTick = Long.MIN_VALUE;
     private static int trailParticles;
+    private boolean burstShown;
 
     public Fox3MissileEntity(EntityType<? extends Fox3MissileEntity> type, Level level) {
         super(type, level);
@@ -196,10 +197,10 @@ public final class Fox3MissileEntity extends FireworkRocketEntity {
         if (detonated || isRemoved() || level().isClientSide) return;
         detonated = true;
         try {
-            // Event 17 has no coordinates. Send the authoritative contact point first, then let the
+            // Burst events have no coordinates. Send the authoritative contact point first, then let the
             // client burst at that queued position rather than its deliberately interpolated rocket.
             ((ServerLevel)level()).getChunkSource().broadcast(this, new ClientboundTeleportEntityPacket(this));
-            level().broadcastEntityEvent(this, (byte)17);
+            level().broadcastEntityEvent(this, Fox3BurstVisuals.event(random.nextBoolean()));
             gameEvent(GameEvent.EXPLODE, maid);
             List<LivingEntity> candidates = new ArrayList<>();
             level().getEntities(EntityTypeTest.forClass(LivingEntity.class), getBoundingBox().inflate(radius),
@@ -222,10 +223,17 @@ public final class Fox3MissileEntity extends FireworkRocketEntity {
     }
 
     @Override public void handleEntityEvent(byte event) {
-        if (event == 17) {
-            if (level().isClientSide) {
+        if (event == Fox3BurstVisuals.CREEPER_EVENT || event == Fox3BurstVisuals.FOX_EVENT) {
+            if (level().isClientSide && !burstShown) {
+                burstShown = true;
                 Vec3 burst = clientTarget == null ? position() : clientTarget;
-                level().createFireworks(burst.x, burst.y, burst.z, 0, 0, 0, EXPLOSIONS);
+                if (event == Fox3BurstVisuals.CREEPER_EVENT) {
+                    level().createFireworks(burst.x, burst.y, burst.z, 0, 0, 0, EXPLOSIONS);
+                } else {
+                    // Same tracked-entity audience as vanilla fireworks; bounded by the client group.
+                    level().addParticle(dev.winefox.skyfarer.network.CometParticles.FOX3_EMBLEM.get(), true,
+                        burst.x, burst.y, burst.z, 0, 0, 0);
+                }
             }
         } else super.handleEntityEvent(event);
     }

@@ -15,6 +15,7 @@ public final class SkyfarerClient {
         event.registerEntityRenderer(dev.winefox.skyfarer.weapon.Fox3Entities.MISSILE.get(), Fox3MissileRenderer::new);
     }
     @SubscribeEvent public static void particles(net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent event){
+        event.registerSpriteSet(dev.winefox.skyfarer.network.CometParticles.FOX3_EMBLEM.get(),sprites->(type,level,x,y,z,vx,vy,vz)->new Fox3EmblemParticle(level,x,y,z,sprites));
         event.registerSpriteSet(dev.winefox.skyfarer.network.CometParticles.TAIL.get(),sprites->(type,level,x,y,z,vx,vy,vz)->new CometGlowParticle(level,x,y,z,vx,vy,vz,sprites,false));
         event.registerSpriteSet(dev.winefox.skyfarer.network.CometParticles.RING.get(),sprites->(type,level,x,y,z,vx,vy,vz)->new CometGlowParticle(level,x,y,z,vx,vy,vz,sprites,true));
     }

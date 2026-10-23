@@ -1,6 +1,27 @@
 # 验证、离线回放与构建
 
-当前版本 **0.7.7**。最新尾巴模型替换已完成编译、四项定向检查和打包；未执行全量 build/check/verify，未启动或安装 Minecraft。以下历史章节保留当时的结果，不等于当前版本重新运行了它们。
+当前版本 **0.7.7**。最新头像/苦力怕烟花替换已完成编译、四项定向检查和打包；未执行全量 build/check/verify，未启动或安装 Minecraft。以下历史章节保留当时的结果，不等于当前版本重新运行了它们。
+
+## 0.7.7 Fox3 头像/苦力怕烟花验证（2026-10-22）
+
+```powershell
+python tools/export-fox3-emblem.py
+.\tools\build.ps1 -Stage fox3-burst-final -Tasks compileJava,verifyFox3Burst,verifyFox3Integration,verifyFox3Geometry,verifyFox3Model,jar
+python tools/preview-fox3-burst.py
+```
+
+[最终日志](../tools/fox3-burst-final.log)：**BUILD SUCCESSFUL in 19s**，9 项任务（8 执行、1 已是最新）；仅现有客户端事件订阅注解的两条弃用警告。先前 [初次检查](../tools/fox3-burst-check.log) 也通过；随后改用更饱满的原版 spark_5 星芒，并补充实际引擎并发/卸载测试后重跑上述四项。
+
+- `verifyFox3Burst`：检查原图 SHA 与黑线覆盖、444 点采样间距、布尔事件映射及固定种子公平性抽样。实际创建生产 `Fox3EmblemParticle` 并捕获顶点，覆盖 12 种相机朝向（含后方、上下俯仰）、无镜像、全亮/橙金/UV、展开/保持/淡出、短尾数量、包围盒和实际到期移除。249,863 次断言主要是逐顶点与采样点对的数值检查，不代表同等数量的独立场景。
+- 同一测试直接调用实际 `ParticleEngine.add`：模拟四次八发齐射的 32 次同时请求，仅接纳 16 个完整头像；`setLevel(null)` 清空队列/计数，随后能重新接纳。测试跳过引擎构造，用队列/计数夹具提供所需字段；没有启动游戏、GL 上下文或世界。
+- `verifyFox3Integration`：616 项配置/权限/生命周期/注册与控制流检查，包括服务端每次仅一次公平抽签、一个视觉事件、最终位置先发送、两个图案分支互斥、重复事件保护、原版 CREEPER 枚举及客户端 provider 注册。
+- `verifyFox3Geometry`、`verifyFox3Model`：现有碰撞/伤害回归及尾巴资源/朝向检查通过。本轮未重跑其他全量测试。
+
+已目视检查 [采样点预览](../build/reports/fox3-emblem-points.png) 和 [生产顶点＋原版星芒的时序预览](../build/reports/fox3-burst-preview.png)。后者读取测试记录的实际 renderer 输出；仍不等同于游戏 shader、资源包、深度遮挡、网络或多人 FPS 实测。CREEPER 的实际粒子展开仍由原版代码负责，没有把离线控制流检查称为实机烟花观测。
+
+[产物检查](../tools/fox3-burst-artifact-check.json)：新粒子/数据/动画数学类和粒子资源已打包，原头像 PNG 与测试类未打包；尾巴模型/贴图/renderer、姿态/尾迹、十个既有武器类及爆炸伤害代码与本轮起点一致。服务端仅视觉事件选择改变，Manifest/Mod 元数据保持 0.7.7。
+
+当前 Jar：**2,839,470 bytes**，SHA-256 `31E5A1EB459D93935280D7414C403BB0625C050B3C5B87A99E130CBCFD1EB78F`；[下载](../build/libs/touhou_little_maid_skyfarer-1.21.1-0.7.7.jar)。同名产物已更新，下列尾巴模型及更早构建的大小/hash 是历史记录。
 
 ## 0.7.7 Fox3 尾巴模型验证（2026-10-22）
 

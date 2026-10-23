@@ -1,0 +1,33 @@
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :createMinecraftArtifacts UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :processResources
+> Task :classes
+> Task :compileVerificationJava
+> Task :processVerificationResources NO-SOURCE
+> Task :verificationClasses
+
+> Task :verifyFox3Burst
+Fox3 burst: source sampling, fair selection, actual vertex rendering from 12 cameras, expansion/hold/fade, fullbright, bounds and expiry passed (249860 assertions).
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyFox3Integration
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Fox3 integration: 616 real config, authorization control-flow, per-maid UI, queued network, lifecycle/renderer and localization checks passed.
+
+> Task :verifyFox3Geometry
+Fox3 impact/blast passed: swept thin walls/entities, nearest hit and initial containment; spherical radius, native AABB LOS, protected/occluded filtering, UUID dedup and configured damage
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+
+> Task :verifyFox3Model
+Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=F:/wfs-nonexistent-socket-dir
+Fox3 tail model: 6667 assertions passed: packaged mesh/PNG, outward normals/UVs, six axes, climb/rollover/dive, zero speed, yaw seam and rear exhaust.
+
+> Task :jarJar NO-SOURCE
+> Task :jar
+
+BUILD SUCCESSFUL in 18s
+9 actionable tasks: 7 executed, 2 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

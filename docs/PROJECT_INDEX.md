@@ -8,6 +8,8 @@
 
 已有 Home 重复召唤、远程唤醒、彗星光效和动力仲裁的历史证据保留于 [buildHistory](buildHistory.md) 与 [验证](VALIDATION.md)。当前航迹执行、控制仲裁、有限证明与延迟避障见 [飞控总览](FLIGHT_CONTROL_OVERVIEW.md) 和 [TrajectoryCommitment](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)；饰品和装备规则见 [装备生存与兼容](EQUIPMENT_SURVIVAL.md)。源码为最终权威。
 
+当前爆炸外观为服务端一次公平抽签的酒狐头像 / 原版 `CREEPER` 烟花。`Fox3EmblemData` 保存原图黑线的 444 个采样点，`Fox3EmblemParticle` 按各客户端相机朝向绘制 Fullbright 星芒。原图位于 `tools/素材参考/爆炸特效.png`，预处理入口为 `tools/export-fox3-emblem.py`，检查入口为 `verifyFox3Burst`；生命周期与限额见飞控总览 13.3 和异步架构 11 节。
+
 ## 先读：长期维护规则
 
 > **这些文档属于当前工程实现的一部分，而不是一次性说明文件。**

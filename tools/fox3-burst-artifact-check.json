@@ -1,0 +1,26 @@
+{
+  "artifact": "touhou_little_maid_skyfarer-1.21.1-0.7.7.jar",
+  "bytes": 2839470,
+  "sha256": "31E5A1EB459D93935280D7414C403BB0625C050B3C5B87A99E130CBCFD1EB78F",
+  "version": "0.7.7",
+  "new_classes_and_particle_resource_present": true,
+  "source_image_and_tests_excluded": true,
+  "unchanged_sources": [
+    "Fox3Ammo",
+    "Fox3Blast",
+    "Fox3Budget",
+    "Fox3Entities",
+    "Fox3Guidance",
+    "Fox3Impact",
+    "Fox3Salvo",
+    "Fox3System",
+    "Fox3Targets",
+    "Fox3VisualOrientation"
+  ],
+  "damage_body_unchanged": true,
+  "tail_model_renderer_orientation_and_trail_unchanged": true,
+  "custom_points": 444,
+  "max_custom_active": 16,
+  "max_custom_quads": 8880,
+  "lifetime_ticks": 40
+}

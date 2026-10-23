@@ -2,7 +2,18 @@
 
 ## 当前交付状态
 
-当前工程为 **0.7.7**，Fox3 现已装配用户提供的酒狐尾巴模型。最新编译、四项模型相关定向检查和打包均已通过；未运行全量 build/check/verify，未启动或安装 Minecraft。
+当前工程为 **0.7.7**，Fox3 使用酒狐尾巴导弹，并以 50%/50% 绽放酒狐头像或原版苦力怕烟花。最新编译、四项定向检查和打包通过；未运行全量 build/check/verify，未启动或安装 Minecraft。
+
+## 0.7.7 — 酒狐头像与苦力怕烟花（2026-10-22）
+
+- 从用户 `爆炸特效.png` 的黑线提取骨架并采样为 444 个坐标点，保留狐耳、发丝、眨眼和笑嘴。源 PNG 不修改、不打包，运行时不解析图片；重生成脚本为 `tools/export-fox3-emblem.py`。
+- 服务端每次引爆仅一次公平布尔抽签，用原有最终位置包＋一个实体事件选择头像或原版 `Shape.CREEPER`，客户端分支互斥且去重。苦力怕图案直接复用原版烟花逻辑；橙金主题、原版音效，未增加实体爆炸。
+- 头像以独立星芒小四边形批量绘制，使用原版 spark_5 与 Fullbright，各客户端按相机方向保持头像正面。8 ticks 展开、保持至 22 ticks、40 ticks 消散，视觉升高约 3 格；少量闪烁和短尾，不显示整张 PNG。
+- 原版 ParticleGroup 限制最多 16 个头像批次、最多 8,880 四边形/帧。无逐点网络包、子粒子链或新线程；原版引擎在切世界时释放队列与计数。原有尾巴模型、飞控、制导、索敌、齐射、库存和伤害逻辑保持不变。
+- [fox3-burst-final.log](../tools/fox3-burst-final.log) 的 compileJava、verifyFox3Burst、Integration、Geometry、Model 和 jar 通过（19 秒）。实际 renderer 顶点捕获覆盖 12 种相机方向与完整淡出；实际 ParticleEngine 的 32 次同时请求仅接纳 16 个，并验证卸载清理。离线预览与测试边界见 [验证](VALIDATION.md)，未启动 Minecraft。
+- 仅更新现有 README、索引、飞控/异步/验证文档与本文件，没有新增技术文档，版本保持 0.7.7。
+
+当前交付：[touhou_little_maid_skyfarer-1.21.1-0.7.7.jar](../build/libs/touhou_little_maid_skyfarer-1.21.1-0.7.7.jar)，**2,839,470 bytes**，SHA-256 `31E5A1EB459D93935280D7414C403BB0625C050B3C5B87A99E130CBCFD1EB78F`；[产物校验](../tools/fox3-burst-artifact-check.json)。同名 Jar 已替换，下列大小与校验值保留为历史证据。
 
 ## 0.7.7 — Fox3 酒狐尾巴导弹外观（2026-10-22）
 
