@@ -1,0 +1,22 @@
+{
+  "artifact": "touhou_little_maid_skyfarer-1.21.1-0.7.7.jar",
+  "bytes": 2830009,
+  "sha256": "389B2BC881E68FDECEBB3568EB7EBE60C806AB3DE62EEBB5A88313D8E5803560",
+  "version": "0.7.7",
+  "packaged_resources_match": true,
+  "artist_png_unchanged": true,
+  "renderer_and_orientation_classes_present": true,
+  "test_classes_excluded": true,
+  "unchanged_weapon_sources": [
+    "Fox3Ammo.java",
+    "Fox3Blast.java",
+    "Fox3Budget.java",
+    "Fox3Entities.java",
+    "Fox3Guidance.java",
+    "Fox3Impact.java",
+    "Fox3Salvo.java",
+    "Fox3System.java",
+    "Fox3Targets.java"
+  ],
+  "existing_entity_server_and_explosion_methods_unchanged": true
+}

@@ -2,7 +2,17 @@
 
 ## 当前交付状态
 
-当前工程为 **0.7.7**，在已发布 0.7.6 上增加 Fox3 独立制导烟花武器。编译、六项 Fox3 定向检查和打包均已通过；未运行全量 build/check/verify，未启动或安装 Minecraft。
+当前工程为 **0.7.7**，Fox3 现已装配用户提供的酒狐尾巴模型。最新编译、四项模型相关定向检查和打包均已通过；未运行全量 build/check/verify，未启动或安装 Minecraft。
+
+## 0.7.7 — Fox3 酒狐尾巴导弹外观（2026-10-22）
+
+- **导入**：保留用户 `.bbmodel` 与 PNG 原件；27 个立方体/10 个组的 pivot 和 ZYX Euler 旋转烘焙为 162 个四边形，逐面 UV 保留，128×128 贴图原样打包。不添加动画库或运行时建模依赖。重导出脚本为 `tools/export-fox3-model.py`。
+- **朝向与尾迹**：白色 Tail7 尖端定义 +Z，机械喷口定义 -Z，中心间距缩放至约 0.985 格；`Fox3MissileRenderer` 通过速度 yaw/pitch 和客户端角度插值绘制。跨 ±180° 走短弧，近零速度保持朝向，尾迹起点按同一姿态变换至机械后端。模型加载一次并缓存顶点，不逐帧读文件。
+- **保持原机制**：仅修改外观和客户端粒子起点；源码对照确认既有制导、独立索敌、齐射、库存、服务端碰撞与爆炸/伤害/卸载逻辑未改动。白色原版尾迹种类/预算、橙色烟花与音效保留。
+- **验证**：[fox3-model-final.log](../tools/fox3-model-final.log) 的 compileJava、verifyFox3Model、Integration、Guidance、Geometry 和 jar 通过（17 秒）；模型 6667 项、Integration 570 项断言。独立 JOML 矩阵核对全部导出顶点，六轴及真实制导序列验证白尖/喷口朝向，目视核对包内网格离线预览。中间测试失败与通用 headless 旧格式预览限制见 [验证文档](VALIDATION.md)。未运行游戏，未把离线预览称为实机效果。
+- **文档**：仅更新已有 README、工程索引、飞控总览、验证与本文件，没有新增版本技术文档；版本元数据保持 0.7.7。
+
+当前交付包：[touhou_little_maid_skyfarer-1.21.1-0.7.7.jar](../build/libs/touhou_little_maid_skyfarer-1.21.1-0.7.7.jar)，**2,830,009 bytes**，SHA-256 `389B2BC881E68FDECEBB3568EB7EBE60C806AB3DE62EEBB5A88313D8E5803560`；[产物校验](../tools/fox3-model-artifact-check.json)。同名路径已更新，以下初次 Fox3 构建的大小/hash 属于历史记录。
 
 ## 0.7.7 — Fox3，导弹离仓！（2026-10-22）
 

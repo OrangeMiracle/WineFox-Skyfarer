@@ -429,7 +429,7 @@ tasks.register('verifyRemoteRecall', JavaExec) {
 }
 
 // Fox3 directed checks only; these do not attach the full verification suite or launch Minecraft.
-['Salvo', 'Guidance', 'Ammo', 'Integration', 'Geometry', 'Targets'].each { suite ->
+['Salvo', 'Guidance', 'Ammo', 'Integration', 'Geometry', 'Targets', 'Model'].each { suite ->
     tasks.register("verifyFox3${suite}", JavaExec) {
         dependsOn verificationClasses
         classpath = sourceSets.verification.runtimeClasspath + sourceSets.main.compileClasspath + files('build/moddev/artifacts/neoforge-21.1.250-client-extra-aka-minecraft-resources.jar')

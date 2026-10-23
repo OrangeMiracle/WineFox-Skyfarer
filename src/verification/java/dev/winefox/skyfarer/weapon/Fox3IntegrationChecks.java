@@ -154,7 +154,7 @@ public final class Fox3IntegrationChecks {
         require(main.methods.stream().anyMatch(m -> field(m, ROOT + "weapon/Fox3Entities", "TYPES")), "missile entity type registry connected to mod entry");
         var client = read(ROOT + "client/SkyfarerClient");
         require(client.methods.stream().anyMatch(m -> field(m, ROOT + "weapon/Fox3Entities", "MISSILE") && calls(m, c -> c.name.equals("registerEntityRenderer"))), "client registers missile renderer");
-        require(client.methods.stream().flatMap(m -> handles(m).stream()).anyMatch(h -> h.getOwner().equals("net/minecraft/client/renderer/entity/FireworkEntityRenderer")), "native firework renderer is reused");
+        require(client.methods.stream().flatMap(m -> handles(m).stream()).anyMatch(h -> h.getOwner().equals(ROOT + "client/Fox3MissileRenderer")), "tail missile renderer is registered");
         var listeners = main.methods.stream().flatMap(m -> handles(m).stream()).toList();
         require(listeners.stream().anyMatch(h -> h.getOwner().equals(SYSTEM) && h.getName().equals("tick") && h.getDesc().contains("EntityTickEvent$Post")), "POST entity tick drives independent weapon after flight control");
         require(listeners.stream().anyMatch(h -> h.getOwner().equals(SYSTEM) && h.getName().equals("leave") && h.getDesc().contains("EntityLeaveLevelEvent")), "entity leave listener cleans weapon state");

@@ -1,8 +1,33 @@
 # 验证、离线回放与构建
 
-当前版本 **0.7.7**。本次编译、六项 Fox3 定向检查和打包均已通过；未执行全量 build/check/verify，未启动或安装 Minecraft。以下历史章节保留当时的结果，不等于当前版本重新运行了它们。
+当前版本 **0.7.7**。最新尾巴模型替换已完成编译、四项定向检查和打包；未执行全量 build/check/verify，未启动或安装 Minecraft。以下历史章节保留当时的结果，不等于当前版本重新运行了它们。
+
+## 0.7.7 Fox3 尾巴模型验证（2026-10-22）
+
+本轮只修改客户端外观、姿态和喷口粒子起点。已将现有源码与 HEAD 对照：九个既有 Fox3 武器类完全不变，导弹实体原有构造、服务端 tick、碰撞/伤害/爆炸、卸载及位置同步方法不变。证据见 [模型产物校验](../tools/fox3-model-artifact-check.json)。
+
+```powershell
+python tools/export-fox3-model.py
+python tools/preview-fox3-model.py
+.\tools\build.ps1 -Stage fox3-model-final -Tasks compileJava,verifyFox3Model,verifyFox3Integration,verifyFox3Guidance,verifyFox3Geometry,jar
+```
+
+[最终日志](../tools/fox3-model-final.log)：**BUILD SUCCESSFUL in 17s**，9 项任务（7 执行、2 已是最新）。
+
+- `verifyFox3Model`：6667 项逐顶点/资源/数学断言；源文件 SHA、原 PNG 一致性、128×128 解码与运行时路径、27 立方体/162 面、UV/外向法线；以独立 JOML ZYX 层级矩阵逐顶点对照原始模型。生产姿态函数覆盖六轴、斜向、垂直、零速度、±180° 接缝，以及真实制导器双侧爬升→翻转→追踪序列；白尖沿速度、喷口反向。
+- `verifyFox3Integration`：570 项配置/权限/生命周期/注册检查，renderer 断言已更新为 `Fox3MissileRenderer`；未放松原服务端门控。
+- `verifyFox3Guidance`、`verifyFox3Geometry`：原有分阶段制导、障碍扫掠、爆炸过滤/遮挡/去重检查通过。本轮没有重跑 Salvo、Ammo、Targets 或完整 verify。
+- 包内几何/贴图与源资源一致，新增渲染及姿态类已打包；离线验证类/agent/外部夹具未混入，Manifest/Mod 元数据保持 0.7.7。
+
+已目视检查 [包内模型离线预览](../build/reports/fox3-model-preview.png)，白尖、金橙尾身、机械喷口与参考外观相符。通用 headless 工具对此旧格式的直接预览出现部件分离，因此不把它作为导出成功的依据；核对 Blockbench 官方 ZYX/UV 规则后，以包内网格预览和独立矩阵对照验证。离线图不代表游戏实际光照、网络插值或粒子效果；仍需用户实机观察，未自动启动 Minecraft。
+
+中间 [fox3-model-check.log](../tools/fox3-model-check.log) 保留一次测试失败：极薄喷口侧面的叉积被 Minecraft `Vec3.normalize` 的近零阈值清零，断言改为按实际非零长度归一化；没有移除这些面的检查。[fox3-model-release.log](../tools/fox3-model-release.log) 是最终 ZYX 修正前的中间运行，最新结论以 final 日志为准。
+
+当前交付包：[touhou_little_maid_skyfarer-1.21.1-0.7.7.jar](../build/libs/touhou_little_maid_skyfarer-1.21.1-0.7.7.jar)，**2,830,009 bytes**，SHA-256 `389B2BC881E68FDECEBB3568EB7EBE60C806AB3DE62EEBB5A88313D8E5803560`。
 
 ## 0.7.7 Fox3 定向验证
+
+此节记录首次 Fox3 功能交付；最新同版本尾巴模型构建见上节，已替换同名 Jar。下列历史大小与校验值不代表当前产物。
 
 实现入口见 [飞控总览第 13 节](FLIGHT_CONTROL_OVERVIEW.md#13-fox3-独立制导武器)，预算见 [异步架构第 11 节](ASYNC_PLANNING.md#11-fox3-主线程轻量武器预算)。本轮针对性任务不挂接完整 `check`，也不运行 Minecraft 客户端或服务端：
 
@@ -12,7 +37,7 @@
 | `verifyFox3Guidance` | 执行生产向量制导：双侧外张爬升、连续翻转与追踪的阶段转向上限/曲率、固定与移动目标、正后方和零向量；不以数值回放代替真实画面 |
 | `verifyFox3Ammo` | 真实 mapped ItemStack/组件和 NeoForge ItemStackHandler：免费零库存读取、普通/装饰烟花、仅 3 发库存尝试 8 发、生成否决、回调更换库存与实际提取拒绝 |
 | `verifyFox3Geometry` | 生产 Fox3Impact/Fox3Blast 配合真实 Vec3/AABB：薄墙/实体扫掠、最近命中和初始重叠、球形半径、遮挡/保护/UUID 去重及配置伤害；世界碰撞形状与伤害事件仍需实机 |
-| `verifyFox3Integration` | 实际 NeoForge 配置默认/范围/命令/reload/reset 与编译字节码控制流：nonce、持物、UUID/owner/权限、手动绕过自动条件但保留安全/付费门控、主线程派发、原版 renderer 和双语资源；核对真实依赖的区块卸载 `setRemoved`→tracking-end→`onRemovedFromLevel` 调用链 |
+| `verifyFox3Integration` | 实际 NeoForge 配置默认/范围/命令/reload/reset 与编译字节码控制流：nonce、持物、UUID/owner/权限、手动绕过自动条件但保留安全/付费门控、主线程派发、renderer（首次为原版、当前为尾巴模型）和双语资源；核对真实依赖的区块卸载 `setRemoved`→tracking-end→`onRemovedFromLevel` 调用链 |
 | `verifyFox3Targets` | 生产独立目标过滤、选择、安全门控和手动拒绝：玩家/女仆/有主实体/双向盟友/失效实体排除、主人附近优先、战区备选、八目标分散、主飞控目标不读写、UUID 隔离及承诺攻击禁止启动；实际导弹卸载钩子/重复/重入/异常后的唯一释放。真实 MC/TLM 测试子类用离线属性探针，并跳过实体构造器 |
 
 最终 [fox3-release.log](../tools/fox3-release.log) 的 `compileJava`、上述六项 `verifyFox3*` 和 `jar` 全部通过：**BUILD SUCCESSFUL in 25s**，12 个任务（9 执行、3 已是最新）。Integration **534** 项断言，Targets 与实际生命周期 **67** 项断言；Salvo 的 64 女仆×500 ticks 检查触及全服 128 枚上限且全部释放。编译仅保留现有客户端事件订阅注解的两条弃用警告。

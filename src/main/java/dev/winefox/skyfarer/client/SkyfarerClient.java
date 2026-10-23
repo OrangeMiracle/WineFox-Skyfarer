@@ -12,7 +12,7 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 @EventBusSubscriber(modid = WineFoxSkyfarer.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public final class SkyfarerClient {
     @SubscribeEvent public static void entities(net.neoforged.neoforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
-        event.registerEntityRenderer(dev.winefox.skyfarer.weapon.Fox3Entities.MISSILE.get(), net.minecraft.client.renderer.entity.FireworkEntityRenderer::new);
+        event.registerEntityRenderer(dev.winefox.skyfarer.weapon.Fox3Entities.MISSILE.get(), Fox3MissileRenderer::new);
     }
     @SubscribeEvent public static void particles(net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent event){
         event.registerSpriteSet(dev.winefox.skyfarer.network.CometParticles.TAIL.get(),sprites->(type,level,x,y,z,vx,vy,vz)->new CometGlowParticle(level,x,y,z,vx,vy,vz,sprites,false));

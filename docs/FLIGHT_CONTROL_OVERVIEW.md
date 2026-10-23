@@ -534,7 +534,7 @@ Fox3 是飞行中的独立武器，不增加 `AirCombatState`，不调用空战�
 
 ### 13.2 连续轨迹与实体边界
 
-[Fox3MissileEntity](../src/main/java/dev/winefox/skyfarer/weapon/Fox3MissileEntity.java) 继承 `FireworkRocketEntity` 复用原版火箭外观/渲染接口，但覆盖其 tick 和爆炸事件，不调用原版自动加速或未过滤的烟花伤害。注册为临时、不保存、不可召唤实体，不申请区块票据、不使用传送门或跨维度。
+[Fox3MissileEntity](../src/main/java/dev/winefox/skyfarer/weapon/Fox3MissileEntity.java) 继承 `FireworkRocketEntity` 保留烟花数据/实体接口，外观由专属尾巴模型渲染器绘制。覆盖原版 tick 和爆炸事件，不调用原版自动加速或未过滤的烟花伤害。注册为临时、不保存、不可召唤实体，不申请区块票据、不使用传送门或跨维度。
 
 [Fox3Guidance](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Guidance.java) 是纯数值转向器。导弹自身分爬升、翻转和追踪阶段；左右初速度含反向横向分量，先向外爬升，再用较大的连续转向完成向下翻转，进入追踪后严格限制大幅转向。这些阶段仅属于导弹，不加入女仆飞控状态。各阶段保留转向速度与曲率半径约束，即使目标在正后方也平滑转弯，不瞬间对齐；位置只沿本 tick 已扫掠的速度步进。
 
@@ -555,3 +555,14 @@ Fox3 是飞行中的独立武器，不增加 `AirCombatState`，不调用空战�
 爆炸只由服务端结算一次。最多检查 128 个局部 LivingEntity，由 [Fox3Blast](../src/main/java/dev/winefox/skyfarer/weapon/Fox3Blast.java) 按 UUID 去重、重新验证合法目标，并以爆心至目标碰撞箱最近点的球形距离检查配置半径。范围内统一使用配置基础伤害（默认 5 点，无距离衰减）；到身体中心或低位的两条方块遮挡射线至少一条可见才调用原版 `fireworks` 伤害源。护甲、免疫与伤害事件仍由原版/其他 Mod 正常处理。不会调用破坏方块的世界爆炸。
 
 客户端复用原版 `SMALL_BALL` 烟花，主色鲜橙并带橙黄/橙红渐变及 trail，发射音效也使用原版。引爆先发送原版最终位置包再发送烟花事件，避免客户端插值尚未追上时把爆炸画在接触点后方。每枚每客户端 tick 最多生成 2 个白色 `FIREWORK` 尾迹粒子，全客户端最多 128 个/tick；原版粒子寿命形成较长尾迹。真实颜色、弧线观感、粒子设置/资源包、网络插值与多人负载仍需用户实机确认；离线验证不宣称已观看实际游戏效果。
+
+#### 酒狐尾巴导弹外观
+
+- 用户源文件为 `tools/素材参考/尾巴导弹/fox_tail_missile.bbmodel`（Blockbench 4.10 free 格式，27 cubes/10 groups，无动画）及同名 128×128 PNG；不修改源文件，不增加运行时 Blockbench/GeckoLib 依赖。
+- [export-fox3-model.py](../tools/export-fox3-model.py) 将多层 pivot 与 **ZYX Euler** 旋转、逐面 UV/UV rotation 烘焙为 162 个外向四边形；遵循 [Blockbench 4.10 Cube 预览源码](https://github.com/JannisX11/blockbench/blob/v4.10.4/js/outliner/cube.js) 的旋转和 UV 规则，不套用 Three.js 默认 XYZ。输出 `assets/winefox_skyfarer/models/entity/fox_tail_missile.json`，原 PNG 原样复制到 `textures/entity/fox_tail_missile.png`。
+- 以白色 `Tail7` 中心和 `Nozzle_Warm_Core` 中心确定纵轴，以两者中点作为模型原点，按 1/32 缩放。白尖规范前向为 **+Z**，机械喷口为 **-Z**；两中心间距约 0.985 格。视觉尺寸不修改实体碰撞箱或服务端扫掠。
+- [Fox3MissileRenderer](../src/main/java/dev/winefox/skyfarer/client/Fox3MissileRenderer.java) 在客户端实体渲染注册中替代原版火箭物品 renderer。构造/资源重载时读取模型并缓存顶点，逐帧不读文件；使用独立 PNG 与 `entityCutoutNoCull`，保留普通实体光照。
+- [Fox3VisualOrientation](../src/main/java/dev/winefox/skyfarer/weapon/Fox3VisualOrientation.java) 使用实际 `deltaMovement`：yaw=`atan2(vx,vz)`，pitch=`-atan2(vy,hypot(vx,vz))`，绘制时按 `Ry(yaw)·Rx(pitch)` 将 +Z 对齐速度。yaw 用最短角插值跨越 ±180°，pitch 线性插值；近零速度保持上次有效朝向，垂直速度保持 yaw。此姿态仅供外观，不驱动飞控或制导。
+- 白色尾迹使用同一插值姿态变换喷口局部坐标 `(0,0,-0.49238188058)`，从机械后端发出；原有粒子种类、数量预算、寿命、橙色爆炸及音效不变。
+
+`verifyFox3Model` 检查源文件一致性、独立 JOML ZYX 层级变换、PNG/资源路径、UV/外向法线，以及六轴、零速度、角度接缝和真实制导序列中的尖端/喷口朝向。`tools/preview-fox3-model.py` 可离线绘制包内几何和贴图供目视核对；这不是 Minecraft 画面，游戏内最终表现由用户实机确认。

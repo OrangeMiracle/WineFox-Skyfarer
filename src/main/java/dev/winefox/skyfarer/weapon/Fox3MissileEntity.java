@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Independent, ephemeral server-owned guided rocket. Only native firework rendering/data are
+ * Independent, ephemeral server-owned guided rocket. Only native firework data/interfaces are
  * inherited: FireworkRocketEntity.tick and its unfiltered native explosion damage never run.
  */
 public final class Fox3MissileEntity extends FireworkRocketEntity {
@@ -235,7 +235,21 @@ public final class Fox3MissileEntity extends FireworkRocketEntity {
         clientLerpSteps = Math.max(1, Math.min(3, steps));
     }
 
+    private float visualYaw, visualPitch, previousVisualYaw, previousVisualPitch;
+    private boolean visualInitialized;
+    public float visualYaw(float partial) {
+        return visualInitialized ? net.minecraft.util.Mth.rotLerp(partial,previousVisualYaw,visualYaw)
+            : Fox3VisualOrientation.fromVelocity(getDeltaMovement(),0,0).yaw();
+    }
+    public float visualPitch(float partial) {
+        return visualInitialized ? net.minecraft.util.Mth.lerp(partial,previousVisualPitch,visualPitch)
+            : Fox3VisualOrientation.fromVelocity(getDeltaMovement(),0,0).pitch();
+    }
     private void clientTick() {
+        var orientation = Fox3VisualOrientation.fromVelocity(getDeltaMovement(),visualYaw,visualPitch);
+        previousVisualYaw = visualInitialized ? visualYaw : orientation.yaw();
+        previousVisualPitch = visualInitialized ? visualPitch : orientation.pitch();
+        visualYaw=orientation.yaw(); visualPitch=orientation.pitch(); visualInitialized=true;
         Vec3 previous = position();
         if (clientLerpSteps > 0 && clientTarget != null) {
             setPos(previous.lerp(clientTarget, 1.0 / clientLerpSteps));
@@ -246,7 +260,8 @@ public final class Fox3MissileEntity extends FireworkRocketEntity {
         if (now != trailTick) { trailTick = now; trailParticles = 0; }
         // Native white spark particles last about 48-60 ticks, leaving a long continuous trail.
         for (int i = 0; i < 2 && trailParticles < 128; i++) {
-            Vec3 point = previous.lerp(position(), i * 0.5);
+            float fraction = i * 0.5F;
+            Vec3 point = previous.lerp(position(), fraction).add(Fox3VisualOrientation.nozzle(visualYaw(fraction),visualPitch(fraction)));
             level().addParticle(ParticleTypes.FIREWORK, point.x, point.y, point.z,
                 -getDeltaMovement().x * 0.025, -getDeltaMovement().y * 0.025, -getDeltaMovement().z * 0.025);
             trailParticles++;

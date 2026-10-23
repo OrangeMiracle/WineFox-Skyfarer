@@ -4,6 +4,8 @@
 
 0.7.7 增加独立 Fox3 制导烟花武器系统：飞行中按冷却/敌群数量/概率发射多波导弹，逐枚独立索敌，不接管飞控。当前机制维护于 [飞控总览](FLIGHT_CONTROL_OVERVIEW.md#13-fox3-独立制导武器)，参数和手动发射入口见 [配置与调试参考](CONFIG_DEBUG_REFERENCE.md)，实际定向验证证据见 [验证](VALIDATION.md)。
 
+当前 Fox3 外观为用户提供的酒狐尾巴模型：`Fox3MissileRenderer` 绘制静态烘焙几何，`Fox3VisualOrientation` 将白尖 +Z 对齐速度，机械后端发出白尾。源 `.bbmodel`/PNG 保留于 `tools/素材参考/尾巴导弹`，可用 `tools/export-fox3-model.py` 重导出；模型坐标、资源路径和验证入口见飞控总览 13.3 与验证文档。
+
 已有 Home 重复召唤、远程唤醒、彗星光效和动力仲裁的历史证据保留于 [buildHistory](buildHistory.md) 与 [验证](VALIDATION.md)。当前航迹执行、控制仲裁、有限证明与延迟避障见 [飞控总览](FLIGHT_CONTROL_OVERVIEW.md) 和 [TrajectoryCommitment](../src/main/java/dev/winefox/skyfarer/flight/TrajectoryCommitment.java)；饰品和装备规则见 [装备生存与兼容](EQUIPMENT_SURVIVAL.md)。源码为最终权威。
 
 ## 先读：长期维护规则
@@ -74,7 +76,7 @@ NeoForge EntityTick.Pre → SkyfarerRuntime.tick
 ServerTick.Pre  → PlannerSession.serverTick：结果领取、预算重置、轮转增量采集
 ServerTick.Post → CommandManager.tick / DebugWatchManager.tick：调度、票据、同步
 EntityTick.Post → Fox3System：独立自动检查 / 多波发射（不写飞控）
-Fox3 导弹 tick  → 自身有界制导 / 局部扫掠 / 服务端伤害 / 客户端原版烟花
+Fox3 导弹 tick  → 自身有界制导 / 局部扫掠 / 服务端伤害 / 客户端尾巴模型及原版烟花粒子
 客户端         ← Payload → HUD / 标记 / 预测线 / 管理面板
 ```
 
